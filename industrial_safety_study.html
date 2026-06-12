@@ -137,7 +137,15 @@
       gap: 8px;
     }
 
-    .exam-tabs button {
+    .exam-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 40px 40px;
+      gap: 6px;
+      align-items: stretch;
+    }
+
+    .exam-tabs button,
+    .exam-add {
       width: 100%;
       min-height: 44px;
       text-align: left;
@@ -149,7 +157,7 @@
       align-content: center;
     }
 
-    .exam-tabs button.active {
+    .exam-row button:first-child.active {
       background: var(--soft);
       border-color: var(--soft);
       color: #173831;
@@ -159,6 +167,20 @@
       color: inherit;
       font-size: 12px;
       opacity: 0.72;
+    }
+
+    .exam-icon {
+      justify-content: center;
+      text-align: center;
+      padding: 0;
+      font-weight: 700;
+    }
+
+    .exam-add {
+      justify-content: center;
+      text-align: center;
+      border-style: dashed;
+      color: #eef5f4;
     }
 
     .nav {
@@ -448,6 +470,7 @@
       </div>
       <p class="section-label">시험 선택</p>
       <div id="examTabs" class="exam-tabs" aria-label="시험 선택"></div>
+      <button id="addExamBtn" class="exam-add" type="button">+ 시험 추가</button>
       <nav class="nav" aria-label="화면 전환">
         <button class="active" data-view-btn="study">▣ 학습</button>
         <button data-view-btn="wrong">※ 오답노트</button>
@@ -594,7 +617,7 @@
     const DEFAULT_EXAM_ID = "industrial-practical";
     const STORAGE_KEY = "examStudyApp.v2";
     const OLD_STORAGE_KEYS = ["industrialSafetyPracticalStudy.v1"];
-    const EXAMS = [
+    const DEFAULT_EXAMS = [
       {
         id: DEFAULT_EXAM_ID,
         name: "산업기사 실기",
@@ -650,6 +673,7 @@
       wrongCount: document.querySelector("#wrongCount"),
       masteredCount: document.querySelector("#masteredCount"),
       examTabs: document.querySelector("#examTabs"),
+      addExamBtn: document.querySelector("#addExamBtn"),
       searchInput: document.querySelector("#searchInput"),
       installBtn: document.querySelector("#installBtn"),
       shuffleBtn: document.querySelector("#shuffleBtn"),
@@ -692,6 +716,7 @@
     });
 
     els.searchInput.addEventListener("input", render);
+    els.addExamBtn.addEventListener("click", addExam);
     els.installBtn.addEventListener("click", installApp);
     els.categoryFilter.addEventListener("change", () => { currentIndex = 0; render(); });
     els.statusFilter.addEventListener("change", () => { currentIndex = 0; render(); });
@@ -735,8 +760,20 @@
     }
 
     function normalizeState(saved) {
-      const activeExamId = EXAMS.some(exam => exam.id === saved.activeExamId) ? saved.activeExamId : DEFAULT_EXAM_ID;
+      const savedExams = Array.isArray(saved.exams) ? saved.exams : DEFAULT_EXAMS;
+      const exams = savedExams
+        .filter(exam => exam && exam.id && exam.name)
+        .map(exam => ({
+          id: exam.id,
+          name: exam.name,
+          description: exam.description || "사용자 추가 시험"
+        }));
+
+      if (!exams.length) exams.push(...DEFAULT_EXAMS);
+
+      const activeExamId = exams.some(exam => exam.id === saved.activeExamId) ? saved.activeExamId : exams[0].id;
       return {
+        exams,
         activeExamId,
         questions: saved.questions.map(q => ({
           ...q,
@@ -777,7 +814,7 @@
     }
 
     function currentExam() {
-      return EXAMS.find(exam => exam.id === state.activeExamId) || EXAMS[0];
+      return state.exams.find(exam => exam.id === state.activeExamId) || state.exams[0];
     }
 
     function currentExamQuestions() {
@@ -785,12 +822,16 @@
     }
 
     function renderExamTabs() {
-      els.examTabs.innerHTML = EXAMS.map(exam => {
+      els.examTabs.innerHTML = state.exams.map(exam => {
         const count = state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) === exam.id).length;
-        return `<button class="${exam.id === state.activeExamId ? "active" : ""}" data-exam-id="${escapeHtml(exam.id)}">
-          <b>${escapeHtml(exam.name)}</b>
-          <span>${escapeHtml(exam.description)} · ${count}문제</span>
-        </button>`;
+        return `<div class="exam-row">
+          <button class="${exam.id === state.activeExamId ? "active" : ""}" data-exam-id="${escapeHtml(exam.id)}">
+            <b>${escapeHtml(exam.name)}</b>
+            <span>${escapeHtml(exam.description)} · ${count}문제</span>
+          </button>
+          <button class="exam-icon" data-rename-exam="${escapeHtml(exam.id)}" title="시험 이름 변경">수정</button>
+          <button class="exam-icon" data-delete-exam="${escapeHtml(exam.id)}" title="시험 삭제">삭제</button>
+        </div>`;
       }).join("");
 
       els.examTabs.querySelectorAll("[data-exam-id]").forEach(button => {
@@ -801,6 +842,64 @@
           render();
         });
       });
+
+      els.examTabs.querySelectorAll("[data-rename-exam]").forEach(button => {
+        button.addEventListener("click", () => renameExam(button.dataset.renameExam));
+      });
+
+      els.examTabs.querySelectorAll("[data-delete-exam]").forEach(button => {
+        button.addEventListener("click", () => deleteExam(button.dataset.deleteExam));
+      });
+    }
+
+    function addExam() {
+      const name = prompt("추가할 시험 이름을 입력하세요. 예: 전기기사 필기");
+      if (!name || !name.trim()) return;
+
+      const trimmed = name.trim();
+      const exam = {
+        id: `exam-${Date.now()}`,
+        name: trimmed,
+        description: "사용자 추가 시험"
+      };
+      state.exams.push(exam);
+      state.activeExamId = exam.id;
+      currentIndex = 0;
+      persist();
+      render();
+    }
+
+    function renameExam(id) {
+      const exam = state.exams.find(item => item.id === id);
+      if (!exam) return;
+
+      const name = prompt("시험 이름을 수정하세요.", exam.name);
+      if (!name || !name.trim()) return;
+
+      exam.name = name.trim();
+      persist();
+      render();
+    }
+
+    function deleteExam(id) {
+      const exam = state.exams.find(item => item.id === id);
+      if (!exam) return;
+
+      if (state.exams.length <= 1) {
+        alert("시험 탭은 최소 1개가 필요합니다.");
+        return;
+      }
+
+      const count = state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) === id).length;
+      const ok = confirm(`"${exam.name}" 시험 탭을 삭제할까요?\n이 시험에 들어 있는 ${count}개 문제도 함께 삭제됩니다.`);
+      if (!ok) return;
+
+      state.exams = state.exams.filter(item => item.id !== id);
+      state.questions = state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) !== id);
+      if (state.activeExamId === id) state.activeExamId = state.exams[0].id;
+      currentIndex = 0;
+      persist();
+      render();
     }
 
     function renderStats() {
@@ -994,18 +1093,27 @@
     }
 
     function shuffleQuestions() {
-      for (let i = state.questions.length - 1; i > 0; i--) {
+      const examQuestions = currentExamQuestions();
+      const shuffledIds = examQuestions.map(q => q.id);
+      for (let i = shuffledIds.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [state.questions[i], state.questions[j]] = [state.questions[j], state.questions[i]];
+        [shuffledIds[i], shuffledIds[j]] = [shuffledIds[j], shuffledIds[i]];
       }
+
+      const order = new Map(shuffledIds.map((id, index) => [id, index]));
+      state.questions.sort((a, b) => {
+        const aOrder = order.has(a.id) ? order.get(a.id) : Number.MAX_SAFE_INTEGER;
+        const bOrder = order.has(b.id) ? order.get(b.id) : Number.MAX_SAFE_INTEGER;
+        return aOrder - bOrder;
+      });
       currentIndex = 0;
       persist();
       render();
     }
 
     function resetProgress() {
-      if (!confirm("문제는 유지하고 오답/암기 완료 기록만 초기화할까요?")) return;
-      state.questions.forEach(q => {
+      if (!confirm("현재 시험의 문제는 유지하고 오답/암기 완료 기록만 초기화할까요?")) return;
+      currentExamQuestions().forEach(q => {
         q.status = "new";
         q.wrongCount = 0;
         q.masteredAt = "";
