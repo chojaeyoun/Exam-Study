@@ -476,6 +476,7 @@
         <button data-view-btn="wrong">※ 오답노트</button>
         <button data-view-btn="bank">☰ 문제은행</button>
         <button data-view-btn="import">↕ 가져오기</button>
+        <button data-view-btn="cloud">☁ 클라우드</button>
       </nav>
       <div class="stats">
         <div class="stat"><b id="totalCount">0</b><span>전체 문제</span></div>
@@ -610,12 +611,42 @@
           </div>
         </div>
       </section>
+
+      <section class="view" data-view="cloud">
+        <div class="panel form-grid">
+          <label>Supabase URL
+            <input id="supabaseUrlInput" placeholder="https://프로젝트ID.supabase.co">
+          </label>
+          <label>Supabase anon key
+            <input id="supabaseAnonInput" placeholder="Project API keys의 anon public key">
+          </label>
+          <label>이메일
+            <input id="cloudEmailInput" type="email" autocomplete="email" placeholder="로그인 이메일">
+          </label>
+          <label>비밀번호
+            <input id="cloudPasswordInput" type="password" autocomplete="current-password" placeholder="6자 이상">
+          </label>
+          <div class="wide actions">
+            <button id="saveCloudConfigBtn" class="primary" type="button">연결 정보 저장</button>
+            <button id="signUpBtn" type="button">회원가입</button>
+            <button id="signInBtn" type="button">로그인</button>
+            <button id="signOutBtn" type="button">로그아웃</button>
+          </div>
+          <div class="wide actions">
+            <button id="uploadCloudBtn" type="button">이 기기 데이터를 클라우드로 올리기</button>
+            <button id="downloadCloudBtn" type="button">클라우드 데이터를 이 기기로 가져오기</button>
+          </div>
+          <p id="cloudStatus" class="wide notice">Supabase 프로젝트를 만든 뒤 URL과 anon key를 입력하세요. 비밀번호와 데이터는 Supabase 계정에 저장되고, 이 앱에는 URL과 anon key만 저장됩니다.</p>
+        </div>
+      </section>
     </main>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const DEFAULT_EXAM_ID = "industrial-practical";
     const STORAGE_KEY = "examStudyApp.v2";
+    const CLOUD_CONFIG_KEY = "examStudyApp.supabase.v1";
     const OLD_STORAGE_KEYS = ["industrialSafetyPracticalStudy.v1"];
     const DEFAULT_EXAMS = [
       {
@@ -625,9 +656,11 @@
       }
     ];
     const state = loadState();
+    const cloudConfig = loadCloudConfig();
     let currentIndex = 0;
     let activeView = "study";
     let deferredInstallPrompt = null;
+    let supabaseClient = null;
 
     const sampleQuestions = [
       {
@@ -708,7 +741,18 @@
       loadSampleBtn: document.querySelector("#loadSampleBtn"),
       csvPaste: document.querySelector("#csvPaste"),
       importPasteBtn: document.querySelector("#importPasteBtn"),
-      downloadTemplateBtn: document.querySelector("#downloadTemplateBtn")
+      downloadTemplateBtn: document.querySelector("#downloadTemplateBtn"),
+      supabaseUrlInput: document.querySelector("#supabaseUrlInput"),
+      supabaseAnonInput: document.querySelector("#supabaseAnonInput"),
+      cloudEmailInput: document.querySelector("#cloudEmailInput"),
+      cloudPasswordInput: document.querySelector("#cloudPasswordInput"),
+      saveCloudConfigBtn: document.querySelector("#saveCloudConfigBtn"),
+      signUpBtn: document.querySelector("#signUpBtn"),
+      signInBtn: document.querySelector("#signInBtn"),
+      signOutBtn: document.querySelector("#signOutBtn"),
+      uploadCloudBtn: document.querySelector("#uploadCloudBtn"),
+      downloadCloudBtn: document.querySelector("#downloadCloudBtn"),
+      cloudStatus: document.querySelector("#cloudStatus")
     };
 
     document.querySelectorAll("[data-view-btn]").forEach(button => {
@@ -735,7 +779,14 @@
     els.importPasteBtn.addEventListener("click", () => importCsvText(els.csvPaste.value));
     els.loadSampleBtn.addEventListener("click", loadSamples);
     els.downloadTemplateBtn.addEventListener("click", downloadTemplate);
+    els.saveCloudConfigBtn.addEventListener("click", saveCloudConfig);
+    els.signUpBtn.addEventListener("click", signUpCloud);
+    els.signInBtn.addEventListener("click", signInCloud);
+    els.signOutBtn.addEventListener("click", signOutCloud);
+    els.uploadCloudBtn.addEventListener("click", uploadCloud);
+    els.downloadCloudBtn.addEventListener("click", downloadCloud);
 
+    initCloudInputs();
     render();
     setupPwa();
 
@@ -784,6 +835,106 @@
           masteredAt: q.masteredAt || ""
         }))
       };
+    }
+
+    function loadCloudConfig() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY));
+        if (saved && saved.url && saved.anonKey) return saved;
+      } catch (error) {
+        console.warn(error);
+      }
+      return { url: "", anonKey: "" };
+    }
+
+    function initCloudInputs() {
+      els.supabaseUrlInput.value = cloudConfig.url || "";
+      els.supabaseAnonInput.value = cloudConfig.anonKey || "";
+      getSupabaseClient();
+      refreshCloudStatus();
+    }
+
+    function getSupabaseClient() {
+      if (!cloudConfig.url || !cloudConfig.anonKey || !window.supabase) return null;
+      if (!supabaseClient) {
+        supabaseClient = window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey);
+      }
+      return supabaseClient;
+    }
+
+    async function refreshCloudStatus(message = "") {
+      const client = getSupabaseClient();
+      if (!client) {
+        setCloudStatus(message || "Supabase URL과 anon key를 저장하면 클라우드 동기화를 사용할 수 있습니다.");
+        return;
+      }
+
+      const { data } = await client.auth.getUser();
+      const email = data?.user?.email;
+      setCloudStatus(message || (email ? `로그인됨: ${email}` : "연결 정보는 저장됨. 회원가입 또는 로그인을 진행하세요."));
+    }
+
+    function setCloudStatus(message) {
+      els.cloudStatus.textContent = message;
+    }
+
+    function saveCloudConfig() {
+      cloudConfig.url = els.supabaseUrlInput.value.trim();
+      cloudConfig.anonKey = els.supabaseAnonInput.value.trim();
+      supabaseClient = null;
+      localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(cloudConfig));
+      refreshCloudStatus("Supabase 연결 정보를 저장했습니다.");
+    }
+
+    async function signUpCloud() {
+      const client = requireSupabaseClient();
+      if (!client) return;
+      const email = els.cloudEmailInput.value.trim();
+      const password = els.cloudPasswordInput.value;
+      if (!email || !password) return alert("이메일과 비밀번호를 입력하세요.");
+
+      setCloudStatus("회원가입 중...");
+      const { error } = await client.auth.signUp({ email, password });
+      if (error) return setCloudStatus(`회원가입 실패: ${error.message}`);
+      refreshCloudStatus("회원가입 완료. 이메일 확인이 필요한 설정이면 메일함을 확인하세요.");
+    }
+
+    async function signInCloud() {
+      const client = requireSupabaseClient();
+      if (!client) return;
+      const email = els.cloudEmailInput.value.trim();
+      const password = els.cloudPasswordInput.value;
+      if (!email || !password) return alert("이메일과 비밀번호를 입력하세요.");
+
+      setCloudStatus("로그인 중...");
+      const { error } = await client.auth.signInWithPassword({ email, password });
+      if (error) return setCloudStatus(`로그인 실패: ${error.message}`);
+      refreshCloudStatus("로그인했습니다.");
+    }
+
+    async function signOutCloud() {
+      const client = requireSupabaseClient();
+      if (!client) return;
+      await client.auth.signOut();
+      refreshCloudStatus("로그아웃했습니다.");
+    }
+
+    function requireSupabaseClient() {
+      const client = getSupabaseClient();
+      if (!client) {
+        alert("먼저 Supabase URL과 anon key를 저장하세요.");
+        return null;
+      }
+      return client;
+    }
+
+    async function requireCloudUser(client) {
+      const { data, error } = await client.auth.getUser();
+      if (error || !data?.user) {
+        setCloudStatus("먼저 로그인하세요.");
+        return null;
+      }
+      return data.user;
     }
 
     function persist() {
@@ -900,6 +1051,94 @@
       currentIndex = 0;
       persist();
       render();
+    }
+
+    async function uploadCloud() {
+      const client = requireSupabaseClient();
+      if (!client) return;
+      const user = await requireCloudUser(client);
+      if (!user) return;
+
+      setCloudStatus("클라우드로 업로드 중...");
+      const examRows = state.exams.map(exam => ({
+        id: exam.id,
+        user_id: user.id,
+        name: exam.name,
+        description: exam.description || "",
+        updated_at: new Date().toISOString()
+      }));
+      const questionRows = state.questions.map(q => ({
+        id: q.id,
+        user_id: user.id,
+        exam_id: q.examId || DEFAULT_EXAM_ID,
+        category: q.category || "미분류",
+        level: q.level || "중",
+        question: q.question || "",
+        answer: q.answer || "",
+        memo: q.memo || "",
+        status: q.status || "new",
+        wrong_count: q.wrongCount || 0,
+        mastered_at: q.masteredAt || null,
+        updated_at: new Date().toISOString()
+      }));
+
+      const { error: examError } = await client.from("exam_tabs").upsert(examRows);
+      if (examError) return setCloudStatus(`시험 탭 업로드 실패: ${examError.message}`);
+
+      if (questionRows.length) {
+        const { error: questionError } = await client.from("exam_questions").upsert(questionRows);
+        if (questionError) return setCloudStatus(`문제 업로드 실패: ${questionError.message}`);
+      }
+
+      setCloudStatus(`업로드 완료: 시험 ${examRows.length}개, 문제 ${questionRows.length}개`);
+    }
+
+    async function downloadCloud() {
+      const client = requireSupabaseClient();
+      if (!client) return;
+      const user = await requireCloudUser(client);
+      if (!user) return;
+
+      if (!confirm("클라우드 데이터를 이 기기에 덮어쓸까요? 현재 기기의 로컬 데이터는 클라우드 내용으로 바뀝니다.")) return;
+
+      setCloudStatus("클라우드에서 가져오는 중...");
+      const { data: exams, error: examError } = await client
+        .from("exam_tabs")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (examError) return setCloudStatus(`시험 탭 가져오기 실패: ${examError.message}`);
+
+      const { data: questions, error: questionError } = await client
+        .from("exam_questions")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (questionError) return setCloudStatus(`문제 가져오기 실패: ${questionError.message}`);
+
+      state.exams = (exams || []).map(row => ({
+        id: row.id,
+        name: row.name,
+        description: row.description || "사용자 추가 시험"
+      }));
+      if (!state.exams.length) state.exams = [...DEFAULT_EXAMS];
+
+      state.questions = (questions || []).map(row => ({
+        id: row.id,
+        examId: row.exam_id,
+        category: row.category,
+        level: row.level,
+        question: row.question,
+        answer: row.answer,
+        memo: row.memo || "",
+        status: row.status || "new",
+        wrongCount: row.wrong_count || 0,
+        masteredAt: row.mastered_at || ""
+      }));
+
+      state.activeExamId = state.exams[0].id;
+      currentIndex = 0;
+      persist();
+      render();
+      setCloudStatus(`가져오기 완료: 시험 ${state.exams.length}개, 문제 ${state.questions.length}개`);
     }
 
     function renderStats() {
