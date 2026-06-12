@@ -1,7 +1,7 @@
 {
-  "name": "산업안전기사 실기 학습장",
-  "short_name": "산업안전 실기",
-  "description": "산업안전기사 실기 단답형, 작업형, 오답노트 학습 앱",
+  "name": "시험 공부 어플",
+  "short_name": "시험 공부",
+  "description": "여러 시험을 탭으로 나눠 단답형, 작업형, 오답노트를 관리하는 학습 앱",
   "lang": "ko-KR",
   "start_url": "./industrial_safety_study.html",
   "scope": "./",
@@ -22,7 +22,7 @@
       "name": "학습 시작",
       "short_name": "학습",
       "url": "./industrial_safety_study.html",
-      "description": "마지막 학습 범위로 바로 이동"
+      "description": "선택한 시험 탭의 학습 화면으로 이동"
     }
   ]
 }

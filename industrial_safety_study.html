@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#24323b">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="산업안전 실기">
+  <meta name="apple-mobile-web-app-title" content="시험 공부 어플">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icons/safety-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/safety-icon.svg">
-  <title>산업안전기사 실기 학습장</title>
+  <title>시험 공부 어플</title>
   <style>
     :root {
       color-scheme: light;
@@ -123,6 +123,42 @@
       margin: 0;
       color: #b9c8c7;
       font-size: 13px;
+    }
+
+    .section-label {
+      margin: 0;
+      color: #a9bbb9;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .exam-tabs {
+      display: grid;
+      gap: 8px;
+    }
+
+    .exam-tabs button {
+      width: 100%;
+      min-height: 44px;
+      text-align: left;
+      color: #edf5f3;
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.12);
+      display: grid;
+      gap: 3px;
+      align-content: center;
+    }
+
+    .exam-tabs button.active {
+      background: var(--soft);
+      border-color: var(--soft);
+      color: #173831;
+    }
+
+    .exam-tabs button span {
+      color: inherit;
+      font-size: 12px;
+      opacity: 0.72;
     }
 
     .nav {
@@ -407,9 +443,11 @@
   <div class="app">
     <aside class="side">
       <div class="brand">
-        <h1>산업안전기사<br>실기 학습장</h1>
-        <p>단답형·작업형 암기와 오답 반복</p>
+        <h1>시험 공부 어플</h1>
+        <p>여러 시험을 탭으로 나눠 관리</p>
       </div>
+      <p class="section-label">시험 선택</p>
+      <div id="examTabs" class="exam-tabs" aria-label="시험 선택"></div>
       <nav class="nav" aria-label="화면 전환">
         <button class="active" data-view-btn="study">▣ 학습</button>
         <button data-view-btn="wrong">※ 오답노트</button>
@@ -534,7 +572,7 @@
       <section class="view" data-view="import">
         <div class="panel side-panel">
           <h2 class="mini-title">CSV 가져오기</h2>
-          <p class="notice">CSV 첫 줄은 <b>category,level,question,answer,memo</b> 형식을 권장합니다. 엑셀에서 CSV UTF-8로 저장하면 바로 가져올 수 있습니다.</p>
+          <p class="notice">CSV 첫 줄은 <b>category,level,question,answer,memo</b> 형식을 권장합니다. 가져온 문제는 현재 선택한 시험 탭에 저장됩니다.</p>
           <input id="csvFile" class="hidden-file" type="file" accept=".csv,text/csv">
           <div class="actions">
             <button id="pickCsvBtn" class="primary">CSV 파일 선택</button>
@@ -553,7 +591,16 @@
   </div>
 
   <script>
-    const STORAGE_KEY = "industrialSafetyPracticalStudy.v1";
+    const DEFAULT_EXAM_ID = "industrial-practical";
+    const STORAGE_KEY = "examStudyApp.v2";
+    const OLD_STORAGE_KEYS = ["industrialSafetyPracticalStudy.v1"];
+    const EXAMS = [
+      {
+        id: DEFAULT_EXAM_ID,
+        name: "산업기사 실기",
+        description: "단답형·작업형"
+      }
+    ];
     const state = loadState();
     let currentIndex = 0;
     let activeView = "study";
@@ -562,6 +609,7 @@
     const sampleQuestions = [
       {
         id: crypto.randomUUID(),
+        examId: DEFAULT_EXAM_ID,
         category: "안전관리",
         level: "상",
         question: "위험성평가 답안을 작성할 때 반드시 구분해서 암기해야 할 항목을 자기 말로 정리하세요.",
@@ -573,6 +621,7 @@
       },
       {
         id: crypto.randomUUID(),
+        examId: DEFAULT_EXAM_ID,
         category: "작업형",
         level: "중",
         question: "작업형 영상 문제를 볼 때 확인할 관찰 포인트 5가지를 적으세요.",
@@ -584,6 +633,7 @@
       },
       {
         id: crypto.randomUUID(),
+        examId: DEFAULT_EXAM_ID,
         category: "전기안전",
         level: "중",
         question: "전기 작업 관련 문제를 풀 때 답안 누락을 줄이기 위한 키워드 묶음을 적으세요.",
@@ -599,6 +649,7 @@
       totalCount: document.querySelector("#totalCount"),
       wrongCount: document.querySelector("#wrongCount"),
       masteredCount: document.querySelector("#masteredCount"),
+      examTabs: document.querySelector("#examTabs"),
       searchInput: document.querySelector("#searchInput"),
       installBtn: document.querySelector("#installBtn"),
       shuffleBtn: document.querySelector("#shuffleBtn"),
@@ -666,11 +717,36 @@
     function loadState() {
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (saved && Array.isArray(saved.questions)) return saved;
+        if (saved && Array.isArray(saved.questions)) return normalizeState(saved);
       } catch (error) {
         console.warn(error);
       }
-      return { questions: [] };
+
+      for (const key of OLD_STORAGE_KEYS) {
+        try {
+          const saved = JSON.parse(localStorage.getItem(key));
+          if (saved && Array.isArray(saved.questions)) return normalizeState(saved);
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+
+      return normalizeState({ questions: [] });
+    }
+
+    function normalizeState(saved) {
+      const activeExamId = EXAMS.some(exam => exam.id === saved.activeExamId) ? saved.activeExamId : DEFAULT_EXAM_ID;
+      return {
+        activeExamId,
+        questions: saved.questions.map(q => ({
+          ...q,
+          id: q.id || crypto.randomUUID(),
+          examId: q.examId || DEFAULT_EXAM_ID,
+          status: q.status || "new",
+          wrongCount: q.wrongCount || 0,
+          masteredAt: q.masteredAt || ""
+        }))
+      };
     }
 
     function persist() {
@@ -683,14 +759,16 @@
       const status = els.statusFilter.value;
       return state.questions.filter(q => {
         const text = [q.category, q.level, q.question, q.answer, q.memo].join(" ").toLowerCase();
+        const examOk = (q.examId || DEFAULT_EXAM_ID) === state.activeExamId;
         const categoryOk = !category || category === "all" || q.category === category;
         const statusOk = status === "all" || q.status === status;
         const searchOk = !search || text.includes(search);
-        return categoryOk && statusOk && searchOk;
+        return examOk && categoryOk && statusOk && searchOk;
       });
     }
 
     function render() {
+      renderExamTabs();
       renderStats();
       renderFilters();
       renderStudy();
@@ -698,15 +776,43 @@
       renderBank();
     }
 
+    function currentExam() {
+      return EXAMS.find(exam => exam.id === state.activeExamId) || EXAMS[0];
+    }
+
+    function currentExamQuestions() {
+      return state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) === state.activeExamId);
+    }
+
+    function renderExamTabs() {
+      els.examTabs.innerHTML = EXAMS.map(exam => {
+        const count = state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) === exam.id).length;
+        return `<button class="${exam.id === state.activeExamId ? "active" : ""}" data-exam-id="${escapeHtml(exam.id)}">
+          <b>${escapeHtml(exam.name)}</b>
+          <span>${escapeHtml(exam.description)} · ${count}문제</span>
+        </button>`;
+      }).join("");
+
+      els.examTabs.querySelectorAll("[data-exam-id]").forEach(button => {
+        button.addEventListener("click", () => {
+          state.activeExamId = button.dataset.examId;
+          currentIndex = 0;
+          persist();
+          render();
+        });
+      });
+    }
+
     function renderStats() {
-      els.totalCount.textContent = state.questions.length;
-      els.wrongCount.textContent = state.questions.filter(q => q.status === "wrong").length;
-      els.masteredCount.textContent = state.questions.filter(q => q.status === "mastered").length;
+      const questions = currentExamQuestions();
+      els.totalCount.textContent = questions.length;
+      els.wrongCount.textContent = questions.filter(q => q.status === "wrong").length;
+      els.masteredCount.textContent = questions.filter(q => q.status === "mastered").length;
     }
 
     function renderFilters() {
       const selected = els.categoryFilter.value || "all";
-      const categories = [...new Set(state.questions.map(q => q.category).filter(Boolean))].sort();
+      const categories = [...new Set(currentExamQuestions().map(q => q.category).filter(Boolean))].sort();
       els.categoryFilter.innerHTML = `<option value="all">전체</option>` + categories.map(category => {
         return `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`;
       }).join("");
@@ -748,7 +854,7 @@
     }
 
     function renderWrongList() {
-      const wrong = state.questions.filter(q => q.status === "wrong");
+      const wrong = currentExamQuestions().filter(q => q.status === "wrong");
       els.wrongList.innerHTML = wrong.map(q => `<article class="item">
         <h3>${escapeHtml(q.question)}</h3>
         <p>${escapeHtml(q.answer)}</p>
@@ -761,7 +867,7 @@
     }
 
     function renderBank() {
-      els.bankTable.innerHTML = state.questions.map(q => {
+      els.bankTable.innerHTML = currentExamQuestions().map(q => {
         const status = q.status === "wrong" ? "오답" : q.status === "mastered" ? "암기 완료" : "미학습";
         return `<tr>
           <td>${escapeHtml(q.category || "미분류")}</td>
@@ -839,6 +945,7 @@
       const existing = state.questions.find(q => q.id === id);
       const data = {
         id,
+        examId: existing?.examId || state.activeExamId,
         category: els.categoryInput.value.trim() || "미분류",
         level: els.levelInput.value,
         question: els.questionInput.value.trim(),
@@ -908,9 +1015,9 @@
     }
 
     function loadSamples() {
-      const existingTexts = new Set(state.questions.map(q => q.question));
+      const existingTexts = new Set(currentExamQuestions().map(q => q.question));
       sampleQuestions.forEach(q => {
-        if (!existingTexts.has(q.question)) state.questions.push({ ...q, id: crypto.randomUUID() });
+        if (!existingTexts.has(q.question)) state.questions.push({ ...q, id: crypto.randomUUID(), examId: state.activeExamId });
       });
       persist();
       render();
@@ -937,6 +1044,7 @@
         const get = name => hasHeader ? row[header.indexOf(name)] || "" : "";
         return {
           id: crypto.randomUUID(),
+          examId: state.activeExamId,
           category: (hasHeader ? get("category") : row[0])?.trim() || "미분류",
           level: (hasHeader ? get("level") : row[1])?.trim() || "중",
           question: (hasHeader ? get("question") : row[2])?.trim() || "",
@@ -948,7 +1056,7 @@
         };
       }).filter(q => q.question && q.answer);
 
-      const existing = new Set(state.questions.map(q => `${q.category}|${q.question}`));
+      const existing = new Set(currentExamQuestions().map(q => `${q.category}|${q.question}`));
       let added = 0;
       imported.forEach(q => {
         const key = `${q.category}|${q.question}`;
@@ -967,8 +1075,8 @@
 
     function exportCsv() {
       const header = ["category", "level", "question", "answer", "memo", "status", "wrongCount"];
-      const rows = state.questions.map(q => [q.category, q.level, q.question, q.answer, q.memo, q.status, q.wrongCount]);
-      download("industrial_safety_questions.csv", toCsv([header, ...rows]));
+      const rows = currentExamQuestions().map(q => [q.category, q.level, q.question, q.answer, q.memo, q.status, q.wrongCount]);
+      download(`${state.activeExamId}_questions.csv`, toCsv([header, ...rows]));
     }
 
     function downloadTemplate() {
@@ -976,7 +1084,7 @@
         ["category", "level", "question", "answer", "memo"],
         ["안전관리", "상", "문제 내용을 입력", "정답 내용을 입력", "암기 메모"]
       ];
-      download("industrial_safety_template.csv", toCsv(rows));
+      download("exam_questions_template.csv", toCsv(rows));
     }
 
     function download(filename, content) {
