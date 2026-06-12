@@ -1,0 +1,1066 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#24323b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="산업안전 실기">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/safety-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/safety-icon.svg">
+  <title>산업안전기사 실기 학습장</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7f8;
+      --panel: #ffffff;
+      --ink: #1f2933;
+      --muted: #66737f;
+      --line: #d9e0e6;
+      --accent: #146c5f;
+      --accent-2: #b9412e;
+      --soft: #e7f2ef;
+      --warn: #fff2dc;
+      --shadow: 0 10px 28px rgba(31, 41, 51, 0.08);
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      min-height: 40px;
+      padding: 0 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover { border-color: #9eacb8; }
+
+    button.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    button.danger {
+      color: var(--accent-2);
+      border-color: #e3b0a7;
+    }
+
+    button.hidden {
+      display: none;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 6px;
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 110px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+    }
+
+    .side {
+      background: #24323b;
+      color: #eef5f4;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .brand {
+      display: grid;
+      gap: 6px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.18);
+    }
+
+    .brand h1 {
+      font-size: 22px;
+      line-height: 1.25;
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    .brand p {
+      margin: 0;
+      color: #b9c8c7;
+      font-size: 13px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .nav button {
+      width: 100%;
+      justify-content: flex-start;
+      text-align: left;
+      color: #edf5f3;
+      background: transparent;
+      border-color: transparent;
+      display: flex;
+      gap: 9px;
+      align-items: center;
+    }
+
+    .nav button.active {
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(255,255,255,0.12);
+    }
+
+    .stats {
+      margin-top: auto;
+      display: grid;
+      gap: 10px;
+    }
+
+    .stat {
+      display: grid;
+      gap: 4px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .stat b { font-size: 22px; }
+    .stat span { color: #bed0ce; font-size: 12px; }
+
+    .main {
+      padding: 22px;
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 260px;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .search {
+      position: relative;
+    }
+
+    .search input {
+      padding-left: 38px;
+    }
+
+    .search::before {
+      content: "⌕";
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 19px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .view {
+      display: none;
+      gap: 16px;
+    }
+
+    .view.active {
+      display: grid;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .study-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 16px;
+    }
+
+    .card {
+      padding: 22px;
+      min-height: 430px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 18px;
+    }
+
+    .pillrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      background: #f8fafb;
+      border-radius: 999px;
+      padding: 6px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .question {
+      display: grid;
+      align-content: center;
+      gap: 18px;
+    }
+
+    .question h2 {
+      margin: 0;
+      font-size: 25px;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    .answer {
+      border-top: 1px solid var(--line);
+      padding-top: 16px;
+      display: none;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .answer.visible { display: block; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .side-panel {
+      padding: 16px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .mini-title {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .filters {
+      display: grid;
+      gap: 10px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .item {
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+    }
+
+    .item h3 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .item p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .item footer {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .form-grid {
+      padding: 18px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .form-grid .wide {
+      grid-column: 1 / -1;
+    }
+
+    .table-wrap {
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 11px 12px;
+      text-align: left;
+      vertical-align: top;
+      line-height: 1.45;
+    }
+
+    th {
+      color: var(--muted);
+      background: #f8fafb;
+      font-size: 13px;
+    }
+
+    .empty {
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .notice {
+      padding: 14px 16px;
+      border: 1px solid #ead29e;
+      background: var(--warn);
+      border-radius: 8px;
+      line-height: 1.55;
+      color: #5b4622;
+    }
+
+    .hidden-file {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .side {
+        position: static;
+      }
+
+      .stats {
+        grid-template-columns: repeat(3, 1fr);
+        margin-top: 0;
+      }
+
+      .topbar, .study-grid, .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="side">
+      <div class="brand">
+        <h1>산업안전기사<br>실기 학습장</h1>
+        <p>단답형·작업형 암기와 오답 반복</p>
+      </div>
+      <nav class="nav" aria-label="화면 전환">
+        <button class="active" data-view-btn="study">▣ 학습</button>
+        <button data-view-btn="wrong">※ 오답노트</button>
+        <button data-view-btn="bank">☰ 문제은행</button>
+        <button data-view-btn="import">↕ 가져오기</button>
+      </nav>
+      <div class="stats">
+        <div class="stat"><b id="totalCount">0</b><span>전체 문제</span></div>
+        <div class="stat"><b id="wrongCount">0</b><span>오답 표시</span></div>
+        <div class="stat"><b id="masteredCount">0</b><span>암기 완료</span></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="search">
+          <input id="searchInput" type="search" placeholder="분야, 키워드, 답안으로 검색">
+        </div>
+        <div class="toolbar">
+          <button id="installBtn" class="hidden" title="휴대폰 또는 PC에 앱처럼 설치">설치</button>
+          <button id="shuffleBtn" title="문제 순서 섞기">섞기</button>
+          <button id="resetBtn" class="danger" title="학습 기록 초기화">기록 초기화</button>
+        </div>
+      </div>
+
+      <section class="view active" data-view="study">
+        <div class="study-grid">
+          <article class="panel card">
+            <div class="pillrow">
+              <span class="pill" id="cardIndex">0 / 0</span>
+              <span class="pill" id="cardType">분야</span>
+              <span class="pill" id="cardLevel">중요도</span>
+            </div>
+            <div class="question">
+              <h2 id="questionText">문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.</h2>
+              <textarea id="myAnswer" placeholder="내 답안을 적어본 뒤 정답을 확인하세요. 입력 내용은 채점되지 않고 암기용으로만 사용됩니다."></textarea>
+              <div id="answerText" class="answer"></div>
+            </div>
+            <div class="actions">
+              <button id="showAnswerBtn" class="primary">정답 보기</button>
+              <button id="wrongBtn">오답 표시</button>
+              <button id="masterBtn">암기 완료</button>
+              <button id="prevBtn">이전</button>
+              <button id="nextBtn">다음</button>
+            </div>
+          </article>
+          <aside class="panel side-panel">
+            <h2 class="mini-title">학습 범위</h2>
+            <div class="filters">
+              <label>분야
+                <select id="categoryFilter"></select>
+              </label>
+              <label>상태
+                <select id="statusFilter">
+                  <option value="all">전체</option>
+                  <option value="new">미학습</option>
+                  <option value="wrong">오답</option>
+                  <option value="mastered">암기 완료</option>
+                </select>
+              </label>
+            </div>
+            <div class="notice">
+              문제 데이터는 브라우저 저장소에만 저장됩니다. 다른 PC로 옮기려면 문제은행에서 CSV로 내보내세요.
+            </div>
+            <h2 class="mini-title">오늘의 큐</h2>
+            <div id="queueList" class="list"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" data-view="wrong">
+        <div class="panel side-panel">
+          <h2 class="mini-title">오답노트</h2>
+          <div id="wrongList" class="list"></div>
+        </div>
+      </section>
+
+      <section class="view" data-view="bank">
+        <form id="questionForm" class="panel form-grid">
+          <input type="hidden" id="editId">
+          <label>분야
+            <input id="categoryInput" placeholder="예: 안전관리, 전기, 화학, 건설">
+          </label>
+          <label>중요도
+            <select id="levelInput">
+              <option value="상">상</option>
+              <option value="중" selected>중</option>
+              <option value="하">하</option>
+            </select>
+          </label>
+          <label class="wide">문제
+            <textarea id="questionInput" required placeholder="문제 내용을 입력하세요."></textarea>
+          </label>
+          <label class="wide">정답
+            <textarea id="answerInput" required placeholder="정답 또는 채점 키워드를 입력하세요."></textarea>
+          </label>
+          <label class="wide">메모
+            <textarea id="memoInput" placeholder="헷갈리는 포인트, 암기법, 관련 회차 등을 적어두세요."></textarea>
+          </label>
+          <div class="wide actions">
+            <button class="primary" type="submit">저장</button>
+            <button type="button" id="clearFormBtn">새 문제</button>
+            <button type="button" id="exportBtn">CSV 내보내기</button>
+          </div>
+        </form>
+        <div class="panel table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>분야</th>
+                <th>중요도</th>
+                <th>문제</th>
+                <th>상태</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="bankTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" data-view="import">
+        <div class="panel side-panel">
+          <h2 class="mini-title">CSV 가져오기</h2>
+          <p class="notice">CSV 첫 줄은 <b>category,level,question,answer,memo</b> 형식을 권장합니다. 엑셀에서 CSV UTF-8로 저장하면 바로 가져올 수 있습니다.</p>
+          <input id="csvFile" class="hidden-file" type="file" accept=".csv,text/csv">
+          <div class="actions">
+            <button id="pickCsvBtn" class="primary">CSV 파일 선택</button>
+            <button id="loadSampleBtn">샘플 문제 넣기</button>
+          </div>
+          <label>붙여넣기 가져오기
+            <textarea id="csvPaste" placeholder="category,level,question,answer,memo&#10;안전관리,상,예시 문제,예시 정답,메모"></textarea>
+          </label>
+          <div class="actions">
+            <button id="importPasteBtn">붙여넣은 CSV 가져오기</button>
+            <button id="downloadTemplateBtn">양식 다운로드</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "industrialSafetyPracticalStudy.v1";
+    const state = loadState();
+    let currentIndex = 0;
+    let activeView = "study";
+    let deferredInstallPrompt = null;
+
+    const sampleQuestions = [
+      {
+        id: crypto.randomUUID(),
+        category: "안전관리",
+        level: "상",
+        question: "위험성평가 답안을 작성할 때 반드시 구분해서 암기해야 할 항목을 자기 말로 정리하세요.",
+        answer: "유해·위험요인 파악, 위험성 결정, 감소대책 수립 및 실행, 기록·공유처럼 절차와 목적을 구분해 답안을 구성한다.",
+        memo: "실제 시험 답안은 최신 법령·공단 자료 기준으로 교체하세요.",
+        status: "new",
+        wrongCount: 0,
+        masteredAt: ""
+      },
+      {
+        id: crypto.randomUUID(),
+        category: "작업형",
+        level: "중",
+        question: "작업형 영상 문제를 볼 때 확인할 관찰 포인트 5가지를 적으세요.",
+        answer: "작업자 행동, 보호구 착용, 기계 방호장치, 작업장 정리정돈, 전기·화재·추락·협착 등 주요 위험원을 확인한다.",
+        memo: "영상형은 '무엇이 위험한가'와 '어떻게 조치할 것인가'를 짝으로 암기.",
+        status: "new",
+        wrongCount: 0,
+        masteredAt: ""
+      },
+      {
+        id: crypto.randomUUID(),
+        category: "전기안전",
+        level: "중",
+        question: "전기 작업 관련 문제를 풀 때 답안 누락을 줄이기 위한 키워드 묶음을 적으세요.",
+        answer: "전원 차단, 잠금·표지, 검전, 접지, 절연보호구, 누전차단기, 작업 전 점검을 키워드로 점검한다.",
+        memo: "정확한 수치 기준은 최신 교재 또는 공식 기준으로 확인.",
+        status: "new",
+        wrongCount: 0,
+        masteredAt: ""
+      }
+    ];
+
+    const els = {
+      totalCount: document.querySelector("#totalCount"),
+      wrongCount: document.querySelector("#wrongCount"),
+      masteredCount: document.querySelector("#masteredCount"),
+      searchInput: document.querySelector("#searchInput"),
+      installBtn: document.querySelector("#installBtn"),
+      shuffleBtn: document.querySelector("#shuffleBtn"),
+      resetBtn: document.querySelector("#resetBtn"),
+      cardIndex: document.querySelector("#cardIndex"),
+      cardType: document.querySelector("#cardType"),
+      cardLevel: document.querySelector("#cardLevel"),
+      questionText: document.querySelector("#questionText"),
+      answerText: document.querySelector("#answerText"),
+      myAnswer: document.querySelector("#myAnswer"),
+      showAnswerBtn: document.querySelector("#showAnswerBtn"),
+      wrongBtn: document.querySelector("#wrongBtn"),
+      masterBtn: document.querySelector("#masterBtn"),
+      prevBtn: document.querySelector("#prevBtn"),
+      nextBtn: document.querySelector("#nextBtn"),
+      categoryFilter: document.querySelector("#categoryFilter"),
+      statusFilter: document.querySelector("#statusFilter"),
+      queueList: document.querySelector("#queueList"),
+      wrongList: document.querySelector("#wrongList"),
+      questionForm: document.querySelector("#questionForm"),
+      editId: document.querySelector("#editId"),
+      categoryInput: document.querySelector("#categoryInput"),
+      levelInput: document.querySelector("#levelInput"),
+      questionInput: document.querySelector("#questionInput"),
+      answerInput: document.querySelector("#answerInput"),
+      memoInput: document.querySelector("#memoInput"),
+      clearFormBtn: document.querySelector("#clearFormBtn"),
+      exportBtn: document.querySelector("#exportBtn"),
+      bankTable: document.querySelector("#bankTable"),
+      csvFile: document.querySelector("#csvFile"),
+      pickCsvBtn: document.querySelector("#pickCsvBtn"),
+      loadSampleBtn: document.querySelector("#loadSampleBtn"),
+      csvPaste: document.querySelector("#csvPaste"),
+      importPasteBtn: document.querySelector("#importPasteBtn"),
+      downloadTemplateBtn: document.querySelector("#downloadTemplateBtn")
+    };
+
+    document.querySelectorAll("[data-view-btn]").forEach(button => {
+      button.addEventListener("click", () => setView(button.dataset.viewBtn));
+    });
+
+    els.searchInput.addEventListener("input", render);
+    els.installBtn.addEventListener("click", installApp);
+    els.categoryFilter.addEventListener("change", () => { currentIndex = 0; render(); });
+    els.statusFilter.addEventListener("change", () => { currentIndex = 0; render(); });
+    els.shuffleBtn.addEventListener("click", shuffleQuestions);
+    els.resetBtn.addEventListener("click", resetProgress);
+    els.showAnswerBtn.addEventListener("click", () => els.answerText.classList.toggle("visible"));
+    els.prevBtn.addEventListener("click", () => moveCard(-1));
+    els.nextBtn.addEventListener("click", () => moveCard(1));
+    els.wrongBtn.addEventListener("click", markWrong);
+    els.masterBtn.addEventListener("click", markMastered);
+    els.questionForm.addEventListener("submit", saveQuestion);
+    els.clearFormBtn.addEventListener("click", clearForm);
+    els.exportBtn.addEventListener("click", exportCsv);
+    els.pickCsvBtn.addEventListener("click", () => els.csvFile.click());
+    els.csvFile.addEventListener("change", importCsvFile);
+    els.importPasteBtn.addEventListener("click", () => importCsvText(els.csvPaste.value));
+    els.loadSampleBtn.addEventListener("click", loadSamples);
+    els.downloadTemplateBtn.addEventListener("click", downloadTemplate);
+
+    render();
+    setupPwa();
+
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (saved && Array.isArray(saved.questions)) return saved;
+      } catch (error) {
+        console.warn(error);
+      }
+      return { questions: [] };
+    }
+
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function filteredQuestions() {
+      const search = els.searchInput.value.trim().toLowerCase();
+      const category = els.categoryFilter.value;
+      const status = els.statusFilter.value;
+      return state.questions.filter(q => {
+        const text = [q.category, q.level, q.question, q.answer, q.memo].join(" ").toLowerCase();
+        const categoryOk = !category || category === "all" || q.category === category;
+        const statusOk = status === "all" || q.status === status;
+        const searchOk = !search || text.includes(search);
+        return categoryOk && statusOk && searchOk;
+      });
+    }
+
+    function render() {
+      renderStats();
+      renderFilters();
+      renderStudy();
+      renderWrongList();
+      renderBank();
+    }
+
+    function renderStats() {
+      els.totalCount.textContent = state.questions.length;
+      els.wrongCount.textContent = state.questions.filter(q => q.status === "wrong").length;
+      els.masteredCount.textContent = state.questions.filter(q => q.status === "mastered").length;
+    }
+
+    function renderFilters() {
+      const selected = els.categoryFilter.value || "all";
+      const categories = [...new Set(state.questions.map(q => q.category).filter(Boolean))].sort();
+      els.categoryFilter.innerHTML = `<option value="all">전체</option>` + categories.map(category => {
+        return `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`;
+      }).join("");
+      els.categoryFilter.value = categories.includes(selected) ? selected : "all";
+    }
+
+    function renderStudy() {
+      const questions = filteredQuestions();
+      if (currentIndex >= questions.length) currentIndex = Math.max(0, questions.length - 1);
+      const current = questions[currentIndex];
+
+      els.cardIndex.textContent = `${questions.length ? currentIndex + 1 : 0} / ${questions.length}`;
+      els.queueList.innerHTML = questions.slice(0, 8).map((q, index) => queueItem(q, index)).join("") || `<div class="empty">표시할 문제가 없습니다.</div>`;
+
+      if (!current) {
+        els.cardType.textContent = "분야";
+        els.cardLevel.textContent = "중요도";
+        els.questionText.textContent = "문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.";
+        els.answerText.textContent = "";
+        els.answerText.classList.remove("visible");
+        els.myAnswer.value = "";
+        return;
+      }
+
+      els.cardType.textContent = current.category || "미분류";
+      els.cardLevel.textContent = `중요도 ${current.level || "중"}`;
+      els.questionText.textContent = current.question;
+      els.answerText.textContent = [current.answer, current.memo ? `\n메모: ${current.memo}` : ""].join("");
+      els.answerText.classList.remove("visible");
+      els.myAnswer.value = "";
+    }
+
+    function queueItem(q, index) {
+      const status = q.status === "wrong" ? "오답" : q.status === "mastered" ? "완료" : "미학습";
+      return `<article class="item">
+        <h3>${index + 1}. ${escapeHtml(q.question)}</h3>
+        <p>${escapeHtml(q.category || "미분류")} · ${escapeHtml(status)} · 틀린 횟수 ${q.wrongCount || 0}</p>
+      </article>`;
+    }
+
+    function renderWrongList() {
+      const wrong = state.questions.filter(q => q.status === "wrong");
+      els.wrongList.innerHTML = wrong.map(q => `<article class="item">
+        <h3>${escapeHtml(q.question)}</h3>
+        <p>${escapeHtml(q.answer)}</p>
+        <footer>
+          <button data-edit="${q.id}">수정</button>
+          <button data-master="${q.id}">암기 완료</button>
+        </footer>
+      </article>`).join("") || `<div class="empty">아직 오답 표시한 문제가 없습니다.</div>`;
+      bindListButtons(els.wrongList);
+    }
+
+    function renderBank() {
+      els.bankTable.innerHTML = state.questions.map(q => {
+        const status = q.status === "wrong" ? "오답" : q.status === "mastered" ? "암기 완료" : "미학습";
+        return `<tr>
+          <td>${escapeHtml(q.category || "미분류")}</td>
+          <td>${escapeHtml(q.level || "중")}</td>
+          <td>${escapeHtml(q.question)}</td>
+          <td>${status}</td>
+          <td>
+            <button data-edit="${q.id}">수정</button>
+            <button data-delete="${q.id}" class="danger">삭제</button>
+          </td>
+        </tr>`;
+      }).join("") || `<tr><td colspan="5" class="empty">문제은행이 비어 있습니다.</td></tr>`;
+      bindListButtons(els.bankTable);
+    }
+
+    function bindListButtons(root) {
+      root.querySelectorAll("[data-edit]").forEach(button => {
+        button.addEventListener("click", () => editQuestion(button.dataset.edit));
+      });
+      root.querySelectorAll("[data-delete]").forEach(button => {
+        button.addEventListener("click", () => deleteQuestion(button.dataset.delete));
+      });
+      root.querySelectorAll("[data-master]").forEach(button => {
+        button.addEventListener("click", () => {
+          const q = state.questions.find(item => item.id === button.dataset.master);
+          if (q) {
+            q.status = "mastered";
+            q.masteredAt = new Date().toISOString();
+            persist();
+            render();
+          }
+        });
+      });
+    }
+
+    function setView(name) {
+      activeView = name;
+      document.querySelectorAll("[data-view]").forEach(view => view.classList.toggle("active", view.dataset.view === name));
+      document.querySelectorAll("[data-view-btn]").forEach(button => button.classList.toggle("active", button.dataset.viewBtn === name));
+    }
+
+    function moveCard(delta) {
+      const count = filteredQuestions().length;
+      if (!count) return;
+      currentIndex = (currentIndex + delta + count) % count;
+      renderStudy();
+    }
+
+    function getCurrentQuestion() {
+      return filteredQuestions()[currentIndex];
+    }
+
+    function markWrong() {
+      const q = getCurrentQuestion();
+      if (!q) return;
+      q.status = "wrong";
+      q.wrongCount = (q.wrongCount || 0) + 1;
+      persist();
+      render();
+    }
+
+    function markMastered() {
+      const q = getCurrentQuestion();
+      if (!q) return;
+      q.status = "mastered";
+      q.masteredAt = new Date().toISOString();
+      persist();
+      moveCard(1);
+      render();
+    }
+
+    function saveQuestion(event) {
+      event.preventDefault();
+      const id = els.editId.value || crypto.randomUUID();
+      const existing = state.questions.find(q => q.id === id);
+      const data = {
+        id,
+        category: els.categoryInput.value.trim() || "미분류",
+        level: els.levelInput.value,
+        question: els.questionInput.value.trim(),
+        answer: els.answerInput.value.trim(),
+        memo: els.memoInput.value.trim(),
+        status: existing?.status || "new",
+        wrongCount: existing?.wrongCount || 0,
+        masteredAt: existing?.masteredAt || ""
+      };
+
+      if (existing) Object.assign(existing, data);
+      else state.questions.unshift(data);
+
+      persist();
+      clearForm();
+      render();
+    }
+
+    function clearForm() {
+      els.editId.value = "";
+      els.questionForm.reset();
+      els.levelInput.value = "중";
+    }
+
+    function editQuestion(id) {
+      const q = state.questions.find(item => item.id === id);
+      if (!q) return;
+      els.editId.value = q.id;
+      els.categoryInput.value = q.category;
+      els.levelInput.value = q.level || "중";
+      els.questionInput.value = q.question;
+      els.answerInput.value = q.answer;
+      els.memoInput.value = q.memo || "";
+      setView("bank");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function deleteQuestion(id) {
+      if (!confirm("이 문제를 삭제할까요?")) return;
+      const index = state.questions.findIndex(q => q.id === id);
+      if (index >= 0) {
+        state.questions.splice(index, 1);
+        persist();
+        render();
+      }
+    }
+
+    function shuffleQuestions() {
+      for (let i = state.questions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [state.questions[i], state.questions[j]] = [state.questions[j], state.questions[i]];
+      }
+      currentIndex = 0;
+      persist();
+      render();
+    }
+
+    function resetProgress() {
+      if (!confirm("문제는 유지하고 오답/암기 완료 기록만 초기화할까요?")) return;
+      state.questions.forEach(q => {
+        q.status = "new";
+        q.wrongCount = 0;
+        q.masteredAt = "";
+      });
+      persist();
+      render();
+    }
+
+    function loadSamples() {
+      const existingTexts = new Set(state.questions.map(q => q.question));
+      sampleQuestions.forEach(q => {
+        if (!existingTexts.has(q.question)) state.questions.push({ ...q, id: crypto.randomUUID() });
+      });
+      persist();
+      render();
+      setView("study");
+    }
+
+    function importCsvFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => importCsvText(String(reader.result || ""));
+      reader.readAsText(file, "utf-8");
+      event.target.value = "";
+    }
+
+    function importCsvText(text) {
+      const rows = parseCsv(text).filter(row => row.some(cell => cell.trim()));
+      if (!rows.length) return alert("가져올 CSV 내용이 없습니다.");
+
+      const header = rows[0].map(cell => cell.trim().toLowerCase());
+      const hasHeader = ["category", "level", "question", "answer"].every(name => header.includes(name));
+      const dataRows = hasHeader ? rows.slice(1) : rows;
+      const imported = dataRows.map(row => {
+        const get = name => hasHeader ? row[header.indexOf(name)] || "" : "";
+        return {
+          id: crypto.randomUUID(),
+          category: (hasHeader ? get("category") : row[0])?.trim() || "미분류",
+          level: (hasHeader ? get("level") : row[1])?.trim() || "중",
+          question: (hasHeader ? get("question") : row[2])?.trim() || "",
+          answer: (hasHeader ? get("answer") : row[3])?.trim() || "",
+          memo: (hasHeader ? get("memo") : row[4])?.trim() || "",
+          status: "new",
+          wrongCount: 0,
+          masteredAt: ""
+        };
+      }).filter(q => q.question && q.answer);
+
+      const existing = new Set(state.questions.map(q => `${q.category}|${q.question}`));
+      let added = 0;
+      imported.forEach(q => {
+        const key = `${q.category}|${q.question}`;
+        if (!existing.has(key)) {
+          state.questions.push(q);
+          existing.add(key);
+          added += 1;
+        }
+      });
+
+      persist();
+      render();
+      alert(`${added}개 문제를 가져왔습니다.`);
+      setView("study");
+    }
+
+    function exportCsv() {
+      const header = ["category", "level", "question", "answer", "memo", "status", "wrongCount"];
+      const rows = state.questions.map(q => [q.category, q.level, q.question, q.answer, q.memo, q.status, q.wrongCount]);
+      download("industrial_safety_questions.csv", toCsv([header, ...rows]));
+    }
+
+    function downloadTemplate() {
+      const rows = [
+        ["category", "level", "question", "answer", "memo"],
+        ["안전관리", "상", "문제 내용을 입력", "정답 내용을 입력", "암기 메모"]
+      ];
+      download("industrial_safety_template.csv", toCsv(rows));
+    }
+
+    function download(filename, content) {
+      const blob = new Blob(["\ufeff" + content], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let quote = false;
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const next = text[i + 1];
+        if (char === '"' && quote && next === '"') {
+          cell += '"';
+          i++;
+        } else if (char === '"') {
+          quote = !quote;
+        } else if (char === "," && !quote) {
+          row.push(cell);
+          cell = "";
+        } else if ((char === "\n" || char === "\r") && !quote) {
+          if (char === "\r" && next === "\n") i++;
+          row.push(cell);
+          rows.push(row);
+          row = [];
+          cell = "";
+        } else {
+          cell += char;
+        }
+      }
+      row.push(cell);
+      rows.push(row);
+      return rows;
+    }
+
+    function toCsv(rows) {
+      return rows.map(row => row.map(cell => {
+        const value = String(cell ?? "");
+        return /[",\n\r]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+      }).join(",")).join("\n");
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function setupPwa() {
+      if ("serviceWorker" in navigator && location.protocol !== "file:") {
+        navigator.serviceWorker.register("./sw.js").catch(error => console.warn("Service worker registration failed", error));
+      }
+
+      window.addEventListener("beforeinstallprompt", event => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        els.installBtn.classList.remove("hidden");
+      });
+
+      window.addEventListener("appinstalled", () => {
+        deferredInstallPrompt = null;
+        els.installBtn.classList.add("hidden");
+      });
+    }
+
+    async function installApp() {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      els.installBtn.classList.add("hidden");
+    }
+  </script>
+</body>
+</html>
