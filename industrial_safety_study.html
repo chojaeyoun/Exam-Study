@@ -575,6 +575,41 @@
       display: none;
     }
 
+    .more-grid {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .more-menu {
+      padding: 14px;
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .more-menu button {
+      width: 100%;
+      min-height: 48px;
+      text-align: left;
+      justify-content: flex-start;
+      background: #fff;
+    }
+
+    .more-menu button.active {
+      background: var(--soft);
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+
+    .more-panel {
+      display: none;
+    }
+
+    .more-panel.active {
+      display: block;
+    }
+
     @media (max-width: 900px) {
       body {
         padding-bottom: 84px;
@@ -609,7 +644,7 @@
         bottom: 10px;
         z-index: 10;
         display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 4px;
         padding: 6px;
         background: rgba(36, 50, 59, 0.96);
@@ -638,6 +673,21 @@
 
       .topbar, .study-grid, .form-grid {
         grid-template-columns: 1fr;
+      }
+
+      .more-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .more-menu {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .more-menu button {
+        min-height: 44px;
+        justify-content: center;
+        text-align: center;
+        padding: 0 8px;
       }
 
       .study-summary {
@@ -676,9 +726,8 @@
       <nav class="nav" aria-label="화면 전환">
         <button class="active" data-view-btn="study">▣ 학습</button>
         <button data-view-btn="wrong">※ 오답노트</button>
-        <button data-view-btn="bank">☰ 문제은행</button>
-        <button data-view-btn="import">↕ 가져오기</button>
-        <button data-view-btn="cloud">☁ 클라우드</button>
+        <button data-view-btn="bank">☰ 문제작성</button>
+        <button data-view-btn="more">⋯ 더보기</button>
       </nav>
       <div class="stats">
         <div class="stat"><b id="totalCount">0</b><span>전체 문제</span></div>
@@ -751,7 +800,7 @@
               </label>
             </div>
             <div class="notice">
-              문제 데이터는 브라우저 저장소에만 저장됩니다. 다른 PC로 옮기려면 문제은행에서 CSV로 내보내세요.
+              문제 데이터는 브라우저 저장소에만 저장됩니다. 다른 PC로 옮기려면 문제작성에서 CSV로 내보내세요.
             </div>
             <h2 class="mini-title">오늘의 큐</h2>
             <div id="queueList" class="list"></div>
@@ -810,50 +859,69 @@
         </div>
       </section>
 
-      <section class="view" data-view="import">
-        <div class="panel side-panel">
-          <h2 class="mini-title">CSV 가져오기</h2>
-          <p class="notice">CSV 첫 줄은 <b>category,level,question,answer,memo</b> 형식을 권장합니다. 가져온 문제는 현재 선택한 시험 탭에 저장됩니다.</p>
-          <input id="csvFile" class="hidden-file" type="file" accept=".csv,text/csv">
-          <div class="actions">
-            <button id="pickCsvBtn" class="primary">CSV 파일 선택</button>
-            <button id="loadSampleBtn">샘플 문제 넣기</button>
+      <section class="view" data-view="more">
+        <div class="more-grid">
+          <div class="panel more-menu" aria-label="더보기 메뉴">
+            <button class="active" data-more-btn="import">CSV 가져오기</button>
+            <button data-more-btn="cloud">클라우드 동기화</button>
+            <button data-more-btn="settings">설정</button>
           </div>
-          <label>붙여넣기 가져오기
-            <textarea id="csvPaste" placeholder="category,level,question,answer,memo&#10;안전관리,상,예시 문제,예시 정답,메모"></textarea>
-          </label>
-          <div class="actions">
-            <button id="importPasteBtn">붙여넣은 CSV 가져오기</button>
-            <button id="downloadTemplateBtn">양식 다운로드</button>
-          </div>
-        </div>
-      </section>
 
-      <section class="view" data-view="cloud">
-        <div class="panel form-grid">
-          <label>Supabase URL
-            <input id="supabaseUrlInput" placeholder="https://프로젝트ID.supabase.co">
-          </label>
-          <label>Supabase anon key
-            <input id="supabaseAnonInput" placeholder="Project API keys의 anon public key">
-          </label>
-          <label>이메일
-            <input id="cloudEmailInput" type="email" autocomplete="email" placeholder="로그인 이메일">
-          </label>
-          <label>비밀번호
-            <input id="cloudPasswordInput" type="password" autocomplete="current-password" placeholder="6자 이상">
-          </label>
-          <div class="wide actions">
-            <button id="saveCloudConfigBtn" class="primary" type="button">연결 정보 저장</button>
-            <button id="signUpBtn" type="button">회원가입</button>
-            <button id="signInBtn" type="button">로그인</button>
-            <button id="signOutBtn" type="button">로그아웃</button>
+          <div>
+            <section class="more-panel active" data-more-panel="import">
+              <div class="panel side-panel">
+                <h2 class="mini-title">CSV 가져오기</h2>
+                <p class="notice">CSV 첫 줄은 <b>category,level,question,answer,memo</b> 형식을 권장합니다. 가져온 문제는 현재 선택한 시험 탭에 저장됩니다.</p>
+                <input id="csvFile" class="hidden-file" type="file" accept=".csv,text/csv">
+                <div class="actions">
+                  <button id="pickCsvBtn" class="primary">CSV 파일 선택</button>
+                  <button id="loadSampleBtn">샘플 문제 넣기</button>
+                </div>
+                <label>붙여넣기 가져오기
+                  <textarea id="csvPaste" placeholder="category,level,question,answer,memo&#10;안전관리,상,예시 문제,예시 정답,메모"></textarea>
+                </label>
+                <div class="actions">
+                  <button id="importPasteBtn">붙여넣은 CSV 가져오기</button>
+                  <button id="downloadTemplateBtn">양식 다운로드</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="more-panel" data-more-panel="cloud">
+              <div class="panel form-grid">
+                <label>Supabase URL
+                  <input id="supabaseUrlInput" placeholder="https://프로젝트ID.supabase.co">
+                </label>
+                <label>Supabase anon key
+                  <input id="supabaseAnonInput" placeholder="Project API keys의 anon public key">
+                </label>
+                <label>이메일
+                  <input id="cloudEmailInput" type="email" autocomplete="email" placeholder="로그인 이메일">
+                </label>
+                <label>비밀번호
+                  <input id="cloudPasswordInput" type="password" autocomplete="current-password" placeholder="6자 이상">
+                </label>
+                <div class="wide actions">
+                  <button id="saveCloudConfigBtn" class="primary" type="button">연결 정보 저장</button>
+                  <button id="signUpBtn" type="button">회원가입</button>
+                  <button id="signInBtn" type="button">로그인</button>
+                  <button id="signOutBtn" type="button">로그아웃</button>
+                </div>
+                <div class="wide actions">
+                  <button id="uploadCloudBtn" type="button">이 기기 데이터를 클라우드로 올리기</button>
+                  <button id="downloadCloudBtn" type="button">클라우드 데이터를 이 기기로 가져오기</button>
+                </div>
+                <p id="cloudStatus" class="wide notice">Supabase 프로젝트를 만든 뒤 URL과 anon key를 입력하세요. 비밀번호와 데이터는 Supabase 계정에 저장되고, 이 앱에는 URL과 anon key만 저장됩니다.</p>
+              </div>
+            </section>
+
+            <section class="more-panel" data-more-panel="settings">
+              <div class="panel side-panel">
+                <h2 class="mini-title">설정</h2>
+                <p class="notice">자주 쓰지 않는 관리 기능을 이곳에 모았습니다. 앞으로 테마, 백업, 자동 동기화 같은 옵션을 여기에 추가할 수 있습니다.</p>
+              </div>
+            </section>
           </div>
-          <div class="wide actions">
-            <button id="uploadCloudBtn" type="button">이 기기 데이터를 클라우드로 올리기</button>
-            <button id="downloadCloudBtn" type="button">클라우드 데이터를 이 기기로 가져오기</button>
-          </div>
-          <p id="cloudStatus" class="wide notice">Supabase 프로젝트를 만든 뒤 URL과 anon key를 입력하세요. 비밀번호와 데이터는 Supabase 계정에 저장되고, 이 앱에는 URL과 anon key만 저장됩니다.</p>
         </div>
       </section>
     </main>
@@ -981,6 +1049,10 @@
 
     document.querySelectorAll("[data-view-btn]").forEach(button => {
       button.addEventListener("click", () => setView(button.dataset.viewBtn));
+    });
+
+    document.querySelectorAll("[data-more-btn]").forEach(button => {
+      button.addEventListener("click", () => setMorePanel(button.dataset.moreBtn));
     });
 
     els.searchInput.addEventListener("input", render);
@@ -1453,7 +1525,7 @@
             <button data-delete="${q.id}" class="danger">삭제</button>
           </td>
         </tr>`;
-      }).join("") || `<tr><td colspan="5" class="empty">문제은행이 비어 있습니다.</td></tr>`;
+      }).join("") || `<tr><td colspan="5" class="empty">작성한 문제가 없습니다.</td></tr>`;
       bindListButtons(els.bankTable);
     }
 
@@ -1481,6 +1553,11 @@
       activeView = name;
       document.querySelectorAll("[data-view]").forEach(view => view.classList.toggle("active", view.dataset.view === name));
       document.querySelectorAll("[data-view-btn]").forEach(button => button.classList.toggle("active", button.dataset.viewBtn === name));
+    }
+
+    function setMorePanel(name) {
+      document.querySelectorAll("[data-more-panel]").forEach(panel => panel.classList.toggle("active", panel.dataset.morePanel === name));
+      document.querySelectorAll("[data-more-btn]").forEach(button => button.classList.toggle("active", button.dataset.moreBtn === name));
     }
 
     function moveCard(delta) {
