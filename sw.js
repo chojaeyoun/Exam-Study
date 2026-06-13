@@ -1,4 +1,4 @@
-const CACHE_NAME = "exam-study-app-v8";
+const CACHE_NAME = "exam-study-app-v9";
 const APP_SHELL = [
   "./index.html",
   "./industrial_safety_study.html",
@@ -25,6 +25,26 @@ self.addEventListener("activate", event => {
 
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
+
+  const requestUrl = new URL(event.request.url);
+  const isPageRequest =
+    event.request.mode === "navigate" ||
+    requestUrl.pathname.endsWith("/industrial_safety_study.html") ||
+    requestUrl.pathname.endsWith("/index.html");
+
+  if (isPageRequest) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        return response;
+      }).catch(() => caches.match(event.request).then(cached => {
+        return cached || caches.match("./industrial_safety_study.html");
+      }))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
