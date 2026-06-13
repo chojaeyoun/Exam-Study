@@ -423,15 +423,58 @@
       gap: 20px;
     }
 
-    .question h2 {
+    .question-box {
       margin: 0;
-      font-size: 30px;
-      line-height: 1.5;
+      font-size: 22px;
+      line-height: 1.65;
       letter-spacing: 0;
       padding: 18px;
       border-radius: 8px;
       background: #fbfcfb;
       border: 1px solid #e4ece9;
+    }
+
+    .question-main {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.55;
+      font-weight: 800;
+    }
+
+    .question-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .question-option {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 10px 12px;
+      border: 1px solid #dfe8e5;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 17px;
+      line-height: 1.5;
+      font-weight: 700;
+    }
+
+    .question-option b {
+      display: inline-grid;
+      place-items: center;
+      min-height: 28px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--accent-dark);
+      font-size: 13px;
+    }
+
+    .question-paragraph {
+      margin: 0;
+      white-space: pre-wrap;
+      font-weight: 800;
     }
 
     .answer {
@@ -575,6 +618,43 @@
       display: none;
     }
 
+    .ocr-box {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid #d9e8e4;
+      border-radius: 8px;
+      background: #f7fbfa;
+    }
+
+    .ocr-header {
+      display: grid;
+      gap: 4px;
+    }
+
+    .ocr-header h2 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .ocr-header p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .ocr-status {
+      min-height: 20px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .ocr-status.error {
+      color: var(--accent-2);
+    }
+
     .more-grid {
       display: grid;
       grid-template-columns: 280px minmax(0, 1fr);
@@ -703,8 +783,18 @@
         padding: 22px;
       }
 
-      .question h2 {
-        font-size: 24px;
+      .question-box {
+        font-size: 18px;
+      }
+
+      .question-main {
+        font-size: 21px;
+      }
+
+      .question-option {
+        grid-template-columns: 30px minmax(0, 1fr);
+        font-size: 16px;
+        padding: 9px 10px;
       }
 
       table {
@@ -772,7 +862,7 @@
               <span class="pill" id="cardLevel">중요도</span>
             </div>
             <div class="question">
-              <h2 id="questionText">문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.</h2>
+              <div id="questionText" class="question-box">문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.</div>
               <textarea id="myAnswer" placeholder="내 답안을 적어본 뒤 정답을 확인하세요. 입력 내용은 채점되지 않고 암기용으로만 사용됩니다."></textarea>
               <div id="answerText" class="answer"></div>
             </div>
@@ -818,6 +908,19 @@
       <section class="view" data-view="bank">
         <form id="questionForm" class="panel form-grid">
           <input type="hidden" id="editId">
+          <div class="wide ocr-box">
+            <div class="ocr-header">
+              <h2>사진에서 문제 만들기</h2>
+              <p>문제지를 촬영하거나 이미지 파일을 선택하면 글자를 추출합니다. 추출 결과를 확인한 뒤 문제와 정답 입력칸에 넣을 수 있습니다.</p>
+            </div>
+            <input id="photoFile" class="hidden-file" type="file" accept="image/*" capture="environment">
+            <div class="actions">
+              <button type="button" id="pickPhotoBtn" class="primary">사진 선택</button>
+              <button type="button" id="applyOcrBtn" disabled>추출 내용 넣기</button>
+            </div>
+            <div id="ocrStatus" class="ocr-status">사진을 고르면 OCR 준비를 시작합니다.</div>
+            <textarea id="ocrText" placeholder="사진에서 추출한 텍스트가 여기에 표시됩니다. 잘못 인식된 글자는 저장 전에 고쳐주세요."></textarea>
+          </div>
           <label>분야
             <input id="categoryInput" placeholder="예: 안전관리, 전기, 화학, 건설">
           </label>
@@ -928,6 +1031,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script>
     const DEFAULT_EXAM_ID = "industrial-practical";
     const STORAGE_KEY = "examStudyApp.v2";
@@ -1025,6 +1129,11 @@
       questionInput: document.querySelector("#questionInput"),
       answerInput: document.querySelector("#answerInput"),
       memoInput: document.querySelector("#memoInput"),
+      photoFile: document.querySelector("#photoFile"),
+      pickPhotoBtn: document.querySelector("#pickPhotoBtn"),
+      applyOcrBtn: document.querySelector("#applyOcrBtn"),
+      ocrStatus: document.querySelector("#ocrStatus"),
+      ocrText: document.querySelector("#ocrText"),
       clearFormBtn: document.querySelector("#clearFormBtn"),
       exportBtn: document.querySelector("#exportBtn"),
       bankTable: document.querySelector("#bankTable"),
@@ -1070,6 +1179,12 @@
     els.questionForm.addEventListener("submit", saveQuestion);
     els.clearFormBtn.addEventListener("click", clearForm);
     els.exportBtn.addEventListener("click", exportCsv);
+    els.pickPhotoBtn.addEventListener("click", () => els.photoFile.click());
+    els.photoFile.addEventListener("change", readQuestionPhoto);
+    els.applyOcrBtn.addEventListener("click", applyOcrText);
+    els.ocrText.addEventListener("input", () => {
+      els.applyOcrBtn.disabled = !els.ocrText.value.trim();
+    });
     els.pickCsvBtn.addEventListener("click", () => els.csvFile.click());
     els.csvFile.addEventListener("change", importCsvFile);
     els.importPasteBtn.addEventListener("click", () => importCsvText(els.csvPaste.value));
@@ -1465,6 +1580,52 @@
       els.categoryFilter.value = categories.includes(selected) ? selected : "all";
     }
 
+    function formatQuestionHtml(text) {
+      const source = String(text || "").trim();
+      if (!source) return "";
+
+      const parts = splitQuestionOptions(source);
+      if (parts.options.length >= 2) {
+        const main = parts.body || "다음 조건을 보고 답하세요.";
+        return [
+          `<p class="question-main">${escapeHtml(main)}</p>`,
+          `<div class="question-list">`,
+          ...parts.options.map(option => {
+            return `<div class="question-option"><b>${escapeHtml(option.number)}</b><span>${escapeHtml(option.text)}</span></div>`;
+          }),
+          `</div>`
+        ].join("");
+      }
+
+      return `<p class="question-paragraph">${escapeHtml(source)}</p>`;
+    }
+
+    function splitQuestionOptions(text) {
+      const optionPattern = /(?:^|[\s/])(\d{1,2})[).]\s*/g;
+      const matches = [...text.matchAll(optionPattern)];
+      if (matches.length < 2) return { body: text, options: [] };
+
+      const body = cleanupOptionText(text.slice(0, matches[0].index));
+      const options = matches.map((match, index) => {
+        const start = match.index + match[0].length;
+        const end = matches[index + 1]?.index ?? text.length;
+        return {
+          number: match[1],
+          text: cleanupOptionText(text.slice(start, end))
+        };
+      }).filter(option => option.text);
+
+      return { body, options };
+    }
+
+    function cleanupOptionText(text) {
+      return String(text || "")
+        .replace(/\s*\/\s*$/g, "")
+        .replace(/^[\s/]+|[\s/]+$/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
     function renderStudy() {
       const questions = filteredQuestions();
       if (currentIndex >= questions.length) currentIndex = Math.max(0, questions.length - 1);
@@ -1476,7 +1637,7 @@
       if (!current) {
         els.cardType.textContent = "분야";
         els.cardLevel.textContent = "중요도";
-        els.questionText.textContent = "문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.";
+        els.questionText.innerHTML = formatQuestionHtml("문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.");
         els.answerText.textContent = "";
         els.answerText.classList.remove("visible");
         els.myAnswer.value = "";
@@ -1485,7 +1646,7 @@
 
       els.cardType.textContent = current.category || "미분류";
       els.cardLevel.textContent = `중요도 ${current.level || "중"}`;
-      els.questionText.textContent = current.question;
+      els.questionText.innerHTML = formatQuestionHtml(current.question);
       els.answerText.textContent = [current.answer, current.memo ? `\n메모: ${current.memo}` : ""].join("");
       els.answerText.classList.remove("visible");
       els.myAnswer.value = "";
@@ -1588,6 +1749,82 @@
       persist();
       moveCard(1);
       render();
+    }
+
+    async function readQuestionPhoto(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!window.Tesseract) {
+        setOcrStatus("OCR 라이브러리를 불러오지 못했습니다. 인터넷 연결 후 다시 시도하세요.", true);
+        event.target.value = "";
+        return;
+      }
+
+      els.applyOcrBtn.disabled = true;
+      els.pickPhotoBtn.disabled = true;
+      setOcrStatus("사진에서 글자를 읽는 중입니다. 잠시만 기다려주세요.");
+
+      try {
+        const result = await Tesseract.recognize(file, "kor+eng", {
+          logger: message => {
+            if (message.status === "recognizing text") {
+              const progress = Math.round((message.progress || 0) * 100);
+              setOcrStatus(`사진에서 글자를 읽는 중입니다... ${progress}%`);
+            }
+          }
+        });
+        const text = normalizeOcrText(result?.data?.text || "");
+        els.ocrText.value = text;
+        els.applyOcrBtn.disabled = !text;
+        setOcrStatus(text ? "추출 완료. 내용을 확인한 뒤 입력칸에 넣으세요." : "읽어낸 글자가 없습니다. 더 밝고 정면에서 찍은 사진으로 다시 시도하세요.", !text);
+      } catch (error) {
+        console.warn(error);
+        setOcrStatus("사진을 읽는 중 오류가 발생했습니다. 이미지가 너무 흐리거나 OCR 파일을 불러오지 못했을 수 있습니다.", true);
+      } finally {
+        els.pickPhotoBtn.disabled = false;
+        event.target.value = "";
+      }
+    }
+
+    function applyOcrText() {
+      const text = normalizeOcrText(els.ocrText.value);
+      if (!text) return;
+
+      const parsed = parseOcrQuestionText(text);
+      els.questionInput.value = parsed.question;
+      if (parsed.answer) els.answerInput.value = parsed.answer;
+      if (!els.memoInput.value.trim()) els.memoInput.value = "사진 OCR로 입력";
+      setOcrStatus(parsed.answer ? "문제와 정답 입력칸에 넣었습니다. 저장 전에 오타를 확인하세요." : "문제 입력칸에 넣었습니다. 정답은 직접 확인해 입력하세요.");
+      (parsed.answer ? els.questionInput : els.answerInput).focus();
+    }
+
+    function parseOcrQuestionText(text) {
+      const source = normalizeOcrText(text);
+      const answerMatch = source.match(/(?:^|\n)\s*(정답|답|해답|해설)\s*[:：.)-]?\s*/);
+      if (!answerMatch) return { question: source, answer: "" };
+
+      const markerIndex = answerMatch.index + answerMatch[0].indexOf(answerMatch[1]);
+      const answerStart = answerMatch.index + answerMatch[0].length;
+      return {
+        question: source.slice(0, markerIndex).trim(),
+        answer: source.slice(answerStart).trim()
+      };
+    }
+
+    function normalizeOcrText(text) {
+      return String(text || "")
+        .replace(/\r/g, "")
+        .split("\n")
+        .map(line => line.replace(/\s+/g, " ").trim())
+        .join("\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+    }
+
+    function setOcrStatus(message, isError = false) {
+      els.ocrStatus.textContent = message;
+      els.ocrStatus.classList.toggle("error", isError);
     }
 
     function saveQuestion(event) {
