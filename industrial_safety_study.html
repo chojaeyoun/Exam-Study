@@ -919,9 +919,11 @@
               <h2>사진에서 문제 만들기</h2>
               <p>문제 한 개만 화면에 크게 나오도록 정면에서 촬영하세요. 추출 결과를 확인하고 오타를 고친 뒤 문제와 정답 입력칸에 넣을 수 있습니다.</p>
             </div>
-            <input id="photoFile" class="hidden-file" type="file" accept="image/*" capture="environment">
+            <input id="cameraFile" class="hidden-file" type="file" accept="image/*" capture="environment">
+            <input id="galleryFile" class="hidden-file" type="file" accept="image/*">
             <div class="actions">
-              <button type="button" id="pickPhotoBtn" class="primary">사진 선택</button>
+              <button type="button" id="takePhotoBtn" class="primary">사진 찍기</button>
+              <button type="button" id="pickGalleryBtn">사진첩 선택</button>
               <button type="button" id="applyOcrBtn" disabled>추출 내용 넣기</button>
             </div>
             <div id="ocrStatus" class="ocr-status">사진을 고르면 OCR 준비를 시작합니다.</div>
@@ -1135,8 +1137,10 @@
       questionInput: document.querySelector("#questionInput"),
       answerInput: document.querySelector("#answerInput"),
       memoInput: document.querySelector("#memoInput"),
-      photoFile: document.querySelector("#photoFile"),
-      pickPhotoBtn: document.querySelector("#pickPhotoBtn"),
+      cameraFile: document.querySelector("#cameraFile"),
+      galleryFile: document.querySelector("#galleryFile"),
+      takePhotoBtn: document.querySelector("#takePhotoBtn"),
+      pickGalleryBtn: document.querySelector("#pickGalleryBtn"),
       applyOcrBtn: document.querySelector("#applyOcrBtn"),
       ocrStatus: document.querySelector("#ocrStatus"),
       ocrText: document.querySelector("#ocrText"),
@@ -1185,8 +1189,10 @@
     els.questionForm.addEventListener("submit", saveQuestion);
     els.clearFormBtn.addEventListener("click", clearForm);
     els.exportBtn.addEventListener("click", exportCsv);
-    els.pickPhotoBtn.addEventListener("click", () => els.photoFile.click());
-    els.photoFile.addEventListener("change", readQuestionPhoto);
+    els.takePhotoBtn.addEventListener("click", () => els.cameraFile.click());
+    els.pickGalleryBtn.addEventListener("click", () => els.galleryFile.click());
+    els.cameraFile.addEventListener("change", readQuestionPhoto);
+    els.galleryFile.addEventListener("change", readQuestionPhoto);
     els.applyOcrBtn.addEventListener("click", applyOcrText);
     els.ocrText.addEventListener("input", () => {
       els.applyOcrBtn.disabled = !els.ocrText.value.trim();
@@ -1776,7 +1782,7 @@
       }
 
       els.applyOcrBtn.disabled = true;
-      els.pickPhotoBtn.disabled = true;
+      setPhotoButtonsDisabled(true);
       setOcrStatus("사진에서 글자를 읽는 중입니다. 잠시만 기다려주세요.");
 
       try {
@@ -1796,9 +1802,14 @@
         console.warn(error);
         setOcrStatus("사진을 읽는 중 오류가 발생했습니다. 이미지가 너무 흐리거나 OCR 파일을 불러오지 못했을 수 있습니다.", true);
       } finally {
-        els.pickPhotoBtn.disabled = false;
+        setPhotoButtonsDisabled(false);
         event.target.value = "";
       }
+    }
+
+    function setPhotoButtonsDisabled(disabled) {
+      els.takePhotoBtn.disabled = disabled;
+      els.pickGalleryBtn.disabled = disabled;
     }
 
     function applyOcrText() {
