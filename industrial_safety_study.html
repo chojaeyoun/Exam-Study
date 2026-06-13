@@ -1817,16 +1817,34 @@
 
     function parseOcrQuestionText(text) {
       const source = normalizeOcrText(text);
-      const answerPattern = /(?:^|\n)\s*((?:정답|답안|답|해답|모범답안|해설|풀이|answer)\s*[:：.)-]?|a\s*[:：.)-])\s*/i;
-      const answerMatch = source.match(answerPattern);
+      const answerMatch = findAnswerMarker(source);
       if (!answerMatch) return { question: cleanOcrQuestion(source), answer: "" };
 
-      const markerIndex = answerMatch.index + answerMatch[0].indexOf(answerMatch[1]);
-      const answerStart = answerMatch.index + answerMatch[0].length;
       return {
-        question: cleanOcrQuestion(source.slice(0, markerIndex)),
-        answer: cleanOcrAnswer(source.slice(answerStart))
+        question: cleanOcrQuestion(source.slice(0, answerMatch.markerStart)),
+        answer: cleanOcrAnswer(source.slice(answerMatch.answerStart))
       };
+    }
+
+    function findAnswerMarker(text) {
+      const patterns = [
+        /(?:^|[\n\s([{<])((?:정\s*답|답\s*안|해\s*답|모범\s*답안|예시\s*답안|해\s*설|풀\s*이|answer)\s*[:：.)\]-]?|a\s*[:：.)\]-])\s*/i,
+        /(?:^|[\n\s([{<])((?:정\s*답|답)\s*(?:은|:|：|-|=))\s*/i
+      ];
+
+      const matches = patterns
+        .map(pattern => {
+          const match = text.match(pattern);
+          if (!match) return null;
+          return {
+            markerStart: match.index + match[0].indexOf(match[1]),
+            answerStart: match.index + match[0].length
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => a.markerStart - b.markerStart);
+
+      return matches[0] || null;
     }
 
     function cleanOcrQuestion(text) {
@@ -1837,7 +1855,8 @@
 
     function cleanOcrAnswer(text) {
       return String(text || "")
-        .replace(/^\s*((?:정답|답안|답|해답|모범답안|해설|풀이|answer)\s*[:：.)-]?|a\s*[:：.)-])\s*/i, "")
+        .replace(/^\s*((?:정\s*답|답\s*안|답|해\s*답|모범\s*답안|예시\s*답안|해\s*설|풀\s*이|answer)\s*[:：.)\]-]?|a\s*[:：.)\]-])\s*/i, "")
+        .replace(/^\s*(?:정\s*답|답)\s*(?:은|:|：|-|=)\s*/i, "")
         .trim();
     }
 
