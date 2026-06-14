@@ -112,6 +112,12 @@
       grid-template-columns: 300px minmax(0, 1fr);
     }
 
+    .mobile-header,
+    .mobile-drawer,
+    .mobile-backdrop {
+      display: none;
+    }
+
     .side {
       background: linear-gradient(180deg, #173d39 0, #26323a 100%);
       color: #eef5f4;
@@ -152,6 +158,13 @@
     .exam-tabs {
       display: grid;
       gap: 8px;
+    }
+
+    .drawer-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
     }
 
     .exam-row {
@@ -764,25 +777,118 @@
       }
 
       .app {
-        grid-template-columns: 1fr;
+        display: block;
+      }
+
+      .mobile-header {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: grid;
+        grid-template-columns: 48px minmax(0, 1fr) 48px;
+        gap: 8px;
+        align-items: center;
+        min-height: 64px;
+        padding: 10px 14px;
+        background: rgba(255, 255, 255, 0.96);
+        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(12px);
+      }
+
+      .mobile-title {
+        min-width: 0;
+        margin: 0;
+        text-align: center;
+        font-size: 18px;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .mobile-icon-btn {
+        width: 44px;
+        min-height: 44px;
+        padding: 0;
+        display: grid;
+        place-items: center;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 22px;
+      }
+
+      .mobile-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        display: block;
+        background: rgba(15, 24, 30, 0.46);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.18s ease;
+      }
+
+      .mobile-drawer {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 50;
+        width: min(86vw, 360px);
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding: 22px;
+        color: #eef5f4;
+        background: linear-gradient(180deg, #173d39 0, #26323a 100%);
+        box-shadow: 20px 0 42px rgba(17, 24, 39, 0.28);
+        transform: translateX(-102%);
+        transition: transform 0.2s ease;
+        overflow-y: auto;
+      }
+
+      .mobile-drawer .brand {
+        border-bottom: 1px solid rgba(255,255,255,0.18);
+      }
+
+      .mobile-drawer .brand h1 {
+        font-size: 22px;
+      }
+
+      .mobile-drawer .exam-row {
+        grid-template-columns: minmax(0, 1fr) 46px 46px;
+      }
+
+      .mobile-drawer .exam-tabs {
+        gap: 9px;
+      }
+
+      .mobile-drawer .drawer-close {
+        flex: 0 0 auto;
+        color: #eef5f4;
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.16);
+      }
+
+      body.drawer-open .mobile-backdrop {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      body.drawer-open .mobile-drawer {
+        transform: translateX(0);
       }
 
       .side {
         position: static;
-        padding: 18px;
-        gap: 14px;
+        padding: 0;
+        gap: 0;
+        background: transparent;
+        border: 0;
       }
 
-      .brand {
-        padding-bottom: 10px;
-      }
-
-      .brand h1 {
-        font-size: 21px;
-      }
-
-      .exam-row {
-        grid-template-columns: minmax(0, 1fr) 46px 46px;
+      .side > .brand,
+      .side > .section-label,
+      .side > .exam-tabs,
+      .side > .exam-add,
+      .side > .stats {
+        display: none;
       }
 
       .nav {
@@ -816,11 +922,28 @@
       }
 
       .main {
-        padding: 16px;
+        padding: 14px 16px 16px;
       }
 
       .topbar, .study-grid, .form-grid {
         grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        display: grid;
+        gap: 10px;
+      }
+
+      .topbar .search {
+        display: none;
+      }
+
+      body.search-open .topbar .search {
+        display: block;
+      }
+
+      .topbar .toolbar {
+        justify-content: flex-end;
       }
 
       .more-grid {
@@ -875,6 +998,26 @@
 </head>
 <body>
   <div class="app">
+    <header class="mobile-header" aria-label="모바일 상단 메뉴">
+      <button id="openDrawerBtn" class="mobile-icon-btn" type="button" aria-label="시험 목록 열기">☰</button>
+      <h1 class="mobile-title">시험 공부 어플</h1>
+      <button id="toggleSearchBtn" class="mobile-icon-btn" type="button" aria-label="검색 열기">⌕</button>
+    </header>
+
+    <div id="mobileBackdrop" class="mobile-backdrop" aria-hidden="true"></div>
+    <aside id="mobileDrawer" class="mobile-drawer" aria-label="시험 목록">
+      <div class="drawer-head">
+        <div class="brand">
+          <h1>시험 공부 어플</h1>
+          <p>시험을 선택하고 새 시험을 추가</p>
+        </div>
+        <button id="closeDrawerBtn" class="drawer-close mobile-icon-btn" type="button" aria-label="시험 목록 닫기">×</button>
+      </div>
+      <p class="section-label">시험 선택</p>
+      <div id="mobileExamTabs" class="exam-tabs" aria-label="모바일 시험 선택"></div>
+      <button id="mobileAddExamBtn" class="exam-add" type="button">+ 시험 추가</button>
+    </aside>
+
     <aside class="side">
       <div class="brand">
         <h1>시험 공부 어플</h1>
@@ -1182,6 +1325,13 @@
       progressFill: document.querySelector("#progressFill"),
       examTabs: document.querySelector("#examTabs"),
       addExamBtn: document.querySelector("#addExamBtn"),
+      openDrawerBtn: document.querySelector("#openDrawerBtn"),
+      closeDrawerBtn: document.querySelector("#closeDrawerBtn"),
+      mobileBackdrop: document.querySelector("#mobileBackdrop"),
+      mobileDrawer: document.querySelector("#mobileDrawer"),
+      mobileExamTabs: document.querySelector("#mobileExamTabs"),
+      mobileAddExamBtn: document.querySelector("#mobileAddExamBtn"),
+      toggleSearchBtn: document.querySelector("#toggleSearchBtn"),
       searchInput: document.querySelector("#searchInput"),
       installBtn: document.querySelector("#installBtn"),
       shuffleBtn: document.querySelector("#shuffleBtn"),
@@ -1247,6 +1397,14 @@
 
     els.searchInput.addEventListener("input", render);
     els.addExamBtn.addEventListener("click", addExam);
+    els.mobileAddExamBtn.addEventListener("click", () => {
+      addExam();
+      closeMobileDrawer();
+    });
+    els.openDrawerBtn.addEventListener("click", openMobileDrawer);
+    els.closeDrawerBtn.addEventListener("click", closeMobileDrawer);
+    els.mobileBackdrop.addEventListener("click", closeMobileDrawer);
+    els.toggleSearchBtn.addEventListener("click", toggleMobileSearch);
     els.installBtn.addEventListener("click", installApp);
     els.categoryFilter.addEventListener("change", () => { currentIndex = 0; render(); });
     els.statusFilter.addEventListener("change", () => { currentIndex = 0; render(); });
@@ -1278,6 +1436,14 @@
     els.signOutBtn.addEventListener("click", signOutCloud);
     els.uploadCloudBtn.addEventListener("click", uploadCloud);
     els.downloadCloudBtn.addEventListener("click", downloadCloud);
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") {
+        closeMobileDrawer();
+        document.body.classList.remove("search-open");
+        els.toggleSearchBtn.textContent = "⌕";
+        els.toggleSearchBtn.setAttribute("aria-label", "검색 열기");
+      }
+    });
 
     initCloudInputs();
     render();
@@ -1466,7 +1632,12 @@
     }
 
     function renderExamTabs() {
-      els.examTabs.innerHTML = state.exams.map(exam => {
+      renderExamButtons(els.examTabs);
+      renderExamButtons(els.mobileExamTabs, { closeOnSelect: true });
+    }
+
+    function renderExamButtons(root, options = {}) {
+      root.innerHTML = state.exams.map(exam => {
         const count = state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) === exam.id).length;
         return `<div class="exam-row">
           <button class="${exam.id === state.activeExamId ? "active" : ""}" data-exam-id="${escapeHtml(exam.id)}">
@@ -1478,20 +1649,21 @@
         </div>`;
       }).join("");
 
-      els.examTabs.querySelectorAll("[data-exam-id]").forEach(button => {
+      root.querySelectorAll("[data-exam-id]").forEach(button => {
         button.addEventListener("click", () => {
           state.activeExamId = button.dataset.examId;
           currentIndex = 0;
           persist();
           render();
+          if (options.closeOnSelect) closeMobileDrawer();
         });
       });
 
-      els.examTabs.querySelectorAll("[data-rename-exam]").forEach(button => {
+      root.querySelectorAll("[data-rename-exam]").forEach(button => {
         button.addEventListener("click", () => renameExam(button.dataset.renameExam));
       });
 
-      els.examTabs.querySelectorAll("[data-delete-exam]").forEach(button => {
+      root.querySelectorAll("[data-delete-exam]").forEach(button => {
         button.addEventListener("click", () => deleteExam(button.dataset.deleteExam));
       });
     }
@@ -1809,6 +1981,24 @@
     function setMorePanel(name) {
       document.querySelectorAll("[data-more-panel]").forEach(panel => panel.classList.toggle("active", panel.dataset.morePanel === name));
       document.querySelectorAll("[data-more-btn]").forEach(button => button.classList.toggle("active", button.dataset.moreBtn === name));
+    }
+
+    function openMobileDrawer() {
+      document.body.classList.add("drawer-open");
+    }
+
+    function closeMobileDrawer() {
+      document.body.classList.remove("drawer-open");
+    }
+
+    function toggleMobileSearch() {
+      const willOpen = !document.body.classList.contains("search-open");
+      document.body.classList.toggle("search-open", willOpen);
+      els.toggleSearchBtn.setAttribute("aria-label", willOpen ? "검색 닫기" : "검색 열기");
+      els.toggleSearchBtn.textContent = willOpen ? "×" : "⌕";
+      if (willOpen) {
+        requestAnimationFrame(() => els.searchInput.focus());
+      }
     }
 
     function moveCard(delta) {
