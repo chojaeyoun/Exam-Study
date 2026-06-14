@@ -502,6 +502,46 @@
       gap: 9px;
     }
 
+    .study-controls {
+      display: grid;
+      gap: 10px;
+    }
+
+    .step-controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .step-controls button {
+      min-height: 42px;
+      background: #f8fafb;
+    }
+
+    .review-actions {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr 1fr;
+      gap: 9px;
+    }
+
+    .review-actions button {
+      min-height: 50px;
+      padding: 0 14px;
+      white-space: nowrap;
+    }
+
+    .review-actions .wrong-action {
+      color: var(--accent-2);
+      border-color: #e3b0a7;
+      background: #fff8f6;
+    }
+
+    .review-actions .master-action {
+      color: #134f45;
+      border-color: #a9cbc4;
+      background: #f1f8f6;
+    }
+
     .card .actions button {
       min-height: 46px;
       padding: 0 18px;
@@ -896,12 +936,16 @@
               <textarea id="myAnswer" placeholder="내 답안을 적어본 뒤 정답을 확인하세요. 입력 내용은 채점되지 않고 암기용으로만 사용됩니다."></textarea>
               <div id="answerText" class="answer"></div>
             </div>
-            <div class="actions">
-              <button id="showAnswerBtn" class="primary">정답 보기</button>
-              <button id="wrongBtn">오답 표시</button>
-              <button id="masterBtn">암기 완료</button>
-              <button id="prevBtn">이전</button>
-              <button id="nextBtn">다음</button>
+            <div class="study-controls">
+              <div class="step-controls" aria-label="문제 이동">
+                <button id="prevBtn">← 이전 문제</button>
+                <button id="nextBtn">다음 문제 →</button>
+              </div>
+              <div class="review-actions" aria-label="정답 확인과 학습 결과">
+                <button id="showAnswerBtn" class="primary">정답 보기</button>
+                <button id="wrongBtn" class="wrong-action">틀렸음</button>
+                <button id="masterBtn" class="master-action">맞혔음</button>
+              </div>
             </div>
           </article>
           <aside class="panel side-panel">
@@ -1784,7 +1828,7 @@
       q.status = "wrong";
       q.wrongCount = (q.wrongCount || 0) + 1;
       persist();
-      render();
+      advanceAfterReview(q.id);
     }
 
     function markMastered() {
@@ -1793,7 +1837,19 @@
       q.status = "mastered";
       q.masteredAt = new Date().toISOString();
       persist();
-      moveCard(1);
+      advanceAfterReview(q.id);
+    }
+
+    function advanceAfterReview(reviewedId) {
+      const questions = filteredQuestions();
+      if (questions.length) {
+        const reviewedIndex = questions.findIndex(q => q.id === reviewedId);
+        if (reviewedIndex >= 0) {
+          currentIndex = (reviewedIndex + 1) % questions.length;
+        } else if (currentIndex >= questions.length) {
+          currentIndex = Math.max(0, questions.length - 1);
+        }
+      }
       render();
     }
 
