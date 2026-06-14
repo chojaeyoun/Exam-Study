@@ -1361,6 +1361,8 @@
     const OLD_STORAGE_KEYS = ["industrialSafetyPracticalStudy.v1"];
     const CLOUD_SYNC_START = "\n\n<!--EXAM_STUDY_SYNC:";
     const CLOUD_SYNC_END = "-->";
+    const CLOUD_BACKUP_CATEGORY = "__sync_backup__";
+    const CLOUD_BACKUP_CHUNK_SIZE = 250000;
     const DEFAULT_EXAMS = [
       {
         id: DEFAULT_EXAM_ID,
@@ -1861,11 +1863,15 @@
         if (questionError) return setCloudStatus(`문제 업로드 실패: ${questionError.message}`);
       }
 
+      const backupResult = await uploadCloudBackup(client, user);
+      if (!backupResult.ok) return setCloudStatus(backupResult.message);
+
       const { count: cloudQuestionCount } = await client
         .from("exam_questions")
-        .select("id", { count: "exact", head: true });
+        .select("id", { count: "exact", head: true })
+        .neq("category", CLOUD_BACKUP_CATEGORY);
       const cloudCountText = Number.isFinite(cloudQuestionCount) ? `, 클라우드 확인 ${cloudQuestionCount}개` : "";
-      setCloudStatus(`업로드 완료: 시험 ${examRows.length}개, 이 기기 문제 ${questionRows.length}개${cloudCountText}`);
+      setCloudStatus(`업로드 완료: 시험 ${examRows.length}개, 이 기기 문제 ${questionRows.length}개${cloudCountText}, 백업 ${backupResult.chunkCount}조각`);
     }
 
     async function downloadCloud() {
@@ -1877,6 +1883,19 @@
       if (!confirm("클라우드 데이터를 이 기기에 덮어쓸까요? 현재 기기의 로컬 데이터는 클라우드 내용으로 바뀝니다.")) return;
 
       setCloudStatus("클라우드에서 가져오는 중...");
+      const backup = await downloadCloudBackup(client, user);
+      if (backup.ok) {
+        const normalized = normalizeState(backup.data);
+        state.exams = normalized.exams;
+        state.questions = normalized.questions;
+        state.activeExamId = normalized.activeExamId;
+        currentIndex = 0;
+        persist();
+        render();
+        setCloudStatus(`백업으로 가져오기 완료: 전체 ${state.questions.length}개 · ${questionCountSummary()}`);
+        return;
+      }
+
       const { data: exams, error: examError } = await client
         .from("exam_tabs")
         .select("*")
@@ -1896,7 +1915,7 @@
       }));
       if (!state.exams.length) state.exams = [...DEFAULT_EXAMS];
 
-      state.questions = (questions || []).map(row => {
+      state.questions = (questions || []).filter(row => row.category !== CLOUD_BACKUP_CATEGORY).map(row => {
         const cloudMemo = parseCloudMemo(row.memo || "");
         return {
           id: row.id,
@@ -1921,6 +1940,77 @@
       persist();
       render();
       setCloudStatus(`가져오기 완료: 전체 ${state.questions.length}개 · ${questionCountSummary()}`);
+    }
+
+    async function uploadCloudBackup(client, user) {
+      const payload = encodeURIComponent(JSON.stringify({
+        exams: state.exams,
+        activeExamId: state.activeExamId,
+        questions: state.questions,
+        savedAt: new Date().toISOString()
+      }));
+      const chunks = chunkText(payload, CLOUD_BACKUP_CHUNK_SIZE);
+
+      const { error: deleteError } = await client
+        .from("exam_questions")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("category", CLOUD_BACKUP_CATEGORY);
+      if (deleteError) {
+        return { ok: false, message: `백업 정리 실패: ${deleteError.message}`, chunkCount: 0 };
+      }
+
+      for (let index = 0; index < chunks.length; index++) {
+        const row = {
+          id: crypto.randomUUID(),
+          user_id: user.id,
+          exam_id: DEFAULT_EXAM_ID,
+          category: CLOUD_BACKUP_CATEGORY,
+          level: String(index).padStart(4, "0"),
+          question: `backup ${index + 1}/${chunks.length}`,
+          answer: "",
+          memo: chunks[index],
+          status: "new",
+          wrong_count: 0,
+          mastered_at: null,
+          updated_at: new Date().toISOString()
+        };
+        const { error } = await client.from("exam_questions").upsert(row);
+        if (error) return { ok: false, message: `백업 업로드 실패: ${error.message}`, chunkCount: index };
+      }
+
+      return { ok: true, message: "", chunkCount: chunks.length };
+    }
+
+    async function downloadCloudBackup(client, user) {
+      const { data, error } = await client
+        .from("exam_questions")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("category", CLOUD_BACKUP_CATEGORY)
+        .order("level", { ascending: true });
+
+      if (error || !data?.length) return { ok: false, data: null };
+
+      try {
+        const joined = data
+          .slice()
+          .sort((a, b) => String(a.level || "").localeCompare(String(b.level || "")))
+          .map(row => row.memo || "")
+          .join("");
+        return { ok: true, data: JSON.parse(decodeURIComponent(joined)) };
+      } catch (error) {
+        console.warn("Cloud backup restore failed.", error);
+        return { ok: false, data: null };
+      }
+    }
+
+    function chunkText(text, size) {
+      const chunks = [];
+      for (let index = 0; index < text.length; index += size) {
+        chunks.push(text.slice(index, index + size));
+      }
+      return chunks.length ? chunks : [""];
     }
 
     function pickExamWithMostQuestions() {
