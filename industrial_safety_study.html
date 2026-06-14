@@ -1861,7 +1861,11 @@
         if (questionError) return setCloudStatus(`문제 업로드 실패: ${questionError.message}`);
       }
 
-      setCloudStatus(`업로드 완료: 시험 ${examRows.length}개, 문제 ${questionRows.length}개`);
+      const { count: cloudQuestionCount } = await client
+        .from("exam_questions")
+        .select("id", { count: "exact", head: true });
+      const cloudCountText = Number.isFinite(cloudQuestionCount) ? `, 클라우드 확인 ${cloudQuestionCount}개` : "";
+      setCloudStatus(`업로드 완료: 시험 ${examRows.length}개, 이 기기 문제 ${questionRows.length}개${cloudCountText}`);
     }
 
     async function downloadCloud() {
@@ -1912,11 +1916,28 @@
         };
       });
 
-      state.activeExamId = state.exams[0].id;
+      state.activeExamId = pickExamWithMostQuestions();
       currentIndex = 0;
       persist();
       render();
-      setCloudStatus(`가져오기 완료: 시험 ${state.exams.length}개, 문제 ${state.questions.length}개`);
+      setCloudStatus(`가져오기 완료: 전체 ${state.questions.length}개 · ${questionCountSummary()}`);
+    }
+
+    function pickExamWithMostQuestions() {
+      if (!state.exams.length) return DEFAULT_EXAM_ID;
+      const counts = state.exams.map(exam => ({
+        id: exam.id,
+        count: state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) === exam.id).length
+      }));
+      counts.sort((a, b) => b.count - a.count);
+      return counts[0]?.id || state.exams[0].id;
+    }
+
+    function questionCountSummary() {
+      return state.exams.map(exam => {
+        const count = state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) === exam.id).length;
+        return `${exam.name} ${count}개`;
+      }).join(", ");
     }
 
     function buildCloudMemo(question) {
