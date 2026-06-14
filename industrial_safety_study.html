@@ -1359,6 +1359,8 @@
     const STORAGE_KEY = "examStudyApp.v2";
     const CLOUD_CONFIG_KEY = "examStudyApp.supabase.v1";
     const OLD_STORAGE_KEYS = ["industrialSafetyPracticalStudy.v1"];
+    const CLOUD_SYNC_START = "\n\n<!--EXAM_STUDY_SYNC:";
+    const CLOUD_SYNC_END = "-->";
     const DEFAULT_EXAMS = [
       {
         id: DEFAULT_EXAM_ID,
@@ -1844,7 +1846,7 @@
         level: q.level || "중",
         question: q.question || "",
         answer: q.answer || "",
-        memo: q.memo || "",
+        memo: buildCloudMemo(q),
         status: q.status || "new",
         wrong_count: q.wrongCount || 0,
         mastered_at: q.masteredAt || null,
@@ -1890,24 +1892,69 @@
       }));
       if (!state.exams.length) state.exams = [...DEFAULT_EXAMS];
 
-      state.questions = (questions || []).map(row => ({
-        id: row.id,
-        examId: row.exam_id,
-        category: row.category,
-        level: row.level,
-        question: row.question,
-        answer: row.answer,
-        memo: row.memo || "",
-        status: row.status || "new",
-        wrongCount: row.wrong_count || 0,
-        masteredAt: row.mastered_at || ""
-      }));
+      state.questions = (questions || []).map(row => {
+        const cloudMemo = parseCloudMemo(row.memo || "");
+        return {
+          id: row.id,
+          examId: row.exam_id,
+          category: row.category,
+          level: row.level,
+          question: row.question,
+          answer: row.answer,
+          memo: cloudMemo.memo,
+          questionImage: cloudMemo.payload.questionImage || "",
+          imageName: cloudMemo.payload.imageName || "",
+          answerImage: cloudMemo.payload.answerImage || "",
+          answerImageName: cloudMemo.payload.answerImageName || "",
+          status: row.status || "new",
+          wrongCount: row.wrong_count || 0,
+          masteredAt: row.mastered_at || ""
+        };
+      });
 
       state.activeExamId = state.exams[0].id;
       currentIndex = 0;
       persist();
       render();
       setCloudStatus(`가져오기 완료: 시험 ${state.exams.length}개, 문제 ${state.questions.length}개`);
+    }
+
+    function buildCloudMemo(question) {
+      const cleanMemo = stripCloudPayload(question.memo || "");
+      const payload = {
+        questionImage: question.questionImage || "",
+        imageName: question.imageName || "",
+        answerImage: question.answerImage || "",
+        answerImageName: question.answerImageName || ""
+      };
+      const hasPayload = Object.values(payload).some(Boolean);
+      if (!hasPayload) return cleanMemo;
+      return `${cleanMemo}${CLOUD_SYNC_START}${encodeURIComponent(JSON.stringify(payload))}${CLOUD_SYNC_END}`;
+    }
+
+    function parseCloudMemo(memo) {
+      const source = String(memo || "");
+      const start = source.indexOf(CLOUD_SYNC_START);
+      if (start < 0) return { memo: source, payload: {} };
+
+      const payloadStart = start + CLOUD_SYNC_START.length;
+      const end = source.indexOf(CLOUD_SYNC_END, payloadStart);
+      if (end < 0) return { memo: source, payload: {} };
+
+      const visibleMemo = `${source.slice(0, start)}${source.slice(end + CLOUD_SYNC_END.length)}`.trim();
+      try {
+        return {
+          memo: visibleMemo,
+          payload: JSON.parse(decodeURIComponent(source.slice(payloadStart, end)))
+        };
+      } catch (error) {
+        console.warn("Failed to parse cloud sync payload.", error);
+        return { memo: visibleMemo, payload: {} };
+      }
+    }
+
+    function stripCloudPayload(memo) {
+      return parseCloudMemo(memo).memo;
     }
 
     function renderStats() {
