@@ -620,16 +620,16 @@
     }
 
     .bank-panel {
-      display: none;
+      display: none !important;
     }
 
     .bank-panel.active {
-      display: block;
+      display: block !important;
     }
 
     .form-grid.bank-panel.active,
     .theory-grid.bank-panel.active {
-      display: grid;
+      display: grid !important;
     }
 
     .step-controls {
@@ -1212,7 +1212,7 @@
       <nav class="nav" aria-label="화면 전환">
         <button class="active" data-view-btn="study">▣ 학습</button>
         <button data-view-btn="wrong">※ 오답노트</button>
-        <button data-view-btn="bank">☰ 문제작성</button>
+        <button data-view-btn="bank">☰ 작성</button>
         <button data-view-btn="more">⋯ 더보기</button>
       </nav>
       <div class="stats">
@@ -1298,7 +1298,7 @@
                 </label>
               </div>
               <div class="notice">
-                문제 데이터는 브라우저 저장소에만 저장됩니다. 다른 PC로 옮기려면 문제작성에서 CSV로 내보내세요.
+                문제 데이터는 브라우저 저장소에만 저장됩니다. 다른 PC로 옮기려면 작성에서 CSV로 내보내세요.
               </div>
               <h2 class="mini-title">오늘의 큐</h2>
               <div id="queueList" class="list"></div>
@@ -2410,7 +2410,7 @@
       els.showAnswerBtn.textContent = "문제로 만들기";
 
       if (!current) {
-        els.questionText.innerHTML = formatQuestionHtml("문제작성에서 이론을 정리하면 여기서 학습할 수 있습니다.");
+        els.questionText.innerHTML = formatQuestionHtml("작성에서 이론을 정리하면 여기서 학습할 수 있습니다.");
         els.answerText.innerHTML = "";
         els.answerText.classList.remove("visible");
         return;
