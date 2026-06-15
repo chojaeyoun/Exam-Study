@@ -1533,6 +1533,7 @@
     const DEFAULT_EXAM_ID = "industrial-practical";
     const STORAGE_KEY = "examStudyApp.v2";
     const CLOUD_CONFIG_KEY = "examStudyApp.supabase.v1";
+    const BUILTIN_QUESTION_SEED_KEY = "examStudyApp.builtinQuestions.2020-1.v1";
     const BUILTIN_THEORY_SEED_KEY = "examStudyApp.builtinTheories.v2";
     const OLD_STORAGE_KEYS = ["industrialSafetyPracticalStudy.v1"];
     const CLOUD_SYNC_START = "\n\n<!--EXAM_STUDY_SYNC:";
@@ -1595,6 +1596,107 @@
         status: "new",
         wrongCount: 0,
         masteredAt: ""
+      }
+    ];
+
+    const builtinQuestionSeeds = [
+      {
+        category: "2020년 1차 기출",
+        level: "중",
+        question: "달기체인 등의 사용금지 규정 3가지를 쓰시오.",
+        answer: "1. 달기체인의 길이가 제조 당시 길이의 5%를 초과한 경우\n2. 링의 단면지름이 제조 당시 지름의 10%를 초과하여 감소한 경우\n3. 균열이 있거나 심하게 변형된 경우",
+        memo: "출처: 2020년 1차 1번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "중",
+        question: "기상 악화 후 작업 중지 또는 비계 조립·해체 후 작업 시 점검 및 보수해야 할 항목 5가지를 쓰시오.",
+        answer: "1. 손잡이의 탈락 여부\n2. 발판재료의 손상 및 부착 상태\n3. 연결재료와 철물의 손상 및 부식 상태\n4. 기둥의 침하, 변형, 변위, 흔들림 상태\n5. 비계 연결부 및 접속부 풀림 상태",
+        memo: "출처: 2020년 1차 2번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "중",
+        question: "누전에 의한 감전 위험을 방지하기 위해 접지가 필요한 코드와 플러그를 사용하는 전기 기계·기구 5가지를 쓰시오.",
+        answer: "1. 사용전압이 대지전압 150V를 넘는 기구\n2. 냉장고, 세탁기, 컴퓨터 등 고정형 기구\n3. 고정형, 이동형, 휴대형 전동기계\n4. 도전성이 높은 곳에서 사용하는 기구\n5. 휴대형 손전등",
+        memo: "출처: 2020년 1차 3번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "중",
+        question: "사업장 안전보건 관리규정에 포함할 사항 4가지를 쓰시오.",
+        answer: "1. 안전 및 보건 관리조직과 직무\n2. 안전보건교육\n3. 작업장 안전 및 보건 관리\n4. 사고조사 및 대책수립",
+        memo: "출처: 2020년 1차 4번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "중",
+        question: "로봇작업에 대한 특별안전보건교육 내용 4가지를 쓰시오.",
+        answer: "1. 로봇의 기본원리·구조 및 작업방법에 관한 사항\n2. 이상 발생 시 응급조치에 관한 사항\n3. 안전시설 및 안전기준에 관한 사항\n4. 조작방법 및 작업순서에 관한 사항",
+        memo: "출처: 2020년 1차 5번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "상",
+        question: "유해위험방지계획서 제출 대상사업의 종류를 쓰시오.",
+        answer: "반도체 제조업, 전자부품 제조업, 가구 제조업, 1차 금속 제조업, 식료품 제조업, 화학물질 및 화학제품 제조업, 목재 및 나무제품 제조업, 기타 제품 제조업, 자동차 및 트레일러 제조업, 기타 기계 및 장비 제조업, 고무제품 및 플라스틱제품 제조업, 금속가공제품 제조업(기계 및 가구 제외), 비금속 광물제품 제조업",
+        memo: "출처: 2020년 1차 6번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "상",
+        question: "롤러기 급정지장치의 앞면 롤러 표면속도에 따른 안전거리를 채우시오. ① (a)m/min 미만: 앞면 롤러 원주의 (b), ② (c)m/min 이상: 앞면 롤러 원주의 (d).",
+        answer: "a: 30\nb: 1/3 이내\nc: 30\nd: 1/2.5 이내",
+        memo: "출처: 2020년 1차 7번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "중",
+        question: "과압에 따른 폭발 방지를 위한 안전밸브 또는 파열판 설치 대상 설비 3가지를 쓰시오.",
+        answer: "1. 정변위 압축기\n2. 정변위 펌프(토출측에 차단밸브가 설치된 경우에 해당)\n3. 화학설비 및 부속설비 중 최고사용압력을 초과할 우려가 있는 것\n4. 2개 이상의 밸브에 의해 차단되어 대기온도에서 액체의 열팽창에 의해 파열될 우려가 있는 배관\n5. 압력용기",
+        memo: "출처: 2020년 1차 8번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "하",
+        question: "출입금지표지를 그리고 색을 쓰시오.",
+        answer: "1. 바탕 흰색\n2. 도형 빨간색\n3. 화살표 검은색",
+        memo: "출처: 2020년 1차 9번. 원문은 표지 그림 작성 문제이며, 앱에는 색상 답안 중심으로 정리함."
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "중",
+        question: "중량물 취급 작업계획서에 포함되어야 할 내용 3가지를 쓰시오.",
+        answer: "1. 추락 위험을 예방하기 위한 안전 대책\n2. 낙하 위험을 예방하기 위한 안전 대책\n3. 전도 위험을 예방하기 위한 안전 대책\n4. 협착 위험을 예방하기 위한 안전 대책\n5. 붕괴 위험을 예방하기 위한 안전 대책",
+        memo: "출처: 2020년 1차 10번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "중",
+        question: "아세틸렌 발생기 설치에 관하여 빈칸을 채우시오. 발생기실은 건물의 (a)에 위치해야 하며, 화기를 사용하는 설비로부터 (b)m를 초과하는 장소에 설치해야 한다. 발생기실을 옥외에 설치한 경우에는 개구부를 다른 건축물로부터 (c)m 이상 떨어지도록 해야 한다.",
+        answer: "a: 최상층\nb: 3\nc: 1.5",
+        memo: "출처: 2020년 1차 11번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "하",
+        question: "강도율의 의미를 쓰시오.",
+        answer: "근로시간 1,000시간당 재해로 인한 근로손실일수",
+        memo: "출처: 2020년 1차 12번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "상",
+        question: "다음 조건에서 900시간 가동 시 고장확률을 구하시오. 조건: 고장건수 10건, 총가동시간 10,000시간.",
+        answer: "1. 고장률(λ) = 10 / 10000 = 0.001\n2. 고장확률 F(t) = 1 - 신뢰도 R(t)\n3. 신뢰도 R(t) = exp(-λt) = exp(-0.001 × 900) = 0.41\n4. 고장확률 F(t) = 1 - 0.41 = 0.59",
+        memo: "출처: 2020년 1차 13번"
+      },
+      {
+        category: "2020년 1차 기출",
+        level: "상",
+        question: "안전성평가를 순서대로 나열하시오. ① 정성적평가 ② 재평가 ③ FTA 재평가 ④ 대책검토 ⑤ 자료정비 ⑥ 정량적평가",
+        answer: "⑤ 자료정비 → ① 정성적평가 → ⑥ 정량적평가 → ④ 대책검토 → ② 재평가 → ③ FTA 재평가",
+        memo: "출처: 2020년 1차 14번"
       }
     ];
 
@@ -1930,6 +2032,7 @@
     });
 
     initCloudInputs();
+    seedBuiltinQuestions();
     seedBuiltinTheories();
     render();
     setupPwa();
@@ -2092,6 +2195,37 @@
 
     function persist() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function seedBuiltinQuestions() {
+      if (localStorage.getItem(BUILTIN_QUESTION_SEED_KEY)) return;
+      if (!state.questions) state.questions = [];
+      const existing = new Set(state.questions.map(question => {
+        return `${question.examId || DEFAULT_EXAM_ID}|${question.category}|${question.question}`;
+      }));
+      const created = [];
+      builtinQuestionSeeds.forEach((seed, index) => {
+        const key = `${DEFAULT_EXAM_ID}|${seed.category}|${seed.question}`;
+        if (existing.has(key)) return;
+        existing.add(key);
+        created.push({
+          id: `builtin-question-2020-1-${index + 1}`,
+          examId: DEFAULT_EXAM_ID,
+          category: seed.category,
+          level: seed.level,
+          question: seed.question,
+          answer: seed.answer,
+          memo: seed.memo,
+          status: "new",
+          wrongCount: 0,
+          masteredAt: ""
+        });
+      });
+      if (created.length) {
+        state.questions.push(...created);
+        persist();
+      }
+      localStorage.setItem(BUILTIN_QUESTION_SEED_KEY, "done");
     }
 
     function seedBuiltinTheories() {
