@@ -1528,12 +1528,13 @@
     </main>
   </div>
 
+  <script src="./industrial_safety_past_questions.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const DEFAULT_EXAM_ID = "industrial-practical";
     const STORAGE_KEY = "examStudyApp.v2";
     const CLOUD_CONFIG_KEY = "examStudyApp.supabase.v1";
-    const BUILTIN_QUESTION_SEED_KEY = "examStudyApp.builtinQuestions.2020-1.v1";
+    const BUILTIN_QUESTION_SEED_KEY = "examStudyApp.builtinQuestions.2020-2024.v1";
     const BUILTIN_THEORY_SEED_KEY = "examStudyApp.builtinTheories.v2";
     const OLD_STORAGE_KEYS = ["industrialSafetyPracticalStudy.v1"];
     const CLOUD_SYNC_START = "\n\n<!--EXAM_STUDY_SYNC:";
@@ -1699,6 +1700,7 @@
         memo: "출처: 2020년 1차 14번"
       }
     ];
+    builtinQuestionSeeds.push(...(window.EXAM_STUDY_PAST_QUESTION_SEEDS || []));
 
     const builtinTheorySeeds = [
       {
