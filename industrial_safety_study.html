@@ -77,6 +77,10 @@
       display: none;
     }
 
+    .hidden {
+      display: none !important;
+    }
+
     input, textarea, select {
       width: 100%;
       border: 1px solid var(--line);
@@ -386,6 +390,26 @@
       font-weight: 700;
     }
 
+    .mode-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .mode-tabs button {
+      min-height: 36px;
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.18);
+      color: #f7fbfa;
+    }
+
+    .mode-tabs button.active {
+      background: #f3b24f;
+      border-color: #f3b24f;
+      color: #203033;
+    }
+
     .progress-box {
       display: grid;
       gap: 8px;
@@ -579,6 +603,33 @@
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
+    }
+
+    .compose-tabs {
+      padding: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .compose-tabs button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .bank-panel {
+      display: none;
+    }
+
+    .bank-panel.active {
+      display: block;
+    }
+
+    .form-grid.bank-panel.active,
+    .theory-grid.bank-panel.active {
+      display: grid;
     }
 
     .step-controls {
@@ -1160,7 +1211,6 @@
       <button id="addExamBtn" class="exam-add" type="button">+ 시험 추가</button>
       <nav class="nav" aria-label="화면 전환">
         <button class="active" data-view-btn="study">▣ 학습</button>
-        <button data-view-btn="theory">◇ 이론정리</button>
         <button data-view-btn="wrong">※ 오답노트</button>
         <button data-view-btn="bank">☰ 문제작성</button>
         <button data-view-btn="more">⋯ 더보기</button>
@@ -1193,6 +1243,10 @@
               <div class="summary-chip"><b id="summaryTotal">0</b><span>전체</span></div>
               <div class="summary-chip"><b id="summaryWrong">0</b><span>오답</span></div>
               <div class="summary-chip"><b id="summaryMastered">0</b><span>완료</span></div>
+            </div>
+            <div class="mode-tabs" aria-label="학습 방식 선택">
+              <button id="studyQuestionModeBtn" class="active" type="button">문제 학습</button>
+              <button id="studyTheoryModeBtn" type="button">이론 학습</button>
             </div>
           </div>
           <div class="progress-box" aria-label="암기 진행률">
@@ -1253,36 +1307,6 @@
         </div>
       </section>
 
-      <section class="view" data-view="theory">
-        <div class="theory-grid">
-          <form id="theoryForm" class="panel form-grid">
-            <input type="hidden" id="theoryEditId">
-            <h2 class="mini-title wide">이론 정리</h2>
-            <label>분야
-              <input id="theoryCategoryInput" placeholder="예: 안전관리, 전기, 작업형">
-            </label>
-            <label>제목
-              <input id="theoryTitleInput" required placeholder="이론 제목을 입력하세요.">
-            </label>
-            <label class="wide">내용
-              <textarea id="theoryContentInput" required placeholder="핵심 개념, 공식, 암기 포인트를 정리하세요."></textarea>
-            </label>
-            <label class="wide">문제화 힌트
-              <textarea id="theoryPromptInput" placeholder="예: 위험성평가 절차를 순서대로 쓰시오. 비워두면 제목으로 자동 생성됩니다."></textarea>
-            </label>
-            <div class="wide actions">
-              <button class="primary" type="submit">이론 저장</button>
-              <button type="button" id="clearTheoryBtn">새 이론</button>
-            </div>
-          </form>
-
-          <div class="panel side-panel">
-            <h2 class="mini-title">정리한 이론</h2>
-            <div id="theoryList" class="theory-list"></div>
-          </div>
-        </div>
-      </section>
-
       <section class="view" data-view="wrong">
         <div class="panel side-panel">
           <h2 class="mini-title">오답노트</h2>
@@ -1291,7 +1315,12 @@
       </section>
 
       <section class="view" data-view="bank">
-        <form id="questionForm" class="panel form-grid">
+        <div class="panel compose-tabs" aria-label="작성 방식 선택">
+          <button id="composeQuestionModeBtn" class="active" type="button">문제 작성</button>
+          <button id="composeTheoryModeBtn" type="button">이론 정리</button>
+        </div>
+
+        <form id="questionForm" class="panel form-grid bank-panel active" data-bank-panel="question">
           <input type="hidden" id="editId">
           <div id="ocrBox" class="wide ocr-box collapsed">
             <div class="ocr-header">
@@ -1340,7 +1369,8 @@
             <button type="button" id="exportBtn">CSV 내보내기</button>
           </div>
         </form>
-        <div class="panel table-wrap">
+
+        <div class="panel table-wrap bank-panel active" data-bank-panel="question">
           <table>
             <thead>
               <tr>
@@ -1353,6 +1383,34 @@
             </thead>
             <tbody id="bankTable"></tbody>
           </table>
+        </div>
+
+        <div class="theory-grid bank-panel" data-bank-panel="theory">
+          <form id="theoryForm" class="panel form-grid">
+            <input type="hidden" id="theoryEditId">
+            <h2 class="mini-title wide">이론 정리</h2>
+            <label>분야
+              <input id="theoryCategoryInput" placeholder="예: 안전관리, 전기, 작업형">
+            </label>
+            <label>제목
+              <input id="theoryTitleInput" required placeholder="이론 제목을 입력하세요.">
+            </label>
+            <label class="wide">내용
+              <textarea id="theoryContentInput" required placeholder="핵심 개념, 공식, 암기 포인트를 정리하세요."></textarea>
+            </label>
+            <label class="wide">문제화 힌트
+              <textarea id="theoryPromptInput" placeholder="예: 위험성평가 절차를 순서대로 쓰시오. 비워두면 제목으로 자동 생성됩니다."></textarea>
+            </label>
+            <div class="wide actions">
+              <button class="primary" type="submit">이론 저장</button>
+              <button type="button" id="clearTheoryBtn">새 이론</button>
+            </div>
+          </form>
+
+          <div class="panel side-panel">
+            <h2 class="mini-title">정리한 이론</h2>
+            <div id="theoryList" class="theory-list"></div>
+          </div>
         </div>
       </section>
 
@@ -1444,7 +1502,10 @@
     const state = loadState();
     const cloudConfig = loadCloudConfig();
     let currentIndex = 0;
+    let currentTheoryIndex = 0;
     let activeView = "study";
+    let studyMode = "question";
+    let composeMode = "question";
     let deferredInstallPrompt = null;
     let supabaseClient = null;
     let pendingPhotoQuestions = [];
@@ -1501,6 +1562,8 @@
       summaryMastered: document.querySelector("#summaryMastered"),
       progressLabel: document.querySelector("#progressLabel"),
       progressFill: document.querySelector("#progressFill"),
+      studyQuestionModeBtn: document.querySelector("#studyQuestionModeBtn"),
+      studyTheoryModeBtn: document.querySelector("#studyTheoryModeBtn"),
       examTabs: document.querySelector("#examTabs"),
       addExamBtn: document.querySelector("#addExamBtn"),
       openDrawerBtn: document.querySelector("#openDrawerBtn"),
@@ -1531,6 +1594,8 @@
       statusFilter: document.querySelector("#statusFilter"),
       queueList: document.querySelector("#queueList"),
       wrongList: document.querySelector("#wrongList"),
+      composeQuestionModeBtn: document.querySelector("#composeQuestionModeBtn"),
+      composeTheoryModeBtn: document.querySelector("#composeTheoryModeBtn"),
       theoryForm: document.querySelector("#theoryForm"),
       theoryEditId: document.querySelector("#theoryEditId"),
       theoryCategoryInput: document.querySelector("#theoryCategoryInput"),
@@ -1600,7 +1665,11 @@
     els.shuffleBtn.addEventListener("click", shuffleQuestions);
     els.resetBtn.addEventListener("click", resetProgress);
     els.toggleRangeBtn.addEventListener("click", toggleStudyRange);
-    els.showAnswerBtn.addEventListener("click", () => els.answerText.classList.toggle("visible"));
+    els.studyQuestionModeBtn.addEventListener("click", () => setStudyMode("question"));
+    els.studyTheoryModeBtn.addEventListener("click", () => setStudyMode("theory"));
+    els.composeQuestionModeBtn.addEventListener("click", () => setComposeMode("question"));
+    els.composeTheoryModeBtn.addEventListener("click", () => setComposeMode("theory"));
+    els.showAnswerBtn.addEventListener("click", handlePrimaryStudyAction);
     els.prevBtn.addEventListener("click", () => moveCard(-1));
     els.nextBtn.addEventListener("click", () => moveCard(1));
     els.wrongBtn.addEventListener("click", markWrong);
@@ -1809,6 +1878,17 @@
         const statusOk = status === "all" || q.status === status;
         const searchOk = !search || text.includes(search);
         return examOk && categoryOk && statusOk && searchOk;
+      });
+    }
+
+    function filteredTheories() {
+      const search = els.searchInput.value.trim().toLowerCase();
+      const category = els.categoryFilter.value;
+      return currentExamTheories().filter(theory => {
+        const text = [theory.category, theory.title, theory.content, theory.prompt].join(" ").toLowerCase();
+        const categoryOk = !category || category === "all" || theory.category === category;
+        const searchOk = !search || text.includes(search);
+        return categoryOk && searchOk;
       });
     }
 
@@ -2170,13 +2250,14 @@
 
     function renderStats() {
       const questions = currentExamQuestions();
+      const theories = currentExamTheories();
       const mastered = questions.filter(q => q.status === "mastered").length;
       const wrong = questions.filter(q => q.status === "wrong").length;
       const progress = questions.length ? Math.round((mastered / questions.length) * 100) : 0;
       const exam = currentExam();
 
       els.currentExamTitle.textContent = exam?.name || "시험 공부";
-      els.studySummaryText.textContent = `${questions.length}문제 중 ${mastered}문제 암기 완료, ${wrong}문제 오답 표시`;
+      els.studySummaryText.textContent = `${questions.length}문제 · ${theories.length}개 이론, ${mastered}문제 암기 완료, ${wrong}문제 오답 표시`;
       els.summaryTotal.textContent = questions.length;
       els.summaryWrong.textContent = wrong;
       els.summaryMastered.textContent = mastered;
@@ -2189,7 +2270,9 @@
 
     function renderFilters() {
       const selected = els.categoryFilter.value || "all";
-      const categories = [...new Set(currentExamQuestions().map(q => q.category).filter(Boolean))].sort();
+      const questionCategories = currentExamQuestions().map(q => q.category).filter(Boolean);
+      const theoryCategories = currentExamTheories().map(theory => theory.category).filter(Boolean);
+      const categories = [...new Set([...questionCategories, ...theoryCategories])].sort();
       els.categoryFilter.innerHTML = `<option value="all">전체</option>` + categories.map(category => {
         return `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`;
       }).join("");
@@ -2266,6 +2349,12 @@
     }
 
     function renderStudy() {
+      renderStudyModeButtons();
+      if (studyMode === "theory") {
+        renderTheoryStudy();
+        return;
+      }
+
       const questions = filteredQuestions();
       if (currentIndex >= questions.length) currentIndex = Math.max(0, questions.length - 1);
       const current = questions[currentIndex];
@@ -2280,6 +2369,10 @@
         els.answerText.innerHTML = "";
         els.answerText.classList.remove("visible");
         els.myAnswer.value = "";
+        els.myAnswer.classList.remove("hidden");
+        els.showAnswerBtn.textContent = "정답 보기";
+        els.wrongBtn.classList.remove("hidden");
+        els.masterBtn.classList.remove("hidden");
         return;
       }
 
@@ -2289,6 +2382,48 @@
       els.answerText.innerHTML = formatAnswerCardHtml(current);
       els.answerText.classList.remove("visible");
       els.myAnswer.value = "";
+      els.myAnswer.classList.remove("hidden");
+      els.showAnswerBtn.textContent = "정답 보기";
+      els.wrongBtn.classList.remove("hidden");
+      els.masterBtn.classList.remove("hidden");
+    }
+
+    function renderTheoryStudy() {
+      const theories = filteredTheories();
+      if (currentTheoryIndex >= theories.length) currentTheoryIndex = Math.max(0, theories.length - 1);
+      const current = theories[currentTheoryIndex];
+
+      els.cardIndex.textContent = `${theories.length ? currentTheoryIndex + 1 : 0} / ${theories.length}`;
+      els.queueList.innerHTML = theories.slice(0, 8).map((theory, index) => {
+        return `<article class="item">
+          <h3>${index + 1}. ${escapeHtml(theory.title)}</h3>
+          <p>${escapeHtml(theory.category || "미분류")} · 이론</p>
+        </article>`;
+      }).join("") || `<div class="empty">표시할 이론이 없습니다.</div>`;
+
+      els.cardType.textContent = current?.category || "분야";
+      els.cardLevel.textContent = "이론";
+      els.myAnswer.value = "";
+      els.myAnswer.classList.add("hidden");
+      els.wrongBtn.classList.add("hidden");
+      els.masterBtn.classList.add("hidden");
+      els.showAnswerBtn.textContent = "문제로 만들기";
+
+      if (!current) {
+        els.questionText.innerHTML = formatQuestionHtml("문제작성에서 이론을 정리하면 여기서 학습할 수 있습니다.");
+        els.answerText.innerHTML = "";
+        els.answerText.classList.remove("visible");
+        return;
+      }
+
+      els.questionText.innerHTML = [
+        `<p class="question-main">${escapeHtml(current.title)}</p>`,
+        `<p class="question-paragraph">${escapeHtml(current.content)}</p>`
+      ].join("");
+      els.answerText.innerHTML = current.prompt
+        ? `<p class="question-paragraph">문제화 힌트: ${escapeHtml(current.prompt)}</p>`
+        : `<p class="question-paragraph">이 이론을 문제로 만들면 제목을 기준으로 자동 질문을 생성합니다.</p>`;
+      els.answerText.classList.add("visible");
     }
 
     function queueItem(q, index) {
@@ -2302,6 +2437,7 @@
 
     function renderTheories() {
       const theories = currentExamTheories();
+      setComposeMode(composeMode);
       els.theoryList.innerHTML = theories.map(theory => {
         const relatedCount = currentExamQuestions().filter(q => q.category === theory.category).length;
         return `<article class="theory-card">
@@ -2368,7 +2504,8 @@
       els.theoryTitleInput.value = theory.title || "";
       els.theoryContentInput.value = theory.content || "";
       els.theoryPromptInput.value = theory.prompt || "";
-      setView("theory");
+      setView("bank");
+      setComposeMode("theory");
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -2400,6 +2537,7 @@
       currentIndex = 0;
       els.categoryFilter.value = question.category;
       els.statusFilter.value = "all";
+      setStudyMode("question");
       setView("study");
       renderStudy();
     }
@@ -2411,6 +2549,7 @@
       els.categoryFilter.value = [...els.categoryFilter.options].some(option => option.value === theory.category) ? theory.category : "all";
       els.statusFilter.value = "all";
       currentIndex = 0;
+      setStudyMode("question");
       setView("study");
       renderStudy();
     }
@@ -2471,6 +2610,29 @@
       document.querySelectorAll("[data-view-btn]").forEach(button => button.classList.toggle("active", button.dataset.viewBtn === name));
     }
 
+    function setStudyMode(mode) {
+      studyMode = mode;
+      if (mode === "question") currentIndex = Math.max(0, currentIndex);
+      if (mode === "theory") currentTheoryIndex = Math.max(0, currentTheoryIndex);
+      renderStudyModeButtons();
+      renderStudy();
+    }
+
+    function renderStudyModeButtons() {
+      els.studyQuestionModeBtn.classList.toggle("active", studyMode === "question");
+      els.studyTheoryModeBtn.classList.toggle("active", studyMode === "theory");
+      els.statusFilter.disabled = studyMode === "theory";
+    }
+
+    function setComposeMode(mode) {
+      composeMode = mode;
+      els.composeQuestionModeBtn.classList.toggle("active", mode === "question");
+      els.composeTheoryModeBtn.classList.toggle("active", mode === "theory");
+      document.querySelectorAll("[data-bank-panel]").forEach(panel => {
+        panel.classList.toggle("active", panel.dataset.bankPanel === mode);
+      });
+    }
+
     function setMorePanel(name) {
       document.querySelectorAll("[data-more-panel]").forEach(panel => panel.classList.toggle("active", panel.dataset.morePanel === name));
       document.querySelectorAll("[data-more-btn]").forEach(button => button.classList.toggle("active", button.dataset.moreBtn === name));
@@ -2502,13 +2664,30 @@
     }
 
     function moveCard(delta) {
+      if (studyMode === "theory") {
+        const count = filteredTheories().length;
+        if (!count) return;
+        currentTheoryIndex = (currentTheoryIndex + delta + count) % count;
+        renderStudy();
+        return;
+      }
       const count = filteredQuestions().length;
       if (!count) return;
       currentIndex = (currentIndex + delta + count) % count;
       renderStudy();
     }
 
+    function handlePrimaryStudyAction() {
+      if (studyMode === "theory") {
+        const theory = filteredTheories()[currentTheoryIndex];
+        if (theory) createQuestionFromTheory(theory.id);
+        return;
+      }
+      els.answerText.classList.toggle("visible");
+    }
+
     function getCurrentQuestion() {
+      if (studyMode !== "question") return null;
       return filteredQuestions()[currentIndex];
     }
 
