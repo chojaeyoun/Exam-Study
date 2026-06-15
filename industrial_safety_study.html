@@ -819,6 +819,51 @@
       overflow: auto;
     }
 
+    .manage-head {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafb;
+    }
+
+    .manage-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .quick-edit-row td {
+      background: #f7fbfa;
+      padding: 0;
+    }
+
+    .quick-edit-form {
+      display: grid;
+      grid-template-columns: 1fr 140px;
+      gap: 12px;
+      padding: 14px;
+      border-left: 5px solid var(--accent);
+    }
+
+    .quick-edit-form .wide {
+      grid-column: 1 / -1;
+    }
+
+    .quick-edit-form textarea {
+      min-height: 84px;
+    }
+
+    .quick-edit-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -1440,12 +1485,17 @@
 
         <div class="bank-panel" data-bank-panel="manage">
           <div class="panel table-wrap">
+            <div class="manage-head">
+              <p id="bankSummary">전체 문제 0개</p>
+              <button id="clearBankSearchBtn" type="button">검색 초기화</button>
+            </div>
             <table>
               <thead>
                 <tr>
                   <th>분야</th>
                   <th>중요도</th>
                   <th>문제</th>
+                  <th>정답</th>
                   <th>상태</th>
                   <th>관리</th>
                 </tr>
@@ -1555,6 +1605,7 @@
     let activeView = "study";
     let studyMode = "question";
     let composeMode = "question";
+    let quickEditId = "";
     let deferredInstallPrompt = null;
     let supabaseClient = null;
     let pendingPhotoQuestions = [];
@@ -1951,6 +2002,8 @@
       clearFormBtn: document.querySelector("#clearFormBtn"),
       exportBtn: document.querySelector("#exportBtn"),
       bankTable: document.querySelector("#bankTable"),
+      bankSummary: document.querySelector("#bankSummary"),
+      clearBankSearchBtn: document.querySelector("#clearBankSearchBtn"),
       csvFile: document.querySelector("#csvFile"),
       pickCsvBtn: document.querySelector("#pickCsvBtn"),
       loadSampleBtn: document.querySelector("#loadSampleBtn"),
@@ -2009,6 +2062,7 @@
     els.questionForm.addEventListener("submit", saveQuestion);
     els.clearFormBtn.addEventListener("click", clearForm);
     els.exportBtn.addEventListener("click", exportCsv);
+    els.clearBankSearchBtn.addEventListener("click", clearBankSearch);
     els.toggleOcrBtn.addEventListener("click", toggleOcrBox);
     els.pickPhotoBtn.addEventListener("click", () => els.photoFile.click());
     els.photoFile.addEventListener("change", readQuestionPhoto);
@@ -2978,23 +3032,88 @@
     }
 
     function renderBank() {
-      els.bankTable.innerHTML = currentExamQuestions().map(q => {
+      const questions = filteredQuestions();
+      const total = currentExamQuestions().length;
+      const isFiltered =
+        Boolean(els.searchInput.value.trim()) ||
+        (els.categoryFilter.value && els.categoryFilter.value !== "all") ||
+        (els.statusFilter.value && els.statusFilter.value !== "all");
+      els.bankSummary.textContent = isFiltered
+        ? `검색 결과 ${questions.length}개 / 전체 ${total}개`
+        : `전체 문제 ${total}개`;
+      els.clearBankSearchBtn.classList.toggle("hidden", !isFiltered);
+
+      els.bankTable.innerHTML = questions.map(q => {
         const status = q.status === "wrong" ? "오답" : q.status === "mastered" ? "암기 완료" : "미학습";
+        const answerPreview = q.answer || q.answerImageName || "";
+        const quickEdit = quickEditId === q.id ? quickEditRow(q) : "";
         return `<tr>
           <td>${escapeHtml(q.category || "미분류")}</td>
           <td>${escapeHtml(q.level || "중")}</td>
           <td>${escapeHtml(q.question)}</td>
+          <td>${escapeHtml(answerPreview)}</td>
           <td>${status}</td>
           <td>
-            <button data-edit="${q.id}">수정</button>
+            <button data-quick-edit="${q.id}">빠른 수정</button>
+            <button data-edit="${q.id}">전체 수정</button>
             <button data-delete="${q.id}" class="danger">삭제</button>
           </td>
-        </tr>`;
-      }).join("") || `<tr><td colspan="5" class="empty">작성한 문제가 없습니다.</td></tr>`;
+        </tr>${quickEdit}`;
+      }).join("") || `<tr><td colspan="6" class="empty">${isFiltered ? "검색 결과가 없습니다." : "작성한 문제가 없습니다."}</td></tr>`;
       bindListButtons(els.bankTable);
     }
 
+    function quickEditRow(q) {
+      return `<tr class="quick-edit-row">
+        <td colspan="6">
+          <div class="quick-edit-form" data-quick-form="${q.id}">
+            <label>분야
+              <input data-quick-field="category" value="${escapeHtml(q.category || "미분류")}">
+            </label>
+            <label>중요도
+              <select data-quick-field="level">
+                ${["상", "중", "하"].map(level => `<option value="${level}"${(q.level || "중") === level ? " selected" : ""}>${level}</option>`).join("")}
+              </select>
+            </label>
+            <label class="wide">문제
+              <textarea data-quick-field="question" required>${escapeHtml(q.question)}</textarea>
+            </label>
+            <label class="wide">정답
+              <textarea data-quick-field="answer" required>${escapeHtml(q.answer)}</textarea>
+            </label>
+            <label class="wide">메모
+              <textarea data-quick-field="memo">${escapeHtml(q.memo || "")}</textarea>
+            </label>
+            <div class="wide quick-edit-actions">
+              <button type="button" class="primary" data-quick-save="${q.id}">저장</button>
+              <button type="button" data-quick-cancel>취소</button>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+    }
+
     function bindListButtons(root) {
+      root.querySelectorAll("[data-quick-edit]").forEach(button => {
+        button.addEventListener("click", () => {
+          quickEditId = quickEditId === button.dataset.quickEdit ? "" : button.dataset.quickEdit;
+          renderBank();
+          requestAnimationFrame(() => {
+            const form = [...els.bankTable.querySelectorAll("[data-quick-form]")]
+              .find(item => item.dataset.quickForm === quickEditId);
+            form?.querySelector("[data-quick-field='question']")?.focus();
+          });
+        });
+      });
+      root.querySelectorAll("[data-quick-save]").forEach(button => {
+        button.addEventListener("click", () => saveQuickEdit(button));
+      });
+      root.querySelectorAll("[data-quick-cancel]").forEach(button => {
+        button.addEventListener("click", () => {
+          quickEditId = "";
+          renderBank();
+        });
+      });
       root.querySelectorAll("[data-edit]").forEach(button => {
         button.addEventListener("click", () => editQuestion(button.dataset.edit));
       });
@@ -3012,6 +3131,33 @@
           }
         });
       });
+    }
+
+    function saveQuickEdit(button) {
+      const form = button.closest("[data-quick-form]");
+      const q = state.questions.find(item => item.id === button.dataset.quickSave);
+      if (!form || !q) return;
+      q.category = form.querySelector("[data-quick-field='category']").value.trim() || "미분류";
+      q.level = form.querySelector("[data-quick-field='level']").value || "중";
+      q.question = form.querySelector("[data-quick-field='question']").value.trim();
+      q.answer = form.querySelector("[data-quick-field='answer']").value.trim();
+      q.memo = form.querySelector("[data-quick-field='memo']").value.trim();
+      if (!q.question || !q.answer) {
+        alert("문제와 정답은 비워둘 수 없습니다.");
+        return;
+      }
+      persist();
+      quickEditId = "";
+      render();
+    }
+
+    function clearBankSearch() {
+      els.searchInput.value = "";
+      els.categoryFilter.value = "all";
+      els.statusFilter.value = "all";
+      currentIndex = 0;
+      currentTheoryIndex = 0;
+      render();
     }
 
     function setView(name) {
@@ -3036,6 +3182,7 @@
 
     function setComposeMode(mode) {
       composeMode = mode;
+      if (mode !== "manage") quickEditId = "";
       els.composeQuestionModeBtn.classList.toggle("active", mode === "question");
       els.composeTheoryModeBtn.classList.toggle("active", mode === "theory");
       els.composeManageModeBtn.classList.toggle("active", mode === "manage");
