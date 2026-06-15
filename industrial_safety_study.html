@@ -1318,6 +1318,7 @@
         <div class="panel compose-tabs" aria-label="작성 방식 선택">
           <button id="composeQuestionModeBtn" class="active" type="button">문제 작성</button>
           <button id="composeTheoryModeBtn" type="button">이론 정리</button>
+          <button id="composeManageModeBtn" type="button">목록 관리</button>
         </div>
 
         <form id="questionForm" class="panel form-grid bank-panel active" data-bank-panel="question">
@@ -1370,21 +1371,6 @@
           </div>
         </form>
 
-        <div class="panel table-wrap bank-panel active" data-bank-panel="question">
-          <table>
-            <thead>
-              <tr>
-                <th>분야</th>
-                <th>중요도</th>
-                <th>문제</th>
-                <th>상태</th>
-                <th>관리</th>
-              </tr>
-            </thead>
-            <tbody id="bankTable"></tbody>
-          </table>
-        </div>
-
         <div class="theory-grid bank-panel" data-bank-panel="theory">
           <form id="theoryForm" class="panel form-grid">
             <input type="hidden" id="theoryEditId">
@@ -1406,7 +1392,23 @@
               <button type="button" id="clearTheoryBtn">새 이론</button>
             </div>
           </form>
+        </div>
 
+        <div class="bank-panel" data-bank-panel="manage">
+          <div class="panel table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>분야</th>
+                  <th>중요도</th>
+                  <th>문제</th>
+                  <th>상태</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
+              <tbody id="bankTable"></tbody>
+            </table>
+          </div>
           <div class="panel side-panel">
             <h2 class="mini-title">정리한 이론</h2>
             <div id="theoryList" class="theory-list"></div>
@@ -1596,6 +1598,7 @@
       wrongList: document.querySelector("#wrongList"),
       composeQuestionModeBtn: document.querySelector("#composeQuestionModeBtn"),
       composeTheoryModeBtn: document.querySelector("#composeTheoryModeBtn"),
+      composeManageModeBtn: document.querySelector("#composeManageModeBtn"),
       theoryForm: document.querySelector("#theoryForm"),
       theoryEditId: document.querySelector("#theoryEditId"),
       theoryCategoryInput: document.querySelector("#theoryCategoryInput"),
@@ -1669,6 +1672,7 @@
     els.studyTheoryModeBtn.addEventListener("click", () => setStudyMode("theory"));
     els.composeQuestionModeBtn.addEventListener("click", () => setComposeMode("question"));
     els.composeTheoryModeBtn.addEventListener("click", () => setComposeMode("theory"));
+    els.composeManageModeBtn.addEventListener("click", () => setComposeMode("manage"));
     els.showAnswerBtn.addEventListener("click", handlePrimaryStudyAction);
     els.prevBtn.addEventListener("click", () => moveCard(-1));
     els.nextBtn.addEventListener("click", () => moveCard(1));
@@ -2628,6 +2632,7 @@
       composeMode = mode;
       els.composeQuestionModeBtn.classList.toggle("active", mode === "question");
       els.composeTheoryModeBtn.classList.toggle("active", mode === "theory");
+      els.composeManageModeBtn.classList.toggle("active", mode === "manage");
       document.querySelectorAll("[data-bank-panel]").forEach(panel => {
         panel.classList.toggle("active", panel.dataset.bankPanel === mode);
       });
@@ -2946,6 +2951,7 @@
       els.answerInput.value = q.answer;
       els.memoInput.value = q.memo || "";
       setView("bank");
+      setComposeMode("question");
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
