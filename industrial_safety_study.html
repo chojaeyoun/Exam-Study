@@ -518,6 +518,50 @@
       font-weight: 800;
     }
 
+    .theory-study {
+      display: grid;
+      gap: 14px;
+    }
+
+    .theory-study-title {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.45;
+      font-weight: 900;
+      color: #173831;
+    }
+
+    .theory-study-body {
+      display: grid;
+      gap: 10px;
+    }
+
+    .theory-study-block {
+      margin: 0;
+      padding: 13px 14px;
+      border: 1px solid #dce8e5;
+      border-left: 5px solid var(--accent);
+      border-radius: 8px;
+      background: #fbfdfc;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      font-weight: 700;
+      color: #263d38;
+    }
+
+    .theory-study-block.key {
+      border-color: #ead29e;
+      border-left-color: var(--accent-warm);
+      background: #fffaf0;
+      color: #51401f;
+    }
+
+    .theory-study-hint {
+      margin: 0;
+      line-height: 1.6;
+      font-weight: 800;
+    }
+
     .question-photo {
       display: block;
       width: 100%;
@@ -2582,6 +2626,8 @@
         els.myAnswer.value = "";
         els.myAnswer.classList.remove("hidden");
         els.showAnswerBtn.textContent = "정답 보기";
+        els.prevBtn.textContent = "← 이전 문제";
+        els.nextBtn.textContent = "다음 문제 →";
         els.wrongBtn.classList.remove("hidden");
         els.masterBtn.classList.remove("hidden");
         return;
@@ -2595,6 +2641,8 @@
       els.myAnswer.value = "";
       els.myAnswer.classList.remove("hidden");
       els.showAnswerBtn.textContent = "정답 보기";
+      els.prevBtn.textContent = "← 이전 문제";
+      els.nextBtn.textContent = "다음 문제 →";
       els.wrongBtn.classList.remove("hidden");
       els.masterBtn.classList.remove("hidden");
     }
@@ -2619,6 +2667,8 @@
       els.wrongBtn.classList.add("hidden");
       els.masterBtn.classList.add("hidden");
       els.showAnswerBtn.textContent = "문제로 만들기";
+      els.prevBtn.textContent = "← 이전";
+      els.nextBtn.textContent = "다음 →";
 
       if (!current) {
         els.questionText.innerHTML = formatQuestionHtml("작성에서 이론을 정리하면 여기서 학습할 수 있습니다.");
@@ -2627,14 +2677,27 @@
         return;
       }
 
-      els.questionText.innerHTML = [
-        `<p class="question-main">${escapeHtml(current.title)}</p>`,
-        `<p class="question-paragraph">${escapeHtml(current.content)}</p>`
-      ].join("");
+      els.questionText.innerHTML = formatTheoryStudyHtml(current);
       els.answerText.innerHTML = current.prompt
-        ? `<p class="question-paragraph">문제화 힌트: ${escapeHtml(current.prompt)}</p>`
-        : `<p class="question-paragraph">이 이론을 문제로 만들면 제목을 기준으로 자동 질문을 생성합니다.</p>`;
+        ? `<p class="theory-study-hint">문제화 힌트: ${escapeHtml(current.prompt)}</p>`
+        : `<p class="theory-study-hint">이 이론을 문제로 만들면 제목을 기준으로 자동 질문을 생성합니다.</p>`;
       els.answerText.classList.add("visible");
+    }
+
+    function formatTheoryStudyHtml(theory) {
+      const blocks = String(theory.content || "")
+        .split(/\n{2,}/)
+        .map(block => block.trim())
+        .filter(Boolean);
+      const content = blocks.length ? blocks : ["정리된 이론 내용이 없습니다."];
+      const body = content.map(block => {
+        const isKey = /^(암기|공식|정의|기준|절차|비율|특징|방지대책|영향|위험성|종류|장점|단점|핵심|필답형|시험)/.test(block);
+        return `<p class="theory-study-block${isKey ? " key" : ""}">${escapeHtml(block)}</p>`;
+      }).join("");
+      return `<div class="theory-study">
+        <h3 class="theory-study-title">${escapeHtml(theory.title)}</h3>
+        <div class="theory-study-body">${body}</div>
+      </div>`;
     }
 
     function queueItem(q, index) {
