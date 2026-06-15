@@ -541,6 +541,46 @@
       gap: 10px;
     }
 
+    .theory-grid {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .theory-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .theory-card {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .theory-card h3 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.35;
+    }
+
+    .theory-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .theory-card footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     .step-controls {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1017,7 +1057,7 @@
         padding: 14px 16px 16px;
       }
 
-      .topbar, .study-grid, .form-grid {
+      .topbar, .study-grid, .form-grid, .theory-grid {
         grid-template-columns: 1fr;
       }
 
@@ -1120,6 +1160,7 @@
       <button id="addExamBtn" class="exam-add" type="button">+ 시험 추가</button>
       <nav class="nav" aria-label="화면 전환">
         <button class="active" data-view-btn="study">▣ 학습</button>
+        <button data-view-btn="theory">◇ 이론정리</button>
         <button data-view-btn="wrong">※ 오답노트</button>
         <button data-view-btn="bank">☰ 문제작성</button>
         <button data-view-btn="more">⋯ 더보기</button>
@@ -1209,6 +1250,36 @@
               <div id="queueList" class="list"></div>
             </div>
           </aside>
+        </div>
+      </section>
+
+      <section class="view" data-view="theory">
+        <div class="theory-grid">
+          <form id="theoryForm" class="panel form-grid">
+            <input type="hidden" id="theoryEditId">
+            <h2 class="mini-title wide">이론 정리</h2>
+            <label>분야
+              <input id="theoryCategoryInput" placeholder="예: 안전관리, 전기, 작업형">
+            </label>
+            <label>제목
+              <input id="theoryTitleInput" required placeholder="이론 제목을 입력하세요.">
+            </label>
+            <label class="wide">내용
+              <textarea id="theoryContentInput" required placeholder="핵심 개념, 공식, 암기 포인트를 정리하세요."></textarea>
+            </label>
+            <label class="wide">문제화 힌트
+              <textarea id="theoryPromptInput" placeholder="예: 위험성평가 절차를 순서대로 쓰시오. 비워두면 제목으로 자동 생성됩니다."></textarea>
+            </label>
+            <div class="wide actions">
+              <button class="primary" type="submit">이론 저장</button>
+              <button type="button" id="clearTheoryBtn">새 이론</button>
+            </div>
+          </form>
+
+          <div class="panel side-panel">
+            <h2 class="mini-title">정리한 이론</h2>
+            <div id="theoryList" class="theory-list"></div>
+          </div>
         </div>
       </section>
 
@@ -1460,6 +1531,14 @@
       statusFilter: document.querySelector("#statusFilter"),
       queueList: document.querySelector("#queueList"),
       wrongList: document.querySelector("#wrongList"),
+      theoryForm: document.querySelector("#theoryForm"),
+      theoryEditId: document.querySelector("#theoryEditId"),
+      theoryCategoryInput: document.querySelector("#theoryCategoryInput"),
+      theoryTitleInput: document.querySelector("#theoryTitleInput"),
+      theoryContentInput: document.querySelector("#theoryContentInput"),
+      theoryPromptInput: document.querySelector("#theoryPromptInput"),
+      clearTheoryBtn: document.querySelector("#clearTheoryBtn"),
+      theoryList: document.querySelector("#theoryList"),
       questionForm: document.querySelector("#questionForm"),
       editId: document.querySelector("#editId"),
       categoryInput: document.querySelector("#categoryInput"),
@@ -1526,6 +1605,8 @@
     els.nextBtn.addEventListener("click", () => moveCard(1));
     els.wrongBtn.addEventListener("click", markWrong);
     els.masterBtn.addEventListener("click", markMastered);
+    els.theoryForm.addEventListener("submit", saveTheory);
+    els.clearTheoryBtn.addEventListener("click", clearTheoryForm);
     els.questionForm.addEventListener("submit", saveQuestion);
     els.clearFormBtn.addEventListener("click", clearForm);
     els.exportBtn.addEventListener("click", exportCsv);
@@ -1600,7 +1681,16 @@
           status: q.status || "new",
           wrongCount: q.wrongCount || 0,
           masteredAt: q.masteredAt || ""
-        }))
+        })),
+        theories: Array.isArray(saved.theories) ? saved.theories.map(theory => ({
+          id: theory.id || crypto.randomUUID(),
+          examId: theory.examId || DEFAULT_EXAM_ID,
+          category: theory.category || "미분류",
+          title: theory.title || "제목 없는 이론",
+          content: theory.content || "",
+          prompt: theory.prompt || "",
+          updatedAt: theory.updatedAt || ""
+        })) : []
       };
     }
 
@@ -1727,6 +1817,7 @@
       renderStats();
       renderFilters();
       renderStudy();
+      renderTheories();
       renderWrongList();
       renderBank();
     }
@@ -1737,6 +1828,10 @@
 
     function currentExamQuestions() {
       return state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) === state.activeExamId);
+    }
+
+    function currentExamTheories() {
+      return (state.theories || []).filter(theory => (theory.examId || DEFAULT_EXAM_ID) === state.activeExamId);
     }
 
     function renderExamTabs() {
@@ -1815,11 +1910,13 @@
       }
 
       const count = state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) === id).length;
-      const ok = confirm(`"${exam.name}" 시험 탭을 삭제할까요?\n이 시험에 들어 있는 ${count}개 문제도 함께 삭제됩니다.`);
+      const theoryCount = (state.theories || []).filter(theory => (theory.examId || DEFAULT_EXAM_ID) === id).length;
+      const ok = confirm(`"${exam.name}" 시험 탭을 삭제할까요?\n이 시험에 들어 있는 ${count}개 문제와 ${theoryCount}개 이론도 함께 삭제됩니다.`);
       if (!ok) return;
 
       state.exams = state.exams.filter(item => item.id !== id);
       state.questions = state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) !== id);
+      state.theories = (state.theories || []).filter(theory => (theory.examId || DEFAULT_EXAM_ID) !== id);
       if (state.activeExamId === id) state.activeExamId = state.exams[0].id;
       currentIndex = 0;
       persist();
@@ -1888,6 +1985,7 @@
         const normalized = normalizeState(backup.data);
         state.exams = normalized.exams;
         state.questions = normalized.questions;
+        state.theories = normalized.theories;
         state.activeExamId = normalized.activeExamId;
         currentIndex = 0;
         persist();
@@ -1934,6 +2032,7 @@
           masteredAt: row.mastered_at || ""
         };
       });
+      state.theories = [];
 
       state.activeExamId = pickExamWithMostQuestions();
       currentIndex = 0;
@@ -1947,6 +2046,7 @@
         exams: state.exams,
         activeExamId: state.activeExamId,
         questions: state.questions,
+        theories: state.theories || [],
         savedAt: new Date().toISOString()
       }));
       const chunks = chunkText(payload, CLOUD_BACKUP_CHUNK_SIZE);
@@ -2198,6 +2298,121 @@
         <h3>${index + 1}. ${escapeHtml(title)}</h3>
         <p>${escapeHtml(q.category || "미분류")} · ${escapeHtml(status)} · 틀린 횟수 ${q.wrongCount || 0}</p>
       </article>`;
+    }
+
+    function renderTheories() {
+      const theories = currentExamTheories();
+      els.theoryList.innerHTML = theories.map(theory => {
+        const relatedCount = currentExamQuestions().filter(q => q.category === theory.category).length;
+        return `<article class="theory-card">
+          <h3>${escapeHtml(theory.title)}</h3>
+          <p>${escapeHtml(theory.category || "미분류")} · 관련 문제 ${relatedCount}개</p>
+          <p>${escapeHtml(theory.content)}</p>
+          ${theory.prompt ? `<p>문제화 힌트: ${escapeHtml(theory.prompt)}</p>` : ""}
+          <footer>
+            <button data-theory-study="${theory.id}" class="primary">관련 문제 풀기</button>
+            <button data-theory-question="${theory.id}">문제로 만들기</button>
+            <button data-theory-edit="${theory.id}">수정</button>
+            <button data-theory-delete="${theory.id}" class="danger">삭제</button>
+          </footer>
+        </article>`;
+      }).join("") || `<div class="empty">아직 정리한 이론이 없습니다.</div>`;
+
+      els.theoryList.querySelectorAll("[data-theory-study]").forEach(button => {
+        button.addEventListener("click", () => studyTheory(button.dataset.theoryStudy));
+      });
+      els.theoryList.querySelectorAll("[data-theory-question]").forEach(button => {
+        button.addEventListener("click", () => createQuestionFromTheory(button.dataset.theoryQuestion));
+      });
+      els.theoryList.querySelectorAll("[data-theory-edit]").forEach(button => {
+        button.addEventListener("click", () => editTheory(button.dataset.theoryEdit));
+      });
+      els.theoryList.querySelectorAll("[data-theory-delete]").forEach(button => {
+        button.addEventListener("click", () => deleteTheory(button.dataset.theoryDelete));
+      });
+    }
+
+    function saveTheory(event) {
+      event.preventDefault();
+      const id = els.theoryEditId.value || crypto.randomUUID();
+      const existing = (state.theories || []).find(theory => theory.id === id);
+      const data = {
+        id,
+        examId: existing?.examId || state.activeExamId,
+        category: els.theoryCategoryInput.value.trim() || "미분류",
+        title: els.theoryTitleInput.value.trim(),
+        content: els.theoryContentInput.value.trim(),
+        prompt: els.theoryPromptInput.value.trim(),
+        updatedAt: new Date().toISOString()
+      };
+
+      if (!state.theories) state.theories = [];
+      if (existing) Object.assign(existing, data);
+      else state.theories.unshift(data);
+
+      persist();
+      clearTheoryForm();
+      render();
+    }
+
+    function clearTheoryForm() {
+      els.theoryEditId.value = "";
+      els.theoryForm.reset();
+    }
+
+    function editTheory(id) {
+      const theory = (state.theories || []).find(item => item.id === id);
+      if (!theory) return;
+      els.theoryEditId.value = theory.id;
+      els.theoryCategoryInput.value = theory.category || "";
+      els.theoryTitleInput.value = theory.title || "";
+      els.theoryContentInput.value = theory.content || "";
+      els.theoryPromptInput.value = theory.prompt || "";
+      setView("theory");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function deleteTheory(id) {
+      if (!confirm("이 이론 정리를 삭제할까요?")) return;
+      state.theories = (state.theories || []).filter(theory => theory.id !== id);
+      persist();
+      render();
+    }
+
+    function createQuestionFromTheory(id) {
+      const theory = (state.theories || []).find(item => item.id === id);
+      if (!theory) return;
+      const question = {
+        id: crypto.randomUUID(),
+        examId: theory.examId || state.activeExamId,
+        category: theory.category || "미분류",
+        level: "중",
+        question: theory.prompt || `${theory.title}의 핵심 내용을 설명하세요.`,
+        answer: theory.content,
+        memo: `이론 정리: ${theory.title}`,
+        status: "new",
+        wrongCount: 0,
+        masteredAt: ""
+      };
+      state.questions.unshift(question);
+      persist();
+      render();
+      currentIndex = 0;
+      els.categoryFilter.value = question.category;
+      els.statusFilter.value = "all";
+      setView("study");
+      renderStudy();
+    }
+
+    function studyTheory(id) {
+      const theory = (state.theories || []).find(item => item.id === id);
+      if (!theory) return;
+      renderFilters();
+      els.categoryFilter.value = [...els.categoryFilter.options].some(option => option.value === theory.category) ? theory.category : "all";
+      els.statusFilter.value = "all";
+      currentIndex = 0;
+      setView("study");
+      renderStudy();
     }
 
     function renderWrongList() {
