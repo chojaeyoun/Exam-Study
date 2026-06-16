@@ -1,7 +1,7 @@
 {
-  "name": "시험 공부 어플",
-  "short_name": "시험 공부",
-  "description": "여러 시험을 탭으로 나눠 단답형, 작업형, 오답노트를 관리하는 학습 앱",
+  "name": "Sushi Vinegar",
+  "short_name": "Sushi Vinegar",
+  "description": "Personal exam study and note app.",
   "lang": "ko-KR",
   "start_url": "./industrial_safety_study.html",
   "scope": "./",
@@ -19,10 +19,10 @@
   ],
   "shortcuts": [
     {
-      "name": "학습 시작",
-      "short_name": "학습",
+      "name": "Open Sushi Vinegar",
+      "short_name": "Open",
       "url": "./industrial_safety_study.html",
-      "description": "선택한 시험 탭의 학습 화면으로 이동"
+      "description": "Open the study screen."
     }
   ]
 }
