@@ -1700,8 +1700,6 @@
               <div class="notice">
                 문제 데이터는 브라우저 저장소에만 저장됩니다. 다른 PC로 옮기려면 작성에서 CSV로 내보내세요.
               </div>
-              <h2 class="mini-title">오늘의 큐</h2>
-              <div id="queueList" class="list"></div>
             </div>
           </aside>
         </div>
@@ -2311,7 +2309,6 @@
       nextBtn: document.querySelector("#nextBtn"),
       categoryFilter: document.querySelector("#categoryFilter"),
       statusFilter: document.querySelector("#statusFilter"),
-      queueList: document.querySelector("#queueList"),
       wrongList: document.querySelector("#wrongList"),
       composeQuestionModeBtn: document.querySelector("#composeQuestionModeBtn"),
       composeTheoryModeBtn: document.querySelector("#composeTheoryModeBtn"),
@@ -3257,7 +3254,6 @@
       const current = questions[currentIndex];
 
       els.cardIndex.textContent = `${questions.length ? currentIndex + 1 : 0} / ${questions.length}`;
-      els.queueList.innerHTML = questions.slice(0, 8).map((q, index) => queueItem(q, index)).join("") || `<div class="empty">표시할 문제가 없습니다.</div>`;
 
       if (!current) {
         els.cardType.textContent = "분야";
@@ -3295,12 +3291,6 @@
       const current = theories[currentTheoryIndex];
 
       els.cardIndex.textContent = `${theories.length ? currentTheoryIndex + 1 : 0} / ${theories.length}`;
-      els.queueList.innerHTML = theories.slice(0, 8).map((theory, index) => {
-        return `<article class="item">
-          <h3>${index + 1}. ${escapeHtml(theory.title)}</h3>
-          <p>${escapeHtml(theory.category || "미분류")} · 이론</p>
-        </article>`;
-      }).join("") || `<div class="empty">표시할 이론이 없습니다.</div>`;
 
       els.cardType.textContent = current?.category || "분야";
       els.cardLevel.textContent = "이론";
@@ -3356,15 +3346,6 @@
         <h3 class="theory-study-title">${escapeHtml(theory.title)}</h3>
         <div class="theory-study-body">${body}</div>
       </div>`;
-    }
-
-    function queueItem(q, index) {
-      const status = q.status === "wrong" ? "오답" : q.status === "mastered" ? "완료" : "미학습";
-      const title = q.questionImage ? `사진 문제 · ${q.question}` : q.question;
-      return `<article class="item">
-        <h3>${index + 1}. ${escapeHtml(title)}</h3>
-        <p>${escapeHtml(q.category || "미분류")} · ${escapeHtml(status)} · 틀린 횟수 ${q.wrongCount || 0}</p>
-      </article>`;
     }
 
     function renderTheories() {
