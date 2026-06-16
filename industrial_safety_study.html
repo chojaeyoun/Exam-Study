@@ -538,22 +538,19 @@
 
     .theory-study-block {
       margin: 0;
-      padding: 13px 14px;
-      border: 1px solid #dce8e5;
-      border-left: 5px solid var(--accent);
-      border-radius: 8px;
-      background: #fbfdfc;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
       line-height: 1.65;
       white-space: pre-wrap;
-      font-weight: 700;
+      font-weight: 500;
       color: #263d38;
     }
 
     .theory-study-block.key {
-      border-color: #ead29e;
-      border-left-color: var(--accent-warm);
-      background: #fffaf0;
-      color: #51401f;
+      color: #173831;
+      font-weight: 800;
     }
 
     .theory-study-hint {
@@ -3107,7 +3104,7 @@
       const rows = lines
         .filter((line, index) => index !== 1)
         .map(splitTableRow)
-        .filter(row => row.length);
+      .filter(row => row.length);
       if (!rows.length) return "";
       const header = rows[0];
       const bodyRows = rows.slice(1);
@@ -3115,6 +3112,13 @@
         <thead><tr>${header.map(cell => `<th>${escapeHtml(cell)}</th>`).join("")}</tr></thead>
         <tbody>${bodyRows.map(row => `<tr>${header.map((_, index) => `<td>${escapeHtml(row[index] || "")}</td>`).join("")}</tr>`).join("")}</tbody>
       </table></div>`;
+    }
+
+    function renderTheoryContentBlock(block, isKey = false) {
+      if (isMarkdownTable(block)) {
+        return `<div class="theory-study-block${isKey ? " key" : ""}">${renderMarkdownTable(block)}</div>`;
+      }
+      return `<div class="theory-study-block${isKey ? " key" : ""}">${renderRichTextBlock(block)}</div>`;
     }
 
     function splitTableRow(line) {
@@ -3264,10 +3268,7 @@
       const content = blocks.length ? blocks : ["정리된 이론 내용이 없습니다."];
       const body = content.map(block => {
         const isKey = /^(암기|공식|정의|기준|절차|비율|특징|방지대책|영향|위험성|종류|요점|핵심|필답형|시험)/.test(block);
-        if (isMarkdownTable(block)) {
-          return `<div class="theory-study-block${isKey ? " key" : ""}">${renderMarkdownTable(block)}</div>`;
-        }
-        return `<p class="theory-study-block${isKey ? " key" : ""}">${escapeHtml(block)}</p>`;
+        return renderTheoryContentBlock(block, isKey);
       }).join("");
       return `<div class="theory-study">
         <h3 class="theory-study-title">${escapeHtml(theory.title)}</h3>
@@ -3285,8 +3286,13 @@
     }
 
     function renderTheories() {
-      const theories = currentExamTheories();
+      const theories = filteredTheories();
+      const search = els.searchInput.value.trim();
       setComposeMode(composeMode);
+      if (!search) {
+        els.theoryList.innerHTML = `<div class="empty">이론 목록은 검색어를 입력하면 표시됩니다. 저장된 이론은 로컬/클라우드 데이터에 그대로 보관됩니다.</div>`;
+        return;
+      }
       els.theoryList.innerHTML = theories.map(theory => {
         const relatedCount = currentExamQuestions().filter(q => q.category === theory.category).length;
         return `<article class="theory-card">
@@ -3466,8 +3472,14 @@
         (els.statusFilter.value && els.statusFilter.value !== "all");
       els.bankSummary.textContent = isFiltered
         ? `검색 결과 ${questions.length}개 / 전체 ${total}개`
-        : `전체 문제 ${total}개`;
+        : `전체 문제 ${total}개 · 검색하면 목록이 표시됩니다`;
       els.clearBankSearchBtn.classList.toggle("hidden", !isFiltered);
+
+      if (!isFiltered) {
+        quickEditId = "";
+        els.bankTable.innerHTML = `<tr><td colspan="6" class="empty">문제 목록은 검색어 또는 필터를 선택하면 표시됩니다. 저장된 데이터는 로컬/클라우드에 그대로 보관됩니다.</td></tr>`;
+        return;
+      }
 
       els.bankTable.innerHTML = questions.map(q => {
         const status = q.status === "wrong" ? "오답" : q.status === "mastered" ? "암기 완료" : "미학습";
