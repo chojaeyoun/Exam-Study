@@ -643,6 +643,17 @@
       white-space: pre-wrap;
     }
 
+    .theory-card-content {
+      display: grid;
+      gap: 8px;
+    }
+
+    .theory-card-content .question-paragraph {
+      color: var(--muted);
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+
     .theory-card footer {
       display: flex;
       flex-wrap: wrap;
@@ -815,8 +826,78 @@
       grid-column: 1 / -1;
     }
 
+    .text-tools {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8faf9;
+    }
+
+    .symbol-tools,
+    .table-tools {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .symbol-tool {
+      width: 34px;
+      min-height: 32px;
+      padding: 0;
+      justify-content: center;
+      background: #fff;
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .table-tools {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .table-tools input {
+      width: 58px;
+      min-height: 34px;
+      padding: 6px 8px;
+      text-align: center;
+    }
+
+    .insert-table-btn {
+      min-height: 34px;
+      padding: 0 12px;
+      background: #fff;
+    }
+
     .table-wrap {
       overflow: auto;
+    }
+
+    .content-table-wrap {
+      overflow-x: auto;
+      margin: 12px 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .content-table {
+      min-width: 0;
+      font-size: 14px;
+    }
+
+    .content-table th,
+    .content-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid #e4ece9;
+    }
+
+    .content-table tbody tr:last-child td {
+      border-bottom: 0;
     }
 
     .manage-head {
@@ -1445,12 +1526,15 @@
             </select>
           </label>
           <label class="wide">문제
+            <div class="text-tools" data-tools-for="questionInput"></div>
             <textarea id="questionInput" required placeholder="문제 내용을 입력하세요."></textarea>
           </label>
           <label class="wide">정답
+            <div class="text-tools" data-tools-for="answerInput"></div>
             <textarea id="answerInput" required placeholder="정답 또는 채점 키워드를 입력하세요."></textarea>
           </label>
           <label class="wide">메모
+            <div class="text-tools" data-tools-for="memoInput"></div>
             <textarea id="memoInput" placeholder="헷갈리는 포인트, 암기법, 관련 회차 등을 적어두세요."></textarea>
           </label>
           <div class="wide actions">
@@ -1471,9 +1555,11 @@
               <input id="theoryTitleInput" required placeholder="이론 제목을 입력하세요.">
             </label>
             <label class="wide">내용
+              <div class="text-tools" data-tools-for="theoryContentInput"></div>
               <textarea id="theoryContentInput" required placeholder="핵심 개념, 공식, 암기 포인트를 정리하세요."></textarea>
             </label>
             <label class="wide">문제화 힌트
+              <div class="text-tools" data-tools-for="theoryPromptInput"></div>
               <textarea id="theoryPromptInput" placeholder="예: 위험성평가 절차를 순서대로 쓰시오. 비워두면 제목으로 자동 생성됩니다."></textarea>
             </label>
             <div class="wide actions">
@@ -2022,6 +2108,13 @@
       downloadCloudBtn: document.querySelector("#downloadCloudBtn"),
       cloudStatus: document.querySelector("#cloudStatus")
     };
+
+    const WRITING_SYMBOLS = [
+      "√", "±", "×", "÷", "≤", "≥", "≠", "≈", "∞", "∑", "π", "μ", "Ω", "°",
+      "㎡", "㎥", "①", "②", "③", "④", "⑤", "⑥", "→", "←", "※", "·", "ㆍ"
+    ];
+
+    setupTextTools();
 
     document.querySelectorAll("[data-view-btn]").forEach(button => {
       button.addEventListener("click", () => setView(button.dataset.viewBtn));
@@ -2732,7 +2825,7 @@
 
     function formatAnswerCardHtml(question) {
       const answerText = [question.answer, question.memo ? `\n메모: ${question.memo}` : ""].join("").trim();
-      const textHtml = answerText ? `<p class="question-paragraph">${escapeHtml(answerText)}</p>` : "";
+      const textHtml = answerText ? formatRichTextHtml(answerText) : "";
       const imageHtml = question.answerImage
         ? `<img class="answer-photo" src="${escapeHtml(question.answerImage)}" alt="${escapeHtml(question.answerImageName || "정답 사진")}">`
         : "";
@@ -2756,7 +2849,48 @@
         ].join("");
       }
 
-      return `<p class="question-paragraph">${escapeHtml(source)}</p>`;
+      return formatRichTextHtml(source);
+    }
+
+    function formatRichTextHtml(text) {
+      const blocks = String(text || "")
+        .split(/\n{2,}/)
+        .map(block => block.trim())
+        .filter(Boolean);
+      if (!blocks.length) return "";
+      return blocks.map(block => {
+        if (isMarkdownTable(block)) return renderMarkdownTable(block);
+        return `<p class="question-paragraph">${escapeHtml(block)}</p>`;
+      }).join("");
+    }
+
+    function isMarkdownTable(block) {
+      const lines = String(block || "").split("\n").map(line => line.trim()).filter(Boolean);
+      if (lines.length < 2 || !lines.every(line => line.includes("|"))) return false;
+      return /^:?-{3,}:?$/.test(splitTableRow(lines[1])[0] || "") || splitTableRow(lines[1]).every(cell => /^:?-{3,}:?$/.test(cell));
+    }
+
+    function renderMarkdownTable(block) {
+      const lines = String(block || "").split("\n").map(line => line.trim()).filter(Boolean);
+      const rows = lines
+        .filter((line, index) => index !== 1)
+        .map(splitTableRow)
+        .filter(row => row.length);
+      if (!rows.length) return "";
+      const header = rows[0];
+      const bodyRows = rows.slice(1);
+      return `<div class="content-table-wrap"><table class="content-table">
+        <thead><tr>${header.map(cell => `<th>${escapeHtml(cell)}</th>`).join("")}</tr></thead>
+        <tbody>${bodyRows.map(row => `<tr>${header.map((_, index) => `<td>${escapeHtml(row[index] || "")}</td>`).join("")}</tr>`).join("")}</tbody>
+      </table></div>`;
+    }
+
+    function splitTableRow(line) {
+      return String(line || "")
+        .replace(/^\|/, "")
+        .replace(/\|$/, "")
+        .split("|")
+        .map(cell => cell.trim());
     }
 
     function splitQuestionOptions(text) {
@@ -2890,6 +3024,25 @@
       </div>`;
     }
 
+    function formatTheoryStudyHtml(theory) {
+      const blocks = String(theory.content || "")
+        .split(/\n{2,}/)
+        .map(block => block.trim())
+        .filter(Boolean);
+      const content = blocks.length ? blocks : ["정리된 이론 내용이 없습니다."];
+      const body = content.map(block => {
+        const isKey = /^(암기|공식|정의|기준|절차|비율|특징|방지대책|영향|위험성|종류|요점|핵심|필답형|시험)/.test(block);
+        if (isMarkdownTable(block)) {
+          return `<div class="theory-study-block${isKey ? " key" : ""}">${renderMarkdownTable(block)}</div>`;
+        }
+        return `<p class="theory-study-block${isKey ? " key" : ""}">${escapeHtml(block)}</p>`;
+      }).join("");
+      return `<div class="theory-study">
+        <h3 class="theory-study-title">${escapeHtml(theory.title)}</h3>
+        <div class="theory-study-body">${body}</div>
+      </div>`;
+    }
+
     function queueItem(q, index) {
       const status = q.status === "wrong" ? "오답" : q.status === "mastered" ? "완료" : "미학습";
       const title = q.questionImage ? `사진 문제 · ${q.question}` : q.question;
@@ -2907,7 +3060,7 @@
         return `<article class="theory-card">
           <h3>${escapeHtml(theory.title)}</h3>
           <p>${escapeHtml(theory.category || "미분류")} · 관련 문제 ${relatedCount}개</p>
-          <p>${escapeHtml(theory.content)}</p>
+          <div class="theory-card-content">${formatRichTextHtml(theory.content)}</div>
           ${theory.prompt ? `<p>문제화 힌트: ${escapeHtml(theory.prompt)}</p>` : ""}
           <footer>
             <button data-theory-study="${theory.id}" class="primary">관련 문제 풀기</button>
@@ -3619,6 +3772,73 @@
         ["안전관리", "상", "문제 내용을 입력", "정답 내용을 입력", "암기 메모"]
       ];
       download("exam_questions_template.csv", toCsv(rows));
+    }
+
+    function setupTextTools() {
+      document.querySelectorAll("[data-tools-for]").forEach(toolbox => {
+        const textarea = document.querySelector(`#${toolbox.dataset.toolsFor}`);
+        if (!textarea) return;
+        toolbox.innerHTML = `
+          <div class="symbol-tools" aria-label="특수기호 입력">
+            ${WRITING_SYMBOLS.map(symbol => `<button class="symbol-tool" type="button" data-symbol="${escapeHtml(symbol)}" title="${escapeHtml(symbol)}">${escapeHtml(symbol)}</button>`).join("")}
+          </div>
+          <div class="table-tools" aria-label="표 삽입">
+            <span>표</span>
+            <input type="number" min="2" max="8" value="3" aria-label="표 행 수">
+            <span>행</span>
+            <input type="number" min="2" max="6" value="3" aria-label="표 열 수">
+            <span>열</span>
+            <button class="insert-table-btn" type="button">표 삽입</button>
+          </div>
+        `;
+        toolbox.querySelectorAll("[data-symbol]").forEach(button => {
+          button.addEventListener("click", () => insertAtCursor(textarea, button.dataset.symbol));
+        });
+        const [rowInput, colInput] = toolbox.querySelectorAll("input");
+        toolbox.querySelector(".insert-table-btn").addEventListener("click", () => {
+          const rows = clampNumber(rowInput.value, 2, 8, 3);
+          const cols = clampNumber(colInput.value, 2, 6, 3);
+          rowInput.value = rows;
+          colInput.value = cols;
+          insertAtCursor(textarea, buildMarkdownTable(rows, cols));
+        });
+      });
+    }
+
+    function insertAtCursor(textarea, text) {
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? textarea.value.length;
+      const before = textarea.value.slice(0, start);
+      const after = textarea.value.slice(end);
+      const insertText = needsLeadingLineBreak(before, text) ? `\n${text}` : text;
+      textarea.value = `${before}${insertText}${after}`;
+      const cursor = before.length + insertText.length;
+      textarea.focus();
+      textarea.setSelectionRange(cursor, cursor);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function needsLeadingLineBreak(before, text) {
+      return text.startsWith("\n") && before && !before.endsWith("\n");
+    }
+
+    function buildMarkdownTable(rows, cols) {
+      const headers = Array.from({ length: cols }, (_, index) => `항목 ${index + 1}`);
+      const separator = Array.from({ length: cols }, () => "---");
+      const body = Array.from({ length: rows - 1 }, () => Array.from({ length: cols }, () => "내용"));
+      return [
+        "",
+        `| ${headers.join(" | ")} |`,
+        `| ${separator.join(" | ")} |`,
+        ...body.map(row => `| ${row.join(" | ")} |`),
+        ""
+      ].join("\n");
+    }
+
+    function clampNumber(value, min, max, fallback) {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) return fallback;
+      return Math.min(max, Math.max(min, Math.round(parsed)));
     }
 
     function download(filename, content) {
