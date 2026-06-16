@@ -611,9 +611,97 @@
 
     .theory-grid {
       display: grid;
-      grid-template-columns: 360px minmax(0, 1fr);
+      grid-template-columns: minmax(360px, 0.85fr) minmax(320px, 1.15fr);
       gap: 18px;
       align-items: start;
+    }
+
+    .note-editor-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8faf9;
+    }
+
+    .note-editor-head div {
+      display: grid;
+      gap: 4px;
+    }
+
+    .note-editor-head strong {
+      font-size: 15px;
+      color: #173831;
+    }
+
+    .note-editor-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .block-palette {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdfc;
+    }
+
+    .block-palette button {
+      min-height: 34px;
+      padding: 0 11px;
+      background: #fff;
+      font-size: 12px;
+    }
+
+    .note-preview-panel {
+      position: sticky;
+      top: 18px;
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      align-content: start;
+    }
+
+    .note-preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .note-preview-head h3 {
+      margin: 0;
+      font-size: 17px;
+    }
+
+    .note-preview-head span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .note-preview {
+      min-height: 420px;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .note-empty {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 800;
+      line-height: 1.6;
     }
 
     .theory-list {
@@ -898,6 +986,83 @@
 
     .content-table tbody tr:last-child td {
       border-bottom: 0;
+    }
+
+    .rich-heading,
+    .rich-subheading,
+    .rich-paragraph,
+    .rich-callout,
+    .rich-list,
+    .rich-checklist {
+      margin: 0;
+      line-height: 1.65;
+    }
+
+    .rich-heading {
+      padding-top: 4px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #173831;
+    }
+
+    .rich-subheading {
+      font-size: 17px;
+      font-weight: 900;
+      color: #26524b;
+    }
+
+    .rich-paragraph {
+      color: #28423c;
+      white-space: pre-wrap;
+    }
+
+    .rich-list,
+    .rich-checklist {
+      display: grid;
+      gap: 7px;
+      padding-left: 0;
+      list-style: none;
+    }
+
+    .rich-list li,
+    .rich-checklist li {
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      gap: 7px;
+      color: #28423c;
+    }
+
+    .rich-checklist .box {
+      width: 16px;
+      height: 16px;
+      margin-top: 4px;
+      border: 2px solid #9ab4ae;
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .rich-checklist .box.done {
+      border-color: var(--accent);
+      background: var(--accent);
+      box-shadow: inset 0 0 0 3px #fff;
+    }
+
+    .rich-callout {
+      padding: 13px 14px;
+      border: 1px solid #ead29e;
+      border-left: 5px solid var(--accent-warm);
+      border-radius: 8px;
+      background: #fffaf0;
+      color: #51401f;
+      font-weight: 800;
+      white-space: pre-wrap;
+    }
+
+    .rich-divider {
+      height: 1px;
+      border: 0;
+      background: #dbe7e3;
+      width: 100%;
     }
 
     .manage-head {
@@ -1282,6 +1447,15 @@
         grid-template-columns: 1fr;
       }
 
+      .note-preview-panel {
+        position: static;
+      }
+
+      .note-editor-head {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
       .topbar {
         display: grid;
         gap: 10px;
@@ -1548,12 +1722,28 @@
           <form id="theoryForm" class="panel form-grid">
             <input type="hidden" id="theoryEditId">
             <h2 class="mini-title wide">이론 정리</h2>
+            <div class="wide note-editor-head">
+              <div>
+                <strong>노트 편집</strong>
+                <span>블록을 추가해서 이론, 공식, 암기 포인트를 문서처럼 정리하세요.</span>
+              </div>
+              <button type="button" id="insertTheoryQuestionHintBtn">문제 힌트 만들기</button>
+            </div>
             <label>분야
               <input id="theoryCategoryInput" placeholder="예: 안전관리, 전기, 작업형">
             </label>
             <label>제목
               <input id="theoryTitleInput" required placeholder="이론 제목을 입력하세요.">
             </label>
+            <div class="wide block-palette" aria-label="이론 블록 추가">
+              <button type="button" data-theory-block="heading">+ 제목</button>
+              <button type="button" data-theory-block="key">+ 핵심</button>
+              <button type="button" data-theory-block="formula">+ 공식</button>
+              <button type="button" data-theory-block="check">+ 체크</button>
+              <button type="button" data-theory-block="callout">+ 암기 박스</button>
+              <button type="button" data-theory-block="table">+ 표</button>
+              <button type="button" data-theory-block="divider">+ 구분선</button>
+            </div>
             <label class="wide">내용
               <div class="text-tools" data-tools-for="theoryContentInput"></div>
               <textarea id="theoryContentInput" required placeholder="핵심 개념, 공식, 암기 포인트를 정리하세요."></textarea>
@@ -1567,6 +1757,13 @@
               <button type="button" id="clearTheoryBtn">새 이론</button>
             </div>
           </form>
+          <aside class="panel note-preview-panel">
+            <div class="note-preview-head">
+              <h3>미리보기</h3>
+              <span id="theoryPreviewMeta">작성 중</span>
+            </div>
+            <div id="theoryPreview" class="note-preview"></div>
+          </aside>
         </div>
 
         <div class="bank-panel" data-bank-panel="manage">
@@ -2068,6 +2265,9 @@
       theoryTitleInput: document.querySelector("#theoryTitleInput"),
       theoryContentInput: document.querySelector("#theoryContentInput"),
       theoryPromptInput: document.querySelector("#theoryPromptInput"),
+      theoryPreview: document.querySelector("#theoryPreview"),
+      theoryPreviewMeta: document.querySelector("#theoryPreviewMeta"),
+      insertTheoryQuestionHintBtn: document.querySelector("#insertTheoryQuestionHintBtn"),
       clearTheoryBtn: document.querySelector("#clearTheoryBtn"),
       theoryList: document.querySelector("#theoryList"),
       questionForm: document.querySelector("#questionForm"),
@@ -2151,6 +2351,13 @@
     els.wrongBtn.addEventListener("click", markWrong);
     els.masterBtn.addEventListener("click", markMastered);
     els.theoryForm.addEventListener("submit", saveTheory);
+    [els.theoryTitleInput, els.theoryCategoryInput, els.theoryContentInput, els.theoryPromptInput].forEach(input => {
+      input.addEventListener("input", updateTheoryPreview);
+    });
+    document.querySelectorAll("[data-theory-block]").forEach(button => {
+      button.addEventListener("click", () => insertTheoryBlock(button.dataset.theoryBlock));
+    });
+    els.insertTheoryQuestionHintBtn.addEventListener("click", buildTheoryQuestionHint);
     els.clearTheoryBtn.addEventListener("click", clearTheoryForm);
     els.questionForm.addEventListener("submit", saveQuestion);
     els.clearFormBtn.addEventListener("click", clearForm);
@@ -2184,6 +2391,7 @@
     seedBuiltinQuestions();
     seedBuiltinTheories();
     render();
+    updateTheoryPreview();
     setupPwa();
 
     function loadState() {
@@ -2860,8 +3068,32 @@
       if (!blocks.length) return "";
       return blocks.map(block => {
         if (isMarkdownTable(block)) return renderMarkdownTable(block);
-        return `<p class="question-paragraph">${escapeHtml(block)}</p>`;
+        return renderRichTextBlock(block);
       }).join("");
+    }
+
+    function renderRichTextBlock(block) {
+      const source = String(block || "").trim();
+      if (!source) return "";
+      if (/^---+$/.test(source)) return `<hr class="rich-divider">`;
+      if (source.startsWith("## ")) return `<h4 class="rich-subheading">${escapeHtml(source.slice(3).trim())}</h4>`;
+      if (source.startsWith("# ")) return `<h3 class="rich-heading">${escapeHtml(source.slice(2).trim())}</h3>`;
+      if (source.startsWith(">")) {
+        return `<div class="rich-callout">${escapeHtml(source.replace(/^>\s?/gm, "").trim())}</div>`;
+      }
+      if (/^-\s+\[[ xX]\]\s+/m.test(source)) {
+        const items = source.split("\n").map(line => line.trim()).filter(Boolean);
+        return `<ul class="rich-checklist">${items.map(line => {
+          const done = /^-\s+\[[xX]\]\s+/.test(line);
+          const text = line.replace(/^-\s+\[[ xX]\]\s+/, "");
+          return `<li><span class="box${done ? " done" : ""}"></span><span>${escapeHtml(text)}</span></li>`;
+        }).join("")}</ul>`;
+      }
+      if (/^-\s+/m.test(source)) {
+        const items = source.split("\n").map(line => line.replace(/^-\s+/, "").trim()).filter(Boolean);
+        return `<ul class="rich-list">${items.map(item => `<li><span>•</span><span>${escapeHtml(item)}</span></li>`).join("")}</ul>`;
+      }
+      return `<p class="rich-paragraph question-paragraph">${escapeHtml(source)}</p>`;
     }
 
     function isMarkdownTable(block) {
@@ -3085,6 +3317,44 @@
       });
     }
 
+    function insertTheoryBlock(type) {
+      const templates = {
+        heading: "\n# 새 이론 제목\n\n정리할 내용을 입력하세요.\n",
+        key: "\n## 핵심 요약\n\n- 핵심 개념:\n- 암기 포인트:\n- 주의할 표현:\n",
+        formula: "\n## 공식\n\n공식: \n단위: \n기준: \n",
+        check: "\n- [ ] 암기할 항목\n- [ ] 헷갈리는 예외\n- [ ] 기출 연결 포인트\n",
+        callout: "\n> 암기 박스\n> 꼭 외워야 할 문장을 여기에 적으세요.\n",
+        table: buildMarkdownTable(3, 3),
+        divider: "\n---\n"
+      };
+      insertAtCursor(els.theoryContentInput, templates[type] || "");
+      updateTheoryPreview();
+    }
+
+    function buildTheoryQuestionHint() {
+      const title = els.theoryTitleInput.value.trim() || "이론";
+      const content = els.theoryContentInput.value.trim();
+      const firstPoint = content
+        .split("\n")
+        .map(line => line.replace(/^[-#>\s\[\]xX.]+/, "").trim())
+        .find(Boolean);
+      els.theoryPromptInput.value = `${title}의 핵심 내용을 서술하시오.${firstPoint ? ` 핵심어: ${firstPoint}` : ""}`;
+      updateTheoryPreview();
+      els.theoryPromptInput.focus();
+    }
+
+    function updateTheoryPreview() {
+      if (!els.theoryPreview) return;
+      const title = els.theoryTitleInput.value.trim() || "제목 없는 노트";
+      const category = els.theoryCategoryInput.value.trim() || "미분류";
+      const content = els.theoryContentInput.value.trim();
+      const prompt = els.theoryPromptInput.value.trim();
+      els.theoryPreviewMeta.textContent = `${category} · ${content ? "미리보기" : "작성 중"}`;
+      els.theoryPreview.innerHTML = content
+        ? `${formatTheoryStudyHtml({ title, content })}${prompt ? `<p class="theory-study-hint">문제화 힌트: ${escapeHtml(prompt)}</p>` : ""}`
+        : `<p class="note-empty">왼쪽에서 블록을 추가하거나 내용을 입력하면 이곳에 노트처럼 미리 보입니다.</p>`;
+    }
+
     function saveTheory(event) {
       event.preventDefault();
       const id = els.theoryEditId.value || crypto.randomUUID();
@@ -3106,11 +3376,13 @@
       persist();
       clearTheoryForm();
       render();
+      updateTheoryPreview();
     }
 
     function clearTheoryForm() {
       els.theoryEditId.value = "";
       els.theoryForm.reset();
+      updateTheoryPreview();
     }
 
     function editTheory(id) {
@@ -3123,6 +3395,7 @@
       els.theoryPromptInput.value = theory.prompt || "";
       setView("bank");
       setComposeMode("theory");
+      updateTheoryPreview();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
