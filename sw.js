@@ -1,8 +1,7 @@
-const CACHE_NAME = "exam-study-app-v26";
+const CACHE_NAME = "exam-study-app-v27";
 const APP_SHELL = [
   "./index.html",
   "./industrial_safety_study.html",
-  "./industrial_safety_past_questions.js",
   "./manifest.webmanifest",
   "./icons/sushi-vinegar-icon.svg",
   "./industrial_safety_questions_template.csv"

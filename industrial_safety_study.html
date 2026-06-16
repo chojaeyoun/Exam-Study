@@ -1863,7 +1863,6 @@
                 <input id="csvFile" class="hidden-file" type="file" accept=".csv,text/csv">
                 <div class="actions">
                   <button id="pickCsvBtn" class="primary">CSV 파일 선택</button>
-                  <button id="loadSampleBtn">샘플 문제 넣기</button>
                 </div>
                 <label>붙여넣기 가져오기
                   <textarea id="csvPaste" placeholder="category,level,question,answer,memo&#10;안전관리,상,예시 문제,예시 정답,메모"></textarea>
@@ -1916,14 +1915,11 @@
   </div>
   <div id="slashMenu" class="slash-menu hidden" role="listbox" aria-label="이론 블록 선택"></div>
 
-  <script src="./industrial_safety_past_questions.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const DEFAULT_EXAM_ID = "industrial-practical";
     const STORAGE_KEY = "examStudyApp.v2";
     const CLOUD_CONFIG_KEY = "examStudyApp.supabase.v1";
-    const BUILTIN_QUESTION_SEED_KEY = "examStudyApp.builtinQuestions.2020-2024.v1";
-    const BUILTIN_THEORY_SEED_KEY = "examStudyApp.builtinTheories.v2";
     const OLD_STORAGE_KEYS = ["industrialSafetyPracticalStudy.v1"];
     const CLOUD_SYNC_START = "\n\n<!--EXAM_STUDY_SYNC:";
     const CLOUD_SYNC_END = "-->";
@@ -1949,324 +1945,6 @@
     let pendingPhotoQuestions = [];
     const PHOTO_MAX_EDGE = 1600;
     const PHOTO_QUALITY = 0.82;
-
-    const sampleQuestions = [
-      {
-        id: crypto.randomUUID(),
-        examId: DEFAULT_EXAM_ID,
-        category: "안전관리",
-        level: "상",
-        question: "위험성평가 답안을 작성할 때 반드시 구분해서 암기해야 할 항목을 자기 말로 정리하세요.",
-        answer: "유해·위험요인 파악, 위험성 결정, 감소대책 수립 및 실행, 기록·공유처럼 절차와 목적을 구분해 답안을 구성한다.",
-        memo: "실제 시험 답안은 최신 법령·공단 자료 기준으로 교체하세요.",
-        status: "new",
-        wrongCount: 0,
-        masteredAt: ""
-      },
-      {
-        id: crypto.randomUUID(),
-        examId: DEFAULT_EXAM_ID,
-        category: "작업형",
-        level: "중",
-        question: "작업형 영상 문제를 볼 때 확인할 관찰 포인트 5가지를 적으세요.",
-        answer: "작업자 행동, 보호구 착용, 기계 방호장치, 작업장 정리정돈, 전기·화재·추락·협착 등 주요 위험원을 확인한다.",
-        memo: "영상형은 '무엇이 위험한가'와 '어떻게 조치할 것인가'를 짝으로 암기.",
-        status: "new",
-        wrongCount: 0,
-        masteredAt: ""
-      },
-      {
-        id: crypto.randomUUID(),
-        examId: DEFAULT_EXAM_ID,
-        category: "전기안전",
-        level: "중",
-        question: "전기 작업 관련 문제를 풀 때 답안 누락을 줄이기 위한 키워드 묶음을 적으세요.",
-        answer: "전원 차단, 잠금·표지, 검전, 접지, 절연보호구, 누전차단기, 작업 전 점검을 키워드로 점검한다.",
-        memo: "정확한 수치 기준은 최신 교재 또는 공식 기준으로 확인.",
-        status: "new",
-        wrongCount: 0,
-        masteredAt: ""
-      }
-    ];
-
-    const builtinQuestionSeeds = [
-      {
-        category: "2020년 1차 기출",
-        level: "중",
-        question: "달기체인 등의 사용금지 규정 3가지를 쓰시오.",
-        answer: "1. 달기체인의 길이가 제조 당시 길이의 5%를 초과한 경우\n2. 링의 단면지름이 제조 당시 지름의 10%를 초과하여 감소한 경우\n3. 균열이 있거나 심하게 변형된 경우",
-        memo: "출처: 2020년 1차 1번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "중",
-        question: "기상 악화 후 작업 중지 또는 비계 조립·해체 후 작업 시 점검 및 보수해야 할 항목 5가지를 쓰시오.",
-        answer: "1. 손잡이의 탈락 여부\n2. 발판재료의 손상 및 부착 상태\n3. 연결재료와 철물의 손상 및 부식 상태\n4. 기둥의 침하, 변형, 변위, 흔들림 상태\n5. 비계 연결부 및 접속부 풀림 상태",
-        memo: "출처: 2020년 1차 2번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "중",
-        question: "누전에 의한 감전 위험을 방지하기 위해 접지가 필요한 코드와 플러그를 사용하는 전기 기계·기구 5가지를 쓰시오.",
-        answer: "1. 사용전압이 대지전압 150V를 넘는 기구\n2. 냉장고, 세탁기, 컴퓨터 등 고정형 기구\n3. 고정형, 이동형, 휴대형 전동기계\n4. 도전성이 높은 곳에서 사용하는 기구\n5. 휴대형 손전등",
-        memo: "출처: 2020년 1차 3번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "중",
-        question: "사업장 안전보건 관리규정에 포함할 사항 4가지를 쓰시오.",
-        answer: "1. 안전 및 보건 관리조직과 직무\n2. 안전보건교육\n3. 작업장 안전 및 보건 관리\n4. 사고조사 및 대책수립",
-        memo: "출처: 2020년 1차 4번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "중",
-        question: "로봇작업에 대한 특별안전보건교육 내용 4가지를 쓰시오.",
-        answer: "1. 로봇의 기본원리·구조 및 작업방법에 관한 사항\n2. 이상 발생 시 응급조치에 관한 사항\n3. 안전시설 및 안전기준에 관한 사항\n4. 조작방법 및 작업순서에 관한 사항",
-        memo: "출처: 2020년 1차 5번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "상",
-        question: "유해위험방지계획서 제출 대상사업의 종류를 쓰시오.",
-        answer: "반도체 제조업, 전자부품 제조업, 가구 제조업, 1차 금속 제조업, 식료품 제조업, 화학물질 및 화학제품 제조업, 목재 및 나무제품 제조업, 기타 제품 제조업, 자동차 및 트레일러 제조업, 기타 기계 및 장비 제조업, 고무제품 및 플라스틱제품 제조업, 금속가공제품 제조업(기계 및 가구 제외), 비금속 광물제품 제조업",
-        memo: "출처: 2020년 1차 6번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "상",
-        question: "롤러기 급정지장치의 앞면 롤러 표면속도에 따른 안전거리를 채우시오. ① (a)m/min 미만: 앞면 롤러 원주의 (b), ② (c)m/min 이상: 앞면 롤러 원주의 (d).",
-        answer: "a: 30\nb: 1/3 이내\nc: 30\nd: 1/2.5 이내",
-        memo: "출처: 2020년 1차 7번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "중",
-        question: "과압에 따른 폭발 방지를 위한 안전밸브 또는 파열판 설치 대상 설비 3가지를 쓰시오.",
-        answer: "1. 정변위 압축기\n2. 정변위 펌프(토출측에 차단밸브가 설치된 경우에 해당)\n3. 화학설비 및 부속설비 중 최고사용압력을 초과할 우려가 있는 것\n4. 2개 이상의 밸브에 의해 차단되어 대기온도에서 액체의 열팽창에 의해 파열될 우려가 있는 배관\n5. 압력용기",
-        memo: "출처: 2020년 1차 8번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "하",
-        question: "출입금지표지를 그리고 색을 쓰시오.",
-        answer: "1. 바탕 흰색\n2. 도형 빨간색\n3. 화살표 검은색",
-        memo: "출처: 2020년 1차 9번. 원문은 표지 그림 작성 문제이며, 앱에는 색상 답안 중심으로 정리함."
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "중",
-        question: "중량물 취급 작업계획서에 포함되어야 할 내용 3가지를 쓰시오.",
-        answer: "1. 추락 위험을 예방하기 위한 안전 대책\n2. 낙하 위험을 예방하기 위한 안전 대책\n3. 전도 위험을 예방하기 위한 안전 대책\n4. 협착 위험을 예방하기 위한 안전 대책\n5. 붕괴 위험을 예방하기 위한 안전 대책",
-        memo: "출처: 2020년 1차 10번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "중",
-        question: "아세틸렌 발생기 설치에 관하여 빈칸을 채우시오. 발생기실은 건물의 (a)에 위치해야 하며, 화기를 사용하는 설비로부터 (b)m를 초과하는 장소에 설치해야 한다. 발생기실을 옥외에 설치한 경우에는 개구부를 다른 건축물로부터 (c)m 이상 떨어지도록 해야 한다.",
-        answer: "a: 최상층\nb: 3\nc: 1.5",
-        memo: "출처: 2020년 1차 11번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "하",
-        question: "강도율의 의미를 쓰시오.",
-        answer: "근로시간 1,000시간당 재해로 인한 근로손실일수",
-        memo: "출처: 2020년 1차 12번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "상",
-        question: "다음 조건에서 900시간 가동 시 고장확률을 구하시오. 조건: 고장건수 10건, 총가동시간 10,000시간.",
-        answer: "1. 고장률(λ) = 10 / 10000 = 0.001\n2. 고장확률 F(t) = 1 - 신뢰도 R(t)\n3. 신뢰도 R(t) = exp(-λt) = exp(-0.001 × 900) = 0.41\n4. 고장확률 F(t) = 1 - 0.41 = 0.59",
-        memo: "출처: 2020년 1차 13번"
-      },
-      {
-        category: "2020년 1차 기출",
-        level: "상",
-        question: "안전성평가를 순서대로 나열하시오. ① 정성적평가 ② 재평가 ③ FTA 재평가 ④ 대책검토 ⑤ 자료정비 ⑥ 정량적평가",
-        answer: "⑤ 자료정비 → ① 정성적평가 → ⑥ 정량적평가 → ④ 대책검토 → ② 재평가 → ③ FTA 재평가",
-        memo: "출처: 2020년 1차 14번"
-      }
-    ];
-    builtinQuestionSeeds.push(...(window.EXAM_STUDY_PAST_QUESTION_SEEDS || []));
-
-    const builtinTheorySeeds = [
-      {
-        category: "안전관리",
-        title: "안전보건관리체제 핵심",
-        content: "사업장의 안전보건관리는 역할 분담을 묻는 문제가 자주 나온다. 사업주는 안전보건 확보의 최종 책임자이고, 안전보건관리책임자는 사업장 단위의 총괄 관리 역할을 한다. 관리감독자는 현장 작업 지휘와 근로자 지도, 설비·작업방법 점검을 담당한다. 안전관리자와 보건관리자는 전문 기술 사항을 보좌·지도하며, 산업안전보건위원회는 노사 참여로 안전보건 중요 사항을 심의·의결하는 구조로 정리한다.\n\n암기 포인트: 사업주=최종 책임, 관리책임자=총괄, 관리감독자=현장 직접 관리, 안전·보건관리자=전문 보좌, 위원회=노사 참여.",
-        prompt: "안전보건관리체제에서 사업주, 안전보건관리책임자, 관리감독자, 안전관리자·보건관리자의 역할을 구분하여 쓰시오."
-      },
-      {
-        category: "위험성평가",
-        title: "위험성평가 절차",
-        content: "위험성평가는 작업 중 사고나 질병으로 이어질 수 있는 유해·위험요인을 찾아 위험성을 판단하고, 허용 가능한 수준으로 낮추는 관리 절차다. 답안은 대체로 사전준비, 유해·위험요인 파악, 위험성 결정, 감소대책 수립 및 실행, 결과 기록과 공유의 흐름으로 쓰면 안정적이다. 감소대책은 제거, 대체, 공학적 대책, 관리적 대책, 개인보호구 순서처럼 근본 대책을 우선한다.\n\n암기 포인트: 준비-파악-결정-대책-기록/공유.",
-        prompt: "위험성평가의 실시 절차와 위험성 감소대책의 우선순위를 쓰시오."
-      },
-      {
-        category: "재해조사",
-        title: "산업재해 조사와 재발방지",
-        content: "산업재해가 발생하면 응급조치와 추가 재해 방지가 먼저이고, 이후 현장 보존, 관계자 진술, 설비·작업조건 확인, 직접원인과 기본원인 분석, 재발방지대책 수립 순서로 정리한다. 답안은 단순히 사고 원인을 적기보다 불안전한 상태, 불안전한 행동, 관리상 결함을 함께 찾고 교육·점검·설비개선·작업절차 개정으로 연결해야 점수가 안정적이다.\n\n암기 포인트: 응급조치-현장보존-원인분석-대책수립-교육/점검.",
-        prompt: "산업재해 발생 후 조사 절차와 재발방지대책 수립 시 포함할 내용을 쓰시오."
-      },
-      {
-        category: "추락·낙하",
-        title: "추락재해 예방",
-        content: "추락 위험 장소에서는 작업발판, 안전난간, 개구부 덮개, 추락방호망, 안전대 부착설비 등을 통해 떨어짐을 막아야 한다. 작업 전에는 발판의 폭과 고정 상태, 난간의 상부·중간 난간대, 발끝막이판, 개구부 표시와 덮개 고정 여부를 확인한다. 사다리·비계·고소작업대 문제에서는 작업 전 점검, 안전대 착용, 이동 중 탑승 금지, 과상승·전도 방지 같은 키워드를 놓치지 않는다.\n\n암기 포인트: 발판, 난간, 개구부 덮개, 방호망, 안전대 부착설비.",
-        prompt: "추락 위험 작업에서 설치하거나 확인해야 할 추락방지 조치를 쓰시오."
-      },
-      {
-        category: "기계안전",
-        title: "기계 방호장치와 협착 예방",
-        content: "기계안전 문제는 회전부, 동력전달부, 절단·프레스·롤러·컨베이어 등에서 끼임·말림·절단을 막는 방호장치를 묻는다. 방호덮개, 울, 인터록, 양수조작식 장치, 광전자식 방호장치, 비상정지장치, 감김방지 장치 등을 작업 특성에 맞게 연결해 암기한다. 정비·청소·수리 시에는 전원 차단, 잠금장치, 표지 부착, 잔류에너지 제거가 핵심이다.\n\n암기 포인트: 방호덮개/울, 인터록, 양수조작, 광전자식, 비상정지, LOTO.",
-        prompt: "기계의 끼임·말림 재해를 예방하기 위한 방호장치와 정비 시 안전조치를 쓰시오."
-      },
-      {
-        category: "전기안전",
-        title: "전기재해 예방",
-        content: "전기재해는 감전, 아크, 화재로 이어질 수 있으므로 전원 차단, 검전, 접지, 절연, 누전차단기, 잠금·표지, 접근한계 유지가 핵심이다. 이동식 전기기계·기구는 누전차단기 접속, 접지, 코드 손상 여부, 습윤 장소 사용 조건을 점검한다. 활선 또는 근접 작업에서는 절연보호구와 절연용 방호구, 작업구역 통제, 감시자 배치가 답안 키워드가 된다.\n\n암기 포인트: 차단-검전-접지-절연-누전차단-잠금표지.",
-        prompt: "전기작업에서 감전재해를 예방하기 위한 기본 안전조치를 쓰시오."
-      },
-      {
-        category: "화재·폭발",
-        title: "화재·폭발 예방",
-        content: "화재·폭발은 가연물, 산소, 점화원이 동시에 존재할 때 발생한다. 예방은 가연물 제거·격리, 환기, 점화원 관리, 정전기 방지, 방폭 전기기기 사용, 용접·용단 작업 전 가연물 제거와 불티 비산 방지로 정리한다. 인화성 액체나 가연성 가스 취급 시에는 밀폐·환기·누출 점검·농도 관리·소화설비 확보를 함께 적는다.\n\n암기 포인트: 가연물-산소-점화원, 환기, 점화원 제거, 방폭, 정전기 방지.",
-        prompt: "화재·폭발을 예방하기 위한 가연물, 점화원, 환기 관리 대책을 쓰시오."
-      },
-      {
-        category: "밀폐공간",
-        title: "밀폐공간 작업 안전",
-        content: "밀폐공간은 산소결핍, 유해가스, 화재·폭발, 구조 지연 위험이 크다. 작업 전에는 산소와 유해가스 농도를 측정하고, 충분히 환기하며, 출입금지 표시와 감시인을 배치한다. 작업 중에는 계속 환기, 연락체계 유지, 구조장비 준비, 공기호흡기 등 적정 보호구 확보가 필요하다. 구조 시에는 무리한 단독 진입을 피하고 구조장비와 호흡보호구를 먼저 갖춘다.\n\n암기 포인트: 측정-환기-감시인-출입통제-구조장비-호흡보호구.",
-        prompt: "밀폐공간 작업 전과 작업 중에 실시해야 할 안전조치를 쓰시오."
-      },
-      {
-        category: "보호구",
-        title: "개인보호구 선정과 관리",
-        content: "보호구는 위험요인을 제거하지 못할 때 남은 위험을 줄이는 최후의 방어수단이다. 물체 낙하·비래에는 안전모, 추락에는 안전대, 눈 비산에는 보안경·보안면, 소음에는 귀마개·귀덮개, 분진·유해가스에는 적정 호흡보호구, 손상 위험에는 보호장갑을 연결한다. 보호구는 작업 위험에 맞게 선정하고, 착용 전 손상 여부를 점검하며, 근로자에게 착용법과 보관법을 교육해야 한다.\n\n암기 포인트: 위험요인별 보호구 매칭, 지급-착용-점검-교육-보관.",
-        prompt: "작업 위험요인별 적정 보호구와 보호구 관리 시 유의사항을 쓰시오."
-      },
-      {
-        category: "보건관리",
-        title: "작업환경측정과 특수건강진단",
-        content: "보건관리 문제는 유해인자 노출을 확인하고 근로자 건강 이상을 조기에 찾는 흐름으로 정리한다. 작업환경측정은 작업장 공기 중 유해인자 수준을 파악해 환기, 대체, 격리, 보호구 개선 등 관리대책으로 연결한다. 특수건강진단은 특정 유해인자에 노출되는 근로자의 건강 영향을 확인하고, 배치전·정기·수시 등 상황에 맞는 건강관리를 실시하는 제도다.\n\n암기 포인트: 측정=작업환경 노출 확인, 특수건강진단=근로자 건강영향 확인.",
-        prompt: "작업환경측정과 특수건강진단의 목적과 사후관리 방향을 구분하여 쓰시오."
-      },
-      {
-        category: "안전교육",
-        title: "안전보건교육과 작업 전 교육",
-        content: "안전보건교육은 근로자가 작업 위험과 예방조치를 이해하도록 하는 기본 관리수단이다. 신규 채용, 작업내용 변경, 특별교육 대상 작업, 정기교육 등 상황별 교육을 구분한다. 답안에는 작업절차, 위험요인, 보호구 착용, 비상시 조치, 기계·설비 안전장치, MSDS와 화학물질 취급요령 같은 내용을 포함하면 좋다.\n\n암기 포인트: 신규/변경/특별/정기, 작업위험-절차-보호구-비상조치.",
-        prompt: "작업 전 안전보건교육에 포함해야 할 주요 내용을 쓰시오."
-      },
-      {
-        category: "화학물질",
-        title: "화학물질 취급과 MSDS",
-        content: "화학물질 취급 문제는 유해성·위험성 확인, 경고표지, MSDS 비치·교육, 환기, 누출 대응, 보호구 착용을 연결해 답한다. MSDS는 물질의 유해위험성, 응급조치, 폭발·화재 시 대처, 누출 사고 시 조치, 취급·저장, 노출방지와 보호구 정보를 확인하는 자료다. 저장 시에는 혼재금지, 용기 밀폐, 점화원 관리, 누출 방지와 표시를 함께 확인한다.\n\n암기 포인트: MSDS 확인, 경고표지, 환기, 보호구, 누출대응, 저장관리.",
-        prompt: "화학물질 취급 시 MSDS를 활용한 안전조치와 저장·취급 유의사항을 쓰시오."
-      },
-      {
-        category: "필답형 암기",
-        title: "하인리히 재해 발생 이론",
-        content: "하인리히 법칙은 중상해 1건이 발생하기 전에 경상해 29건과 무상해사고 300건이 선행된다는 재해 구성비 이론이다. 비율은 중상해:경상해:무상해사고 = 1:29:300으로 암기한다.\n\n도미노 이론은 재해가 1단계 사회적 환경 및 유전적 요소, 2단계 개인적 결함, 3단계 불안전한 행동 및 상태, 4단계 사고, 5단계 재해의 순서로 발생한다고 본다. 예방의 핵심은 세 번째 단계인 불안전한 행동 및 불안전한 상태를 제거하는 것이다.",
-        prompt: "하인리히의 재해 구성비와 도미노 이론 5단계를 쓰고, 재해 예방의 핵심 단계를 설명하시오."
-      },
-      {
-        category: "필답형 암기",
-        title: "버드의 재해 구성비",
-        content: "버드의 재해 구성비는 중상해 1, 경상해 10, 물적손실 30, 무상해사고 600의 비율로 정리한다. 하인리히의 1:29:300과 헷갈리기 쉬우므로 버드는 1:10:30:600으로 따로 암기한다.\n\n암기 포인트: 버드=중상해, 경상해, 물적손실, 무상해사고.",
-        prompt: "버드의 재해 구성비 1:10:30:600에서 각 숫자가 의미하는 항목을 쓰시오."
-      },
-      {
-        category: "재해원인",
-        title: "재해 원인 분류",
-        content: "재해 원인은 직접원인과 간접원인으로 나눈다. 직접원인은 불안전한 행동과 불안전한 상태다. 불안전한 행동에는 안전장치 제거, 보호구 미착용, 위험장소 접근, 운전 중 장난, 작업방법 위반 등이 있다. 불안전한 상태에는 방호장치 결함, 조명 부족, 환기 불량, 정리정돈 불량, 기계설비 결함 등이 있다.\n\n간접원인은 기술적 원인, 교육적 원인, 관리적 원인으로 정리한다. 기술적 원인은 설계 불량, 구조 결함, 점검 미흡이다. 교육적 원인은 안전교육 부족과 작업방법 미숙지다. 관리적 원인은 감독 부족, 안전관리 미흡, 작업계획 부적정이다.",
-        prompt: "재해의 직접원인과 간접원인을 구분하고 각각의 예를 쓰시오."
-      },
-      {
-        category: "재해통계",
-        title: "산업재해 통계 공식",
-        content: "도수율은 100만 근로시간당 재해 건수를 나타낸다. 공식은 도수율 = 재해건수 × 1,000,000 ÷ 총근로시간수다.\n\n강도율은 1,000 근로시간당 근로손실일수를 나타낸다. 공식은 강도율 = 근로손실일수 × 1,000 ÷ 총근로시간수다.\n\n종합재해지수 FSI는 도수율과 강도율을 함께 고려한 지표이며 공식은 FSI = √(도수율 × 강도율)이다.",
-        prompt: "도수율, 강도율, 종합재해지수 FSI의 정의와 계산식을 쓰시오."
-      },
-      {
-        category: "안전성평가",
-        title: "FTA 핵심 용어",
-        content: "FTA는 Fault Tree Analysis의 약자로 사고의 원인을 논리적으로 분석하여 정상사상 발생 원인을 찾는 정량적 안전성 평가기법이다. AND 게이트는 입력 사건이 모두 발생해야 출력 사건이 발생한다. OR 게이트는 입력 사건 중 하나 이상이 발생하면 출력 사건이 발생한다.\n\n최소컷셋은 정상사상을 발생시키는 최소한의 사건 조합이다. 최소패스셋은 정상상태를 유지하기 위한 최소한의 사건 조합이다.",
-        prompt: "FTA의 정의, AND 게이트, OR 게이트, 최소컷셋, 최소패스셋을 설명하시오."
-      },
-      {
-        category: "공정안전",
-        title: "HAZOP 유인어",
-        content: "HAZOP은 공정의 위험요소를 유인어를 이용해 분석하는 기법이다. 주요 유인어는 No, More, Less, Reverse, Part of, As well as, Other than이다.\n\nNo는 없음, More는 많음, Less는 적음, Reverse는 역방향, Part of는 일부, As well as는 추가, Other than은 다른 것을 의미한다.",
-        prompt: "HAZOP의 정의와 주요 유인어 No, More, Less, Reverse, Part of, As well as, Other than의 의미를 쓰시오."
-      },
-      {
-        category: "화재·폭발",
-        title: "화재 종류",
-        content: "A급 화재는 일반화재로 목재, 종이, 섬유 등이 해당한다. B급 화재는 유류화재로 휘발유, 경유, 벤젠 등이 해당한다. C급 화재는 전기화재다. D급 화재는 금속화재로 마그네슘, 나트륨, 칼륨 등이 해당한다. K급 화재는 식용유 화재다.\n\n암기 포인트: A=일반, B=유류, C=전기, D=금속, K=주방 식용유.",
-        prompt: "A급, B급, C급, D급, K급 화재의 종류와 대표 예를 쓰시오."
-      },
-      {
-        category: "화재·폭발",
-        title: "폭발범위와 화염일주한계",
-        content: "폭발하한계 LEL은 폭발이 가능한 최소 농도이고, 폭발상한계 UEL은 폭발이 가능한 최대 농도다. 폭발범위가 넓을수록 여러 농도 조건에서 폭발할 수 있으므로 위험성이 크다.\n\n화염일주한계는 화염이 관 내부를 전파할 수 있는 최소 관경이다. 관경이 화염일주한계보다 작으면 화염이 전파되지 않는다.",
-        prompt: "폭발하한계, 폭발상한계, 폭발범위의 위험성, 화염일주한계를 설명하시오."
-      },
-      {
-        category: "밀폐공간",
-        title: "산소결핍 기준",
-        content: "산소결핍은 공기 중 산소농도가 부족한 상태다. 필답형에서는 정상 기준 18% 이상, 산소결핍 18% 미만, 질식 위험 10% 이하를 숫자로 정확히 암기한다.\n\n밀폐공간 문제에서는 산소농도 측정, 유해가스 측정, 환기, 감시인 배치, 구조장비와 호흡보호구 준비까지 함께 답안에 넣으면 좋다.",
-        prompt: "산소결핍과 질식 위험의 산소농도 기준을 쓰고 밀폐공간 작업 안전조치를 쓰시오."
-      },
-      {
-        category: "전기안전",
-        title: "정전기 발생 원인과 방지대책",
-        content: "정전기는 마찰, 박리, 유동, 분출, 충돌 등에 의해 발생한다. 방지대책은 접지, 본딩, 가습, 제전제 사용, 도전성 재료 사용으로 정리한다.\n\n암기 포인트: 발생원인=마찰·박리·유동·분출·충돌, 대책=접지·본딩·가습·제전제·도전성 재료.",
-        prompt: "정전기의 발생 원인 5가지와 방지대책 5가지를 쓰시오."
-      },
-      {
-        category: "전기안전",
-        title: "코로나 방전",
-        content: "코로나 방전은 전선 주위 공기의 절연이 파괴되어 부분 방전이 발생하는 현상이다. 영향으로는 전력손실, 통신장애, 소음발생, 오존생성이 있다. 방지대책은 굵은 전선 사용, 다도체 사용, 전선 간격 증가로 정리한다.",
-        prompt: "코로나 방전의 정의, 영향, 방지대책을 쓰시오."
-      },
-      {
-        category: "보호구",
-        title: "보호구 종류와 용도",
-        content: "안전모는 추락, 낙하, 비래물 위험에서 머리를 보호한다. 안전대는 추락방지에 사용한다. 보안경은 비산물과 분진으로부터 눈을 보호한다. 방독마스크는 유해가스에 사용하고, 방진마스크는 분진에 사용한다.\n\n암기 포인트: 안전모=머리, 안전대=추락, 보안경=눈, 방독=가스, 방진=분진.",
-        prompt: "안전모, 안전대, 보안경, 방독마스크, 방진마스크의 용도를 쓰시오."
-      },
-      {
-        category: "위험성평가",
-        title: "위험성평가 필답형 절차",
-        content: "위험성평가 절차는 유해위험요인 파악, 위험성 추정, 위험성 결정, 감소대책 수립 및 실행, 기록 및 관리 순서로 암기한다. 앞글자 흐름은 파악-추정-결정-대책-기록이다.\n\n시험에서는 절차 순서와 함께 감소대책을 실행하고 결과를 기록·관리해야 한다는 점을 함께 쓰면 좋다.",
-        prompt: "위험성평가 절차 5단계를 순서대로 쓰시오."
-      },
-      {
-        category: "안전교육",
-        title: "산업안전보건교육 종류",
-        content: "산업안전보건교육은 정기교육, 채용 시 교육, 작업내용 변경 시 교육, 특별안전보건교육으로 정리한다. 정기교육은 근로자에게 정기적으로 실시하고, 채용 시 교육은 신규 채용자 대상이다. 작업내용 변경 시 교육은 업무가 변경될 때 실시하며, 특별안전보건교육은 유해위험작업 종사자를 대상으로 한다.",
-        prompt: "산업안전보건교육의 종류 4가지를 쓰고 각각의 대상을 설명하시오."
-      },
-      {
-        category: "인간공학",
-        title: "인간 실수 유형",
-        content: "인간 실수 유형은 착오, 실수, 망각으로 구분한다. 착오 Mistake는 판단 자체가 잘못된 경우다. 실수 Slip은 알고 있으나 행동을 잘못한 경우다. 망각 Lapse는 기억하지 못한 경우다.\n\n암기 포인트: 착오=판단 오류, 실수=행동 오류, 망각=기억 실패.",
-        prompt: "착오, 실수, 망각의 의미를 구분하여 쓰시오."
-      },
-      {
-        category: "안전관리",
-        title: "안전관리 조직 형태",
-        content: "Line형은 명령계통이 일원화되어 책임이 명확하지만 전문성이 부족할 수 있다. Staff형은 전문가를 활용해 전문성이 우수하지만 명령권이 없다. Line-Staff형은 Line형과 Staff형의 혼합형으로 현장 명령계통과 전문 지원 기능을 함께 활용한다.",
-        prompt: "Line형, Staff형, Line-Staff형 안전관리 조직의 장단점을 쓰시오."
-      },
-      {
-        category: "필답형 암기",
-        title: "초빈출 암기 숫자",
-        content: "산업안전기사 필답형에서 자주 나오는 숫자는 따로 암기한다. 하인리히 재해 구성비는 1:29:300이다. 버드 재해 구성비는 1:10:30:600이다. 산소결핍은 18% 미만, 질식위험은 10% 이하다. 도수율은 100만 시간 기준이고, 강도율은 1,000시간 기준이다. 종합재해지수는 FSI = √(도수율 × 강도율)이다.",
-        prompt: "산업안전기사 필답형 초빈출 암기 숫자를 정리하여 쓰시오."
-      }
-    ];
 
     const els = {
       totalCount: document.querySelector("#totalCount"),
@@ -2347,7 +2025,6 @@
       clearBankSearchBtn: document.querySelector("#clearBankSearchBtn"),
       csvFile: document.querySelector("#csvFile"),
       pickCsvBtn: document.querySelector("#pickCsvBtn"),
-      loadSampleBtn: document.querySelector("#loadSampleBtn"),
       csvPaste: document.querySelector("#csvPaste"),
       importPasteBtn: document.querySelector("#importPasteBtn"),
       downloadTemplateBtn: document.querySelector("#downloadTemplateBtn"),
@@ -2442,7 +2119,6 @@
     els.pickCsvBtn.addEventListener("click", () => els.csvFile.click());
     els.csvFile.addEventListener("change", importCsvFile);
     els.importPasteBtn.addEventListener("click", () => importCsvText(els.csvPaste.value));
-    els.loadSampleBtn.addEventListener("click", loadSamples);
     els.downloadTemplateBtn.addEventListener("click", downloadTemplate);
     els.saveCloudConfigBtn.addEventListener("click", saveCloudConfig);
     els.signUpBtn.addEventListener("click", signUpCloud);
@@ -2464,8 +2140,6 @@
     });
 
     initCloudInputs();
-    seedBuiltinQuestions();
-    seedBuiltinTheories();
     render();
     updateTheoryPreview();
     setupPwa();
@@ -2628,65 +2302,6 @@
 
     function persist() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
-
-    function seedBuiltinQuestions() {
-      if (localStorage.getItem(BUILTIN_QUESTION_SEED_KEY)) return;
-      if (!state.questions) state.questions = [];
-      const existing = new Set(state.questions.map(question => {
-        return `${question.examId || DEFAULT_EXAM_ID}|${question.category}|${question.question}`;
-      }));
-      const created = [];
-      builtinQuestionSeeds.forEach((seed, index) => {
-        const key = `${DEFAULT_EXAM_ID}|${seed.category}|${seed.question}`;
-        if (existing.has(key)) return;
-        existing.add(key);
-        created.push({
-          id: `builtin-question-2020-1-${index + 1}`,
-          examId: DEFAULT_EXAM_ID,
-          category: seed.category,
-          level: seed.level,
-          question: seed.question,
-          answer: seed.answer,
-          memo: seed.memo,
-          status: "new",
-          wrongCount: 0,
-          masteredAt: ""
-        });
-      });
-      if (created.length) {
-        state.questions.push(...created);
-        persist();
-      }
-      localStorage.setItem(BUILTIN_QUESTION_SEED_KEY, "done");
-    }
-
-    function seedBuiltinTheories() {
-      if (localStorage.getItem(BUILTIN_THEORY_SEED_KEY)) return;
-      if (!state.theories) state.theories = [];
-      const existing = new Set(state.theories.map(theory => {
-        return `${theory.examId || DEFAULT_EXAM_ID}|${theory.category}|${theory.title}`;
-      }));
-      const created = [];
-      builtinTheorySeeds.forEach(seed => {
-        const key = `${DEFAULT_EXAM_ID}|${seed.category}|${seed.title}`;
-        if (existing.has(key)) return;
-        existing.add(key);
-        created.push({
-          id: `builtin-theory-${seed.title.replace(/\s+/g, "-")}`,
-          examId: DEFAULT_EXAM_ID,
-          category: seed.category,
-          title: seed.title,
-          content: seed.content,
-          prompt: seed.prompt,
-          updatedAt: new Date().toISOString()
-        });
-      });
-      if (created.length) {
-        state.theories.push(...created);
-        persist();
-      }
-      localStorage.setItem(BUILTIN_THEORY_SEED_KEY, "done");
     }
 
     function filteredQuestions() {
@@ -4156,16 +3771,6 @@
       });
       persist();
       render();
-    }
-
-    function loadSamples() {
-      const existingTexts = new Set(currentExamQuestions().map(q => q.question));
-      sampleQuestions.forEach(q => {
-        if (!existingTexts.has(q.question)) state.questions.push({ ...q, id: crypto.randomUUID(), examId: state.activeExamId });
-      });
-      persist();
-      render();
-      setView("study");
     }
 
     function importCsvFile(event) {
