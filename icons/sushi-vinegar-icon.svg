@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Sushi Vinegar app icon</title>
+  <desc id="desc">A rounded app icon with a sushi roll, rice grains, and a vinegar drop.</desc>
+  <defs>
+    <linearGradient id="bg" x1="72" y1="48" x2="448" y2="472" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8faf4"/>
+      <stop offset="0.58" stop-color="#e6f1ec"/>
+      <stop offset="1" stop-color="#f7d487"/>
+    </linearGradient>
+    <linearGradient id="nori" x1="142" y1="168" x2="348" y2="366" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#123d37"/>
+      <stop offset="1" stop-color="#071f1d"/>
+    </linearGradient>
+    <linearGradient id="fish" x1="196" y1="136" x2="332" y2="252" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffb37b"/>
+      <stop offset="1" stop-color="#e95f4c"/>
+    </linearGradient>
+    <linearGradient id="drop" x1="337" y1="82" x2="414" y2="216" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b8fff4"/>
+      <stop offset="1" stop-color="#24a99b"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#102f2b" flood-opacity=".18"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="116" cy="114" r="50" fill="#f3b24f" opacity=".25"/>
+  <circle cx="420" cy="404" r="74" fill="#146c5f" opacity=".09"/>
+
+  <g filter="url(#shadow)">
+    <path d="M153 188c0-26 21-47 47-47h107c26 0 47 21 47 47v131c0 26-21 47-47 47H200c-26 0-47-21-47-47V188Z" fill="url(#nori)"/>
+    <path d="M178 207c0-23 19-42 42-42h67c23 0 42 19 42 42v93c0 23-19 42-42 42h-67c-23 0-42-19-42-42v-93Z" fill="#fbfbf3"/>
+    <path d="M207 171c7-20 25-34 47-34s41 14 48 34c-10 21-28 35-48 35s-38-14-47-35Z" fill="url(#fish)"/>
+    <path d="M216 178c18 8 52 8 75 0" fill="none" stroke="#fff0df" stroke-width="10" stroke-linecap="round" opacity=".82"/>
+    <path d="M224 258c0-17 14-31 31-31s31 14 31 31-14 31-31 31-31-14-31-31Z" fill="#f3b24f"/>
+    <path d="M238 258c0-9 8-17 17-17s17 8 17 17-8 17-17 17-17-8-17-17Z" fill="#ffefe4"/>
+  </g>
+
+  <g fill="#d7ddd4" opacity=".9">
+    <ellipse cx="206" cy="220" rx="7" ry="4" transform="rotate(-25 206 220)"/>
+    <ellipse cx="303" cy="223" rx="7" ry="4" transform="rotate(22 303 223)"/>
+    <ellipse cx="210" cy="313" rx="7" ry="4" transform="rotate(18 210 313)"/>
+    <ellipse cx="298" cy="309" rx="7" ry="4" transform="rotate(-24 298 309)"/>
+  </g>
+
+  <path d="M383 82c25 38 61 80 61 118 0 38-27 67-61 67s-61-29-61-67c0-38 36-80 61-118Z" fill="url(#drop)" filter="url(#shadow)"/>
+  <path d="M365 151c-13 19-20 35-20 50 0 22 14 39 35 43" fill="none" stroke="#dcfff9" stroke-width="12" stroke-linecap="round" opacity=".82"/>
+  <path d="M333 358c26 2 48 21 56 46" fill="none" stroke="#d9912b" stroke-width="18" stroke-linecap="round"/>
+</svg>

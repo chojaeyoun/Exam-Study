@@ -11,7 +11,7 @@
   "theme_color": "#24323b",
   "icons": [
     {
-      "src": "icons/safety-icon.svg",
+      "src": "icons/sushi-vinegar-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
