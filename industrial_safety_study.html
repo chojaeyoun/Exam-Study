@@ -3229,12 +3229,15 @@
               </select>
             </label>
             <label class="wide">문제
+              <div class="text-tools" data-tools-for-quick="question"></div>
               <textarea data-quick-field="question" required>${escapeHtml(q.question)}</textarea>
             </label>
             <label class="wide">정답
+              <div class="text-tools" data-tools-for-quick="answer"></div>
               <textarea data-quick-field="answer" required>${escapeHtml(q.answer)}</textarea>
             </label>
             <label class="wide">메모
+              <div class="text-tools" data-tools-for-quick="memo"></div>
               <textarea data-quick-field="memo">${escapeHtml(q.memo || "")}</textarea>
             </label>
             <div class="wide quick-edit-actions">
@@ -3247,6 +3250,7 @@
     }
 
     function bindListButtons(root) {
+      setupTextTools(root);
       root.querySelectorAll("[data-quick-edit]").forEach(button => {
         button.addEventListener("click", () => {
           quickEditId = quickEditId === button.dataset.quickEdit ? "" : button.dataset.quickEdit;
@@ -3774,10 +3778,14 @@
       download("exam_questions_template.csv", toCsv(rows));
     }
 
-    function setupTextTools() {
-      document.querySelectorAll("[data-tools-for]").forEach(toolbox => {
-        const textarea = document.querySelector(`#${toolbox.dataset.toolsFor}`);
+    function setupTextTools(root = document) {
+      root.querySelectorAll("[data-tools-for], [data-tools-for-quick]").forEach(toolbox => {
+        if (toolbox.dataset.toolsReady === "true") return;
+        const textarea = toolbox.dataset.toolsFor
+          ? document.querySelector(`#${toolbox.dataset.toolsFor}`)
+          : toolbox.closest("[data-quick-form]")?.querySelector(`[data-quick-field="${toolbox.dataset.toolsForQuick}"]`);
         if (!textarea) return;
+        toolbox.dataset.toolsReady = "true";
         toolbox.innerHTML = `
           <div class="symbol-tools" aria-label="특수기호 입력">
             ${WRITING_SYMBOLS.map(symbol => `<button class="symbol-tool" type="button" data-symbol="${escapeHtml(symbol)}" title="${escapeHtml(symbol)}">${escapeHtml(symbol)}</button>`).join("")}
