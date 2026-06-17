@@ -1921,6 +1921,8 @@
     const STORAGE_KEY = "examStudyApp.v2";
     const CLOUD_CONFIG_KEY = "examStudyApp.supabase.v1";
     const OLD_STORAGE_KEYS = ["industrialSafetyPracticalStudy.v1"];
+    const LEGACY_PUBLIC_QUESTION_COUNT = 223;
+    const LEGACY_PUBLIC_THEORY_COUNT = 29;
     const CLOUD_SYNC_START = "\n\n<!--EXAM_STUDY_SYNC:";
     const CLOUD_SYNC_END = "-->";
     const CLOUD_BACKUP_CATEGORY = "__sync_backup__";
@@ -2158,7 +2160,13 @@
     function loadState() {
       try {
         const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (saved && Array.isArray(saved.questions)) return normalizeState(saved);
+        if (saved && Array.isArray(saved.questions)) {
+          if (isLegacyPublicSeedState(saved)) {
+            clearLegacyPublicSeedStorage();
+            return normalizeState({ questions: [], theories: [] });
+          }
+          return normalizeState(saved);
+        }
       } catch (error) {
         console.warn(error);
       }
@@ -2166,13 +2174,28 @@
       for (const key of OLD_STORAGE_KEYS) {
         try {
           const saved = JSON.parse(localStorage.getItem(key));
-          if (saved && Array.isArray(saved.questions)) return normalizeState(saved);
+          if (saved && Array.isArray(saved.questions)) {
+            localStorage.removeItem(key);
+            return normalizeState({ questions: [], theories: [] });
+          }
         } catch (error) {
           console.warn(error);
         }
       }
 
       return normalizeState({ questions: [] });
+    }
+
+    function isLegacyPublicSeedState(saved) {
+      const questionCount = Array.isArray(saved?.questions) ? saved.questions.length : 0;
+      const theoryCount = Array.isArray(saved?.theories) ? saved.theories.length : 0;
+      return questionCount === LEGACY_PUBLIC_QUESTION_COUNT &&
+        theoryCount === LEGACY_PUBLIC_THEORY_COUNT;
+    }
+
+    function clearLegacyPublicSeedStorage() {
+      localStorage.removeItem(STORAGE_KEY);
+      OLD_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
     }
 
     function normalizeState(saved) {
