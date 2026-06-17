@@ -2065,6 +2065,7 @@
       [els.answerInput, TABLE_SLASH_BLOCK ? [TABLE_SLASH_BLOCK] : []],
       [els.memoInput, TABLE_SLASH_BLOCK ? [TABLE_SLASH_BLOCK] : []]
     ]);
+    const DYNAMIC_SLASH_TARGETS = new WeakMap();
 
     let slashState = null;
 
@@ -2108,14 +2109,7 @@
     [els.theoryTitleInput, els.theoryCategoryInput, els.theoryContentInput, els.theoryPromptInput].forEach(input => {
       input.addEventListener("input", updateTheoryPreview);
     });
-    SLASH_TARGETS.forEach((options, textarea) => {
-      if (!textarea || !options.length) return;
-      textarea.addEventListener("input", () => handleSlashInput(textarea));
-      textarea.addEventListener("keydown", handleSlashKeydown);
-      textarea.addEventListener("blur", () => {
-        setTimeout(closeSlashMenu, 120);
-      });
-    });
+    SLASH_TARGETS.forEach((options, textarea) => registerSlashTextarea(textarea, options));
     document.querySelectorAll("[data-theory-block]").forEach(button => {
       button.addEventListener("click", () => insertTheoryBlock(button.dataset.theoryBlock));
     });
@@ -3046,6 +3040,17 @@
       return typeof block.template === "function" ? block.template() : block.template;
     }
 
+    function registerSlashTextarea(textarea, options) {
+      if (!textarea || !options?.length || textarea.dataset.slashReady === "true") return;
+      DYNAMIC_SLASH_TARGETS.set(textarea, options);
+      textarea.dataset.slashReady = "true";
+      textarea.addEventListener("input", () => handleSlashInput(textarea));
+      textarea.addEventListener("keydown", handleSlashKeydown);
+      textarea.addEventListener("blur", () => {
+        setTimeout(closeSlashMenu, 120);
+      });
+    }
+
     function handleSlashInput(textarea) {
       const trigger = findSlashTrigger(textarea);
       if (!trigger) {
@@ -3098,7 +3103,7 @@
     }
 
     function slashOptions(query, textarea) {
-      const blocks = SLASH_TARGETS.get(textarea) || [];
+      const blocks = DYNAMIC_SLASH_TARGETS.get(textarea) || SLASH_TARGETS.get(textarea) || [];
       if (!query) return blocks;
       return blocks.filter(block => {
         return block.label.toLowerCase().includes(query) ||
@@ -3357,6 +3362,9 @@
 
     function bindListButtons(root) {
       setupTextTools(root);
+      root.querySelectorAll("[data-quick-field='question'], [data-quick-field='answer'], [data-quick-field='memo']").forEach(textarea => {
+        registerSlashTextarea(textarea, TABLE_SLASH_BLOCK ? [TABLE_SLASH_BLOCK] : []);
+      });
       root.querySelectorAll("[data-quick-edit]").forEach(button => {
         button.addEventListener("click", () => {
           quickEditId = quickEditId === button.dataset.quickEdit ? "" : button.dataset.quickEdit;
