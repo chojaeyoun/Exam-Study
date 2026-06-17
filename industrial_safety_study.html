@@ -1913,7 +1913,7 @@
       </section>
     </main>
   </div>
-  <div id="slashMenu" class="slash-menu hidden" role="listbox" aria-label="이론 블록 선택"></div>
+  <div id="slashMenu" class="slash-menu hidden" role="listbox" aria-label="입력 블록 선택"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -2056,6 +2056,14 @@
       { id: "divider", label: "구분선", icon: "―", hint: "내용 구간 나누기", template: "\n---\n" }
     ];
 
+    const TABLE_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "table");
+    const SLASH_TARGETS = new Map([
+      [els.theoryContentInput, THEORY_BLOCKS],
+      [els.questionInput, TABLE_SLASH_BLOCK ? [TABLE_SLASH_BLOCK] : []],
+      [els.answerInput, TABLE_SLASH_BLOCK ? [TABLE_SLASH_BLOCK] : []],
+      [els.memoInput, TABLE_SLASH_BLOCK ? [TABLE_SLASH_BLOCK] : []]
+    ]);
+
     let slashState = null;
 
     setupTextTools();
@@ -2098,10 +2106,13 @@
     [els.theoryTitleInput, els.theoryCategoryInput, els.theoryContentInput, els.theoryPromptInput].forEach(input => {
       input.addEventListener("input", updateTheoryPreview);
     });
-    els.theoryContentInput.addEventListener("input", handleSlashInput);
-    els.theoryContentInput.addEventListener("keydown", handleSlashKeydown);
-    els.theoryContentInput.addEventListener("blur", () => {
-      setTimeout(closeSlashMenu, 120);
+    SLASH_TARGETS.forEach((options, textarea) => {
+      if (!textarea || !options.length) return;
+      textarea.addEventListener("input", () => handleSlashInput(textarea));
+      textarea.addEventListener("keydown", handleSlashKeydown);
+      textarea.addEventListener("blur", () => {
+        setTimeout(closeSlashMenu, 120);
+      });
     });
     document.querySelectorAll("[data-theory-block]").forEach(button => {
       button.addEventListener("click", () => insertTheoryBlock(button.dataset.theoryBlock));
@@ -3012,18 +3023,18 @@
       return typeof block.template === "function" ? block.template() : block.template;
     }
 
-    function handleSlashInput() {
-      const trigger = findSlashTrigger();
+    function handleSlashInput(textarea) {
+      const trigger = findSlashTrigger(textarea);
       if (!trigger) {
         closeSlashMenu();
         return;
       }
-      const options = slashOptions(trigger.query);
+      const options = slashOptions(trigger.query, textarea);
       if (!options.length) {
         closeSlashMenu();
         return;
       }
-      slashState = { ...trigger, selectedIndex: 0, options };
+      slashState = { ...trigger, textarea, selectedIndex: 0, options };
       renderSlashMenu();
     }
 
@@ -3046,8 +3057,8 @@
       }
     }
 
-    function findSlashTrigger() {
-      const textarea = els.theoryContentInput;
+    function findSlashTrigger(textarea) {
+      if (!textarea) return null;
       const cursor = textarea.selectionStart ?? 0;
       const before = textarea.value.slice(0, cursor);
       const lineStart = before.lastIndexOf("\n") + 1;
@@ -3063,9 +3074,10 @@
       };
     }
 
-    function slashOptions(query) {
-      if (!query) return THEORY_BLOCKS;
-      return THEORY_BLOCKS.filter(block => {
+    function slashOptions(query, textarea) {
+      const blocks = SLASH_TARGETS.get(textarea) || [];
+      if (!query) return blocks;
+      return blocks.filter(block => {
         return block.label.toLowerCase().includes(query) ||
           block.id.toLowerCase().includes(query) ||
           block.hint.toLowerCase().includes(query);
@@ -3083,7 +3095,7 @@
       els.slashMenu.querySelectorAll("[data-slash-id]").forEach(button => {
         button.addEventListener("mousedown", event => {
           event.preventDefault();
-          const block = THEORY_BLOCKS.find(item => item.id === button.dataset.slashId);
+          const block = slashState.options.find(item => item.id === button.dataset.slashId);
           applySlashOption(block);
         });
       });
@@ -3092,7 +3104,8 @@
     }
 
     function positionSlashMenu() {
-      const rect = els.theoryContentInput.getBoundingClientRect();
+      const textarea = slashState?.textarea || els.theoryContentInput;
+      const rect = textarea.getBoundingClientRect();
       const top = Math.min(window.innerHeight - 290, rect.top + 58);
       const left = Math.min(window.innerWidth - 334, rect.left + 18);
       els.slashMenu.style.top = `${Math.max(12, top)}px`;
@@ -3101,7 +3114,7 @@
 
     function applySlashOption(block) {
       if (!slashState || !block) return;
-      const textarea = els.theoryContentInput;
+      const textarea = slashState.textarea || els.theoryContentInput;
       const before = textarea.value.slice(0, slashState.start);
       const after = textarea.value.slice(slashState.end);
       const text = blockTemplate(block);
@@ -3111,7 +3124,9 @@
       textarea.setSelectionRange(cursor, cursor);
       textarea.dispatchEvent(new Event("input", { bubbles: true }));
       closeSlashMenu();
-      updateTheoryPreview();
+      if (textarea === els.theoryContentInput) {
+        updateTheoryPreview();
+      }
     }
 
     function closeSlashMenu() {
