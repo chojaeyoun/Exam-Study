@@ -2995,6 +2995,7 @@
 
     function renderMarkdownTable(block) {
       const lines = String(block || "").split("\n").map(line => line.trim()).filter(Boolean);
+      const alignments = splitTableRow(lines[1] || "").map(tableAlignment);
       const rows = lines
         .filter((line, index) => index !== 1)
         .map(splitTableRow)
@@ -3003,9 +3004,23 @@
       const header = rows[0];
       const bodyRows = rows.slice(1);
       return `<div class="content-table-wrap"><table class="content-table">
-        <thead><tr>${header.map(cell => `<th>${escapeHtml(cell)}</th>`).join("")}</tr></thead>
-        <tbody>${bodyRows.map(row => `<tr>${header.map((_, index) => `<td>${escapeHtml(row[index] || "")}</td>`).join("")}</tr>`).join("")}</tbody>
+        <thead><tr>${header.map((cell, index) => `<th${tableAlignAttr(alignments[index])}>${escapeHtml(cell)}</th>`).join("")}</tr></thead>
+        <tbody>${bodyRows.map(row => `<tr>${header.map((_, index) => `<td${tableAlignAttr(alignments[index])}>${escapeHtml(row[index] || "")}</td>`).join("")}</tr>`).join("")}</tbody>
       </table></div>`;
+    }
+
+    function tableAlignment(cell) {
+      const value = String(cell || "").trim();
+      const left = value.startsWith(":");
+      const right = value.endsWith(":");
+      if (left && right) return "center";
+      if (right) return "right";
+      if (left) return "left";
+      return "";
+    }
+
+    function tableAlignAttr(align) {
+      return align ? ` style="text-align:${align}"` : "";
     }
 
     function renderTheoryContentBlock(block, isKey = false) {
