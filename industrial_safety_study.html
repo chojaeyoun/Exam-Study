@@ -3071,14 +3071,16 @@
             core.push(corePoint[2].trim());
           } else if (/^(의미|해설|풀이|설명)\s*[:：]?$/i.test(point.text)) {
             mode = "points";
-          } else {
+          } else if (mode === "points") {
             points.push(point);
-            mode = "points";
+          } else {
+            core.push(line);
           }
           return;
         }
-        if (mode === "core" && !core.length) {
-          core.push(line.replace(/^(정답|비율)\s*[:：]\s*/i, ""));
+        if (mode === "core") {
+          const cleanLine = core.length ? line : line.replace(/^(정답|비율)\s*[:：]\s*/i, "");
+          core.push(cleanLine);
         } else {
           extra.push(line);
         }
