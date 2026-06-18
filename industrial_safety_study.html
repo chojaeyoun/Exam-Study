@@ -613,6 +613,70 @@
 
     .answer.visible { display: block; }
 
+    .answer-card {
+      display: grid;
+      gap: 14px;
+    }
+
+    .answer-section {
+      display: grid;
+      gap: 8px;
+    }
+
+    .answer-section-title {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .answer-core {
+      margin: 0;
+      padding: 13px 14px;
+      border: 1px solid #cfe0dc;
+      border-radius: 8px;
+      background: #fff;
+      color: #123d36;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .answer-points {
+      display: grid;
+      gap: 7px;
+    }
+
+    .answer-point {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 9px;
+      align-items: start;
+      padding: 9px 10px;
+      border: 1px solid #dfe8e5;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .answer-point b {
+      min-width: 28px;
+      color: var(--accent-dark);
+      font-weight: 900;
+    }
+
+    .answer-note {
+      margin: 0;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #eef5f3;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -2943,12 +3007,99 @@
     }
 
     function formatAnswerCardHtml(question) {
-      const answerText = [question.answer, question.memo ? `\n메모: ${question.memo}` : ""].join("").trim();
-      const textHtml = answerText ? formatRichTextHtml(answerText) : "";
+      const textHtml = formatStructuredAnswerHtml(question);
       const imageHtml = question.answerImage
         ? `<img class="answer-photo" src="${escapeHtml(question.answerImage)}" alt="${escapeHtml(question.answerImageName || "정답 사진")}">`
         : "";
       return textHtml || imageHtml ? `${textHtml}${imageHtml}` : "저장된 정답이 없습니다.";
+    }
+
+    function formatStructuredAnswerHtml(question) {
+      const answer = String(question.answer || "").trim();
+      const memo = String(question.memo || "").trim();
+      if (!answer && !memo) return "";
+      const parsed = parseAnswerSections(answer);
+      const coreHtml = parsed.core
+        ? `<section class="answer-section">
+            <h4 class="answer-section-title">정답</h4>
+            <p class="answer-core">${escapeHtml(parsed.core)}</p>
+          </section>`
+        : "";
+      const pointsHtml = parsed.points.length
+        ? `<section class="answer-section">
+            <h4 class="answer-section-title">의미 · 해설</h4>
+            <div class="answer-points">${parsed.points.map(point => {
+              return `<div class="answer-point"><b>${escapeHtml(point.label)}</b><span>${escapeHtml(point.text)}</span></div>`;
+            }).join("")}</div>
+          </section>`
+        : "";
+      const extraHtml = parsed.extra
+        ? `<section class="answer-section">
+            <h4 class="answer-section-title">추가 답안</h4>
+            ${formatRichTextHtml(parsed.extra)}
+          </section>`
+        : "";
+      const memoHtml = memo
+        ? `<section class="answer-section">
+            <h4 class="answer-section-title">메모</h4>
+            <p class="answer-note">${escapeHtml(memo.replace(/^메모:\s*/i, ""))}</p>
+          </section>`
+        : "";
+      return `<div class="answer-card">${coreHtml}${pointsHtml}${extraHtml}${memoHtml}</div>`;
+    }
+
+    function parseAnswerSections(answer) {
+      const lines = String(answer || "")
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+      const points = [];
+      const core = [];
+      const extra = [];
+      let mode = "core";
+
+      lines.forEach(line => {
+        const heading = line.replace(/^#+\s*/, "").trim();
+        if (/^(의미|해설|풀이|설명)$/i.test(heading)) {
+          mode = "points";
+          return;
+        }
+        const point = parseAnswerPoint(line);
+        if (point) {
+          const corePoint = point.text.match(/^(정답|비율)\s*[:：]\s*(.+)$/i);
+          if (!core.length && corePoint) {
+            core.push(corePoint[2].trim());
+          } else if (/^(의미|해설|풀이|설명)\s*[:：]?$/i.test(point.text)) {
+            mode = "points";
+          } else {
+            points.push(point);
+            mode = "points";
+          }
+          return;
+        }
+        if (mode === "core" && !core.length) {
+          core.push(line.replace(/^(정답|비율)\s*[:：]\s*/i, ""));
+        } else {
+          extra.push(line);
+        }
+      });
+
+      return {
+        core: core.join("\n").trim(),
+        points,
+        extra: extra.join("\n").trim()
+      };
+    }
+
+    function parseAnswerPoint(line) {
+      const source = String(line || "").trim();
+      const circled = source.match(/^([①-⑳])\s*(.+)$/);
+      if (circled) return { label: circled[1], text: circled[2].trim() };
+      const numbered = source.match(/^(\d+)\s*[:：]\s*(.+)$/);
+      if (numbered) return { label: numbered[1], text: numbered[2].trim() };
+      const bullet = source.match(/^[-•]\s*(.+)$/);
+      if (bullet) return { label: "•", text: bullet[1].trim() };
+      return null;
     }
 
     function formatQuestionHtml(text) {
