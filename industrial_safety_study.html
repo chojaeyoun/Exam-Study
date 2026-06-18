@@ -2718,13 +2718,14 @@
 
     function renderFilters() {
       const selected = els.categoryFilter.value || "all";
-      const questionCategories = currentExamQuestions().map(q => q.category).filter(Boolean);
-      const theoryCategories = currentExamTheories().map(theory => theory.category).filter(Boolean);
-      const categories = [...new Set([...questionCategories, ...theoryCategories])].sort();
-      els.categoryFilter.innerHTML = `<option value="all">전체</option>` + categories.map(category => {
+      const categories = studyMode === "theory"
+        ? currentExamTheories().map(theory => theory.category).filter(Boolean)
+        : currentExamQuestions().map(q => q.category).filter(Boolean);
+      const uniqueCategories = [...new Set(categories)].sort();
+      els.categoryFilter.innerHTML = `<option value="all">전체</option>` + uniqueCategories.map(category => {
         return `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`;
       }).join("");
-      els.categoryFilter.value = categories.includes(selected) ? selected : "all";
+      els.categoryFilter.value = uniqueCategories.includes(selected) ? selected : "all";
     }
 
     function formatQuestionCardHtml(question) {
@@ -3424,6 +3425,7 @@
       studyMode = mode;
       if (mode === "question") currentIndex = Math.max(0, currentIndex);
       if (mode === "theory") currentTheoryIndex = Math.max(0, currentTheoryIndex);
+      renderFilters();
       renderStudyModeButtons();
       renderStudy();
     }
