@@ -677,6 +677,46 @@
       white-space: pre-wrap;
     }
 
+    .calc-answer {
+      gap: 12px;
+    }
+
+    .calc-step {
+      display: grid;
+      gap: 7px;
+      padding: 12px;
+      border: 1px solid #dfe8e5;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .calc-step.final {
+      border-color: #b8d8d1;
+      background: #f2faf7;
+    }
+
+    .calc-label {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .calc-equation {
+      margin: 0;
+      color: #123d36;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .calc-step.final .calc-equation {
+      color: var(--accent-dark);
+      font-size: 18px;
+    }
+
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -3018,6 +3058,8 @@
       const answer = String(question.answer || "").trim();
       const memo = String(question.memo || "").trim();
       if (!answer && !memo) return "";
+      const calculation = parseCalculationAnswer(answer);
+      if (calculation) return renderCalculationAnswerHtml(calculation, memo);
       const parsed = parseAnswerSections(answer);
       const coreHtml = parsed.core
         ? `<section class="answer-section">
@@ -3046,6 +3088,65 @@
           </section>`
         : "";
       return `<div class="answer-card">${coreHtml}${pointsHtml}${extraHtml}${memoHtml}</div>`;
+    }
+
+    function parseCalculationAnswer(answer) {
+      const lines = String(answer || "")
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+      if (!lines.length) return null;
+
+      const sections = [];
+      let current = null;
+      const labels = new Map([
+        ["공식", "공식"],
+        ["대입", "대입"],
+        ["계산", "계산"],
+        ["풀이", "계산"],
+        ["답", "답"],
+        ["정답", "답"],
+        ["결과", "답"]
+      ]);
+
+      lines.forEach(line => {
+        const match = line.match(/^(공식|대입|계산|풀이|답|정답|결과)\s*[:：]\s*(.*)$/);
+        if (match) {
+          current = { label: labels.get(match[1]) || match[1], lines: [] };
+          if (match[2]) current.lines.push(match[2]);
+          sections.push(current);
+          return;
+        }
+        if (current) current.lines.push(line);
+      });
+
+      if (!sections.length) return null;
+      const hasCalculationLabel = sections.some(section => {
+        return ["공식", "대입", "계산", "답"].includes(section.label);
+      });
+      if (!hasCalculationLabel) return null;
+
+      const cleaned = sections
+        .map(section => ({ ...section, text: section.lines.join("\n").trim() }))
+        .filter(section => section.text);
+      return cleaned.length ? cleaned : null;
+    }
+
+    function renderCalculationAnswerHtml(sections, memo) {
+      const stepsHtml = sections.map(section => {
+        const isFinal = section.label === "답";
+        return `<section class="calc-step${isFinal ? " final" : ""}">
+          <h4 class="calc-label">${escapeHtml(isFinal ? "최종 답" : section.label)}</h4>
+          <p class="calc-equation">${escapeHtml(section.text)}</p>
+        </section>`;
+      }).join("");
+      const memoHtml = memo
+        ? `<section class="answer-section">
+            <h4 class="answer-section-title">메모</h4>
+            <p class="answer-note">${escapeHtml(memo.replace(/^메모:\s*/i, ""))}</p>
+          </section>`
+        : "";
+      return `<div class="answer-card calc-answer">${stepsHtml}${memoHtml}</div>`;
     }
 
     function parseAnswerSections(answer) {
