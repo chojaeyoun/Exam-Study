@@ -1747,6 +1747,7 @@
               </div>
               <div class="review-actions" aria-label="정답 확인과 학습 결과">
                 <button id="showAnswerBtn" class="primary">정답 보기</button>
+                <button id="studyFavoriteBtn" type="button" class="favorite-button">☆ 중요</button>
                 <button id="wrongBtn" class="wrong-action">틀렸음</button>
                 <button id="masterBtn" class="master-action">맞혔음</button>
               </div>
@@ -1845,10 +1846,6 @@
           <label class="wide">태그
             <input id="tagsInput" placeholder="예: 법령, 계산, 암기">
           </label>
-          <label class="wide check-filter">
-            <input id="favoriteInput" type="checkbox">
-            중요 표시
-          </label>
           <label class="wide">문제
             <div class="text-tools" data-tools-for="questionInput"></div>
             <textarea id="questionInput" required placeholder="문제 내용을 입력하세요."></textarea>
@@ -1887,10 +1884,6 @@
             </label>
             <label class="wide">태그
               <input id="theoryTagsInput" placeholder="예: 법령, 공식, 암기">
-            </label>
-            <label class="wide check-filter">
-              <input id="theoryFavoriteInput" type="checkbox">
-              중요 표시
             </label>
             <div class="wide block-palette" aria-label="이론 블록 추가">
               <button type="button" data-theory-block="heading">+ 제목</button>
@@ -2084,6 +2077,7 @@
       studyRangeBox: document.querySelector("#studyRangeBox"),
       toggleRangeBtn: document.querySelector("#toggleRangeBtn"),
       showAnswerBtn: document.querySelector("#showAnswerBtn"),
+      studyFavoriteBtn: document.querySelector("#studyFavoriteBtn"),
       wrongBtn: document.querySelector("#wrongBtn"),
       masterBtn: document.querySelector("#masterBtn"),
       prevBtn: document.querySelector("#prevBtn"),
@@ -2103,7 +2097,6 @@
       theoryCategoryInput: document.querySelector("#theoryCategoryInput"),
       theoryTitleInput: document.querySelector("#theoryTitleInput"),
       theoryTagsInput: document.querySelector("#theoryTagsInput"),
-      theoryFavoriteInput: document.querySelector("#theoryFavoriteInput"),
       theoryContentInput: document.querySelector("#theoryContentInput"),
       theoryPromptInput: document.querySelector("#theoryPromptInput"),
       theoryPreview: document.querySelector("#theoryPreview"),
@@ -2117,7 +2110,6 @@
       categoryInput: document.querySelector("#categoryInput"),
       levelInput: document.querySelector("#levelInput"),
       tagsInput: document.querySelector("#tagsInput"),
-      favoriteInput: document.querySelector("#favoriteInput"),
       questionInput: document.querySelector("#questionInput"),
       answerInput: document.querySelector("#answerInput"),
       memoInput: document.querySelector("#memoInput"),
@@ -2209,6 +2201,7 @@
     els.toggleRangeBtn.addEventListener("click", toggleStudyRange);
     els.studyQuestionModeBtn.addEventListener("click", () => setStudyMode("question"));
     els.studyTheoryModeBtn.addEventListener("click", () => setStudyMode("theory"));
+    els.studyFavoriteBtn.addEventListener("click", toggleCurrentStudyFavorite);
     els.composeQuestionModeBtn.addEventListener("click", () => setComposeMode("question"));
     els.composeTheoryModeBtn.addEventListener("click", () => setComposeMode("theory"));
     els.composeManageModeBtn.addEventListener("click", () => setComposeMode("manage"));
@@ -3086,6 +3079,7 @@
         els.myAnswer.value = "";
         els.myAnswer.classList.remove("hidden");
         els.showAnswerBtn.textContent = "정답 보기";
+        updateStudyFavoriteButton(null);
         els.prevBtn.textContent = "← 이전 문제";
         els.nextBtn.textContent = "다음 문제 →";
         els.wrongBtn.classList.remove("hidden");
@@ -3101,6 +3095,7 @@
       els.myAnswer.value = "";
       els.myAnswer.classList.remove("hidden");
       els.showAnswerBtn.textContent = "정답 보기";
+      updateStudyFavoriteButton(current);
       els.prevBtn.textContent = "← 이전 문제";
       els.nextBtn.textContent = "다음 문제 →";
       els.wrongBtn.classList.remove("hidden");
@@ -3121,6 +3116,7 @@
       els.wrongBtn.classList.add("hidden");
       els.masterBtn.classList.add("hidden");
       els.showAnswerBtn.textContent = "문제로 만들기";
+      updateStudyFavoriteButton(current || null);
       els.prevBtn.textContent = "← 이전";
       els.nextBtn.textContent = "다음 →";
 
@@ -3369,7 +3365,7 @@
         content: els.theoryContentInput.value.trim(),
         prompt: els.theoryPromptInput.value.trim(),
         tags: normalizeTags(els.theoryTagsInput.value),
-        favorite: els.theoryFavoriteInput.checked,
+        favorite: Boolean(existing?.favorite),
         updatedAt: new Date().toISOString()
       };
 
@@ -3396,7 +3392,6 @@
       els.theoryCategoryInput.value = theory.category || "";
       els.theoryTitleInput.value = theory.title || "";
       els.theoryTagsInput.value = tagsToInput(theory.tags);
-      els.theoryFavoriteInput.checked = Boolean(theory.favorite);
       els.theoryContentInput.value = theory.content || "";
       els.theoryPromptInput.value = theory.prompt || "";
       setView("bank");
@@ -3733,6 +3728,24 @@
       els.answerText.classList.toggle("visible");
     }
 
+    function updateStudyFavoriteButton(item) {
+      const active = Boolean(item?.favorite);
+      els.studyFavoriteBtn.disabled = !item;
+      els.studyFavoriteBtn.classList.toggle("active", active);
+      els.studyFavoriteBtn.textContent = active ? "★ 중요" : "☆ 중요";
+    }
+
+    function toggleCurrentStudyFavorite() {
+      const item = studyMode === "theory"
+        ? filteredTheories()[currentTheoryIndex]
+        : filteredQuestions()[currentIndex];
+      if (!item) return;
+      item.favorite = !item.favorite;
+      item.updatedAt = new Date().toISOString();
+      persist();
+      render();
+    }
+
     function getCurrentQuestion() {
       if (studyMode !== "question") return null;
       return filteredQuestions()[currentIndex];
@@ -3877,7 +3890,6 @@
       const category = els.categoryInput.value.trim() || "사진 문제";
       const level = els.levelInput.value || "중";
       const tags = normalizeTags(els.tagsInput.value);
-      const favorite = els.favoriteInput.checked;
       const baseQuestion = els.questionInput.value.trim();
       const pairMode = els.photoPairMode.checked;
       const answer = els.answerInput.value.trim() || (pairMode ? "정답 사진을 확인하세요." : "사진 문제입니다.");
@@ -3901,7 +3913,7 @@
           answerImage: group.answerPhoto?.dataUrl || "",
           answerImageName: group.answerPhoto?.name || "",
           tags,
-          favorite,
+          favorite: false,
           status: "new",
           wrongCount: 0,
           masteredAt: "",
@@ -3965,7 +3977,7 @@
         answer: els.answerInput.value.trim(),
         memo: els.memoInput.value.trim(),
         tags: normalizeTags(els.tagsInput.value),
-        favorite: els.favoriteInput.checked,
+        favorite: Boolean(existing?.favorite),
         questionImage: existing?.questionImage || "",
         imageName: existing?.imageName || "",
         answerImage: existing?.answerImage || "",
@@ -3988,7 +4000,6 @@
       els.editId.value = "";
       els.questionForm.reset();
       els.levelInput.value = "중";
-      els.favoriteInput.checked = false;
       pendingPhotoQuestions = [];
       els.photoPreview.innerHTML = "";
       els.applyOcrBtn.disabled = true;
@@ -4001,7 +4012,6 @@
       els.categoryInput.value = q.category;
       els.levelInput.value = q.level || "중";
       els.tagsInput.value = tagsToInput(q.tags);
-      els.favoriteInput.checked = Boolean(q.favorite);
       els.questionInput.value = q.question;
       els.answerInput.value = q.answer;
       els.memoInput.value = q.memo || "";
