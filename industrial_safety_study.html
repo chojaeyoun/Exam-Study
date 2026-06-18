@@ -442,6 +442,14 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
+      justify-content: space-between;
+    }
+
+    .pillgroup {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
     }
 
     .pill {
@@ -452,6 +460,15 @@
       color: var(--muted);
       font-size: 12px;
       font-weight: 700;
+    }
+
+    .study-favorite {
+      min-height: 32px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 900;
+      white-space: nowrap;
     }
 
     .question {
@@ -1731,9 +1748,12 @@
         <div class="study-grid">
           <article class="panel card">
             <div class="pillrow">
-              <span class="pill" id="cardIndex">0 / 0</span>
-              <span class="pill" id="cardType">분야</span>
-              <span class="pill" id="cardLevel">중요도</span>
+              <div class="pillgroup">
+                <span class="pill" id="cardIndex">0 / 0</span>
+                <span class="pill" id="cardType">분야</span>
+                <span class="pill" id="cardLevel">중요도</span>
+              </div>
+              <button id="studyFavoriteBtn" type="button" class="favorite-button study-favorite">☆ 중요</button>
             </div>
             <div class="question">
               <div id="questionText" class="question-box">문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.</div>
@@ -1747,7 +1767,6 @@
               </div>
               <div class="review-actions" aria-label="정답 확인과 학습 결과">
                 <button id="showAnswerBtn" class="primary">정답 보기</button>
-                <button id="studyFavoriteBtn" type="button" class="favorite-button">☆ 중요</button>
                 <button id="wrongBtn" class="wrong-action">틀렸음</button>
                 <button id="masterBtn" class="master-action">맞혔음</button>
               </div>
