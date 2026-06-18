@@ -1166,6 +1166,80 @@
       align-items: center;
     }
 
+    .check-filter {
+      display: flex;
+      min-height: 42px;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .check-filter input {
+      width: auto;
+      min-height: auto;
+      accent-color: var(--accent);
+    }
+
+    .dashboard-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .dash-tile {
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafb;
+    }
+
+    .dash-tile b {
+      display: block;
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.1;
+    }
+
+    .dash-tile span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .tag-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border: 1px solid #cfe0dc;
+      border-radius: 999px;
+      background: #f4faf8;
+      color: #24524a;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .favorite-mark {
+      color: #b06f00;
+      font-weight: 900;
+    }
+
+    .favorite-button.active {
+      border-color: #f2c36b;
+      background: #fff7e6;
+      color: #8a5a00;
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -1688,6 +1762,9 @@
                 <label>분야
                   <select id="categoryFilter"></select>
                 </label>
+                <label>태그
+                  <select id="tagFilter"></select>
+                </label>
                 <label>상태
                   <select id="statusFilter">
                     <option value="all">전체</option>
@@ -1696,7 +1773,19 @@
                     <option value="mastered">암기 완료</option>
                   </select>
                 </label>
+                <label>정렬
+                  <select id="sortFilter">
+                    <option value="default">기본순</option>
+                    <option value="recent">최근 수정순</option>
+                    <option value="wrong">오답 많은순</option>
+                  </select>
+                </label>
+                <label class="check-filter">
+                  <input id="favoriteFilter" type="checkbox">
+                  중요만 보기
+                </label>
               </div>
+              <div id="dashboardPanel" class="dashboard-panel"></div>
               <div class="notice">
                 문제 데이터는 브라우저 저장소에만 저장됩니다. 다른 PC로 옮기려면 작성에서 CSV로 내보내세요.
               </div>
@@ -1753,6 +1842,13 @@
               <option value="하">하</option>
             </select>
           </label>
+          <label class="wide">태그
+            <input id="tagsInput" placeholder="예: 법령, 계산, 암기">
+          </label>
+          <label class="wide check-filter">
+            <input id="favoriteInput" type="checkbox">
+            중요 표시
+          </label>
           <label class="wide">문제
             <div class="text-tools" data-tools-for="questionInput"></div>
             <textarea id="questionInput" required placeholder="문제 내용을 입력하세요."></textarea>
@@ -1788,6 +1884,13 @@
             </label>
             <label>제목
               <input id="theoryTitleInput" required placeholder="이론 제목을 입력하세요.">
+            </label>
+            <label class="wide">태그
+              <input id="theoryTagsInput" placeholder="예: 법령, 공식, 암기">
+            </label>
+            <label class="wide check-filter">
+              <input id="theoryFavoriteInput" type="checkbox">
+              중요 표시
             </label>
             <div class="wide block-palette" aria-label="이론 블록 추가">
               <button type="button" data-theory-block="heading">+ 제목</button>
@@ -1986,7 +2089,11 @@
       prevBtn: document.querySelector("#prevBtn"),
       nextBtn: document.querySelector("#nextBtn"),
       categoryFilter: document.querySelector("#categoryFilter"),
+      tagFilter: document.querySelector("#tagFilter"),
       statusFilter: document.querySelector("#statusFilter"),
+      sortFilter: document.querySelector("#sortFilter"),
+      favoriteFilter: document.querySelector("#favoriteFilter"),
+      dashboardPanel: document.querySelector("#dashboardPanel"),
       wrongList: document.querySelector("#wrongList"),
       composeQuestionModeBtn: document.querySelector("#composeQuestionModeBtn"),
       composeTheoryModeBtn: document.querySelector("#composeTheoryModeBtn"),
@@ -1995,6 +2102,8 @@
       theoryEditId: document.querySelector("#theoryEditId"),
       theoryCategoryInput: document.querySelector("#theoryCategoryInput"),
       theoryTitleInput: document.querySelector("#theoryTitleInput"),
+      theoryTagsInput: document.querySelector("#theoryTagsInput"),
+      theoryFavoriteInput: document.querySelector("#theoryFavoriteInput"),
       theoryContentInput: document.querySelector("#theoryContentInput"),
       theoryPromptInput: document.querySelector("#theoryPromptInput"),
       theoryPreview: document.querySelector("#theoryPreview"),
@@ -2007,6 +2116,8 @@
       editId: document.querySelector("#editId"),
       categoryInput: document.querySelector("#categoryInput"),
       levelInput: document.querySelector("#levelInput"),
+      tagsInput: document.querySelector("#tagsInput"),
+      favoriteInput: document.querySelector("#favoriteInput"),
       questionInput: document.querySelector("#questionInput"),
       answerInput: document.querySelector("#answerInput"),
       memoInput: document.querySelector("#memoInput"),
@@ -2088,8 +2199,11 @@
     els.mobileBackdrop.addEventListener("click", closeMobileDrawer);
     els.toggleSearchBtn.addEventListener("click", toggleMobileSearch);
     els.installBtn.addEventListener("click", installApp);
-    els.categoryFilter.addEventListener("change", () => { currentIndex = 0; render(); });
+    els.categoryFilter.addEventListener("change", () => { currentIndex = 0; currentTheoryIndex = 0; render(); });
+    els.tagFilter.addEventListener("change", () => { currentIndex = 0; currentTheoryIndex = 0; render(); });
     els.statusFilter.addEventListener("change", () => { currentIndex = 0; render(); });
+    els.sortFilter.addEventListener("change", () => { currentIndex = 0; currentTheoryIndex = 0; render(); });
+    els.favoriteFilter.addEventListener("change", () => { currentIndex = 0; currentTheoryIndex = 0; render(); });
     els.shuffleBtn.addEventListener("click", shuffleQuestions);
     els.resetBtn.addEventListener("click", resetProgress);
     els.toggleRangeBtn.addEventListener("click", toggleStudyRange);
@@ -2197,7 +2311,10 @@
           examId: q.examId || DEFAULT_EXAM_ID,
           status: q.status || "new",
           wrongCount: q.wrongCount || 0,
-          masteredAt: q.masteredAt || ""
+          masteredAt: q.masteredAt || "",
+          tags: normalizeTags(q.tags),
+          favorite: Boolean(q.favorite),
+          updatedAt: q.updatedAt || q.masteredAt || ""
         })),
         theories: Array.isArray(saved.theories) ? saved.theories.map(theory => ({
           id: theory.id || crypto.randomUUID(),
@@ -2206,6 +2323,8 @@
           title: theory.title || "제목 없는 이론",
           content: theory.content || "",
           prompt: theory.prompt || "",
+          tags: normalizeTags(theory.tags),
+          favorite: Boolean(theory.favorite),
           updatedAt: theory.updatedAt || ""
         })) : []
       };
@@ -2315,35 +2434,80 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     }
 
+    function normalizeTags(value) {
+      const raw = Array.isArray(value) ? value : String(value || "").split(/[,#]/);
+      return [...new Set(raw.map(tag => String(tag).trim()).filter(Boolean))];
+    }
+
+    function tagsToInput(tags) {
+      return normalizeTags(tags).join(", ");
+    }
+
+    function renderTags(tags) {
+      const normalized = normalizeTags(tags);
+      if (!normalized.length) return "";
+      return `<div class="tag-row">${normalized.map(tag => `<span class="tag-chip">#${escapeHtml(tag)}</span>`).join("")}</div>`;
+    }
+
+    function tagMatches(item, tag) {
+      return !tag || tag === "all" || normalizeTags(item.tags).includes(tag);
+    }
+
+    function favoriteMatches(item) {
+      return !els.favoriteFilter.checked || Boolean(item.favorite);
+    }
+
+    function itemTime(item) {
+      return Date.parse(item.updatedAt || item.masteredAt || "") || 0;
+    }
+
+    function sortItems(items) {
+      const sort = els.sortFilter.value;
+      const copy = [...items];
+      if (sort === "recent") {
+        copy.sort((a, b) => itemTime(b) - itemTime(a));
+      } else if (sort === "wrong") {
+        copy.sort((a, b) => (b.wrongCount || 0) - (a.wrongCount || 0));
+      }
+      return copy;
+    }
+
     function filteredQuestions() {
       const search = els.searchInput.value.trim().toLowerCase();
       const category = els.categoryFilter.value;
+      const tag = els.tagFilter.value;
       const status = els.statusFilter.value;
-      return state.questions.filter(q => {
-        const text = [q.category, q.level, q.question, q.answer, q.memo, q.imageName].join(" ").toLowerCase();
+      return sortItems(state.questions.filter(q => {
+        const text = [q.category, q.level, q.question, q.answer, q.memo, q.imageName, normalizeTags(q.tags).join(" ")].join(" ").toLowerCase();
         const examOk = (q.examId || DEFAULT_EXAM_ID) === state.activeExamId;
         const categoryOk = !category || category === "all" || q.category === category;
+        const tagOk = tagMatches(q, tag);
+        const favoriteOk = favoriteMatches(q);
         const statusOk = status === "all" || q.status === status;
         const searchOk = !search || text.includes(search);
-        return examOk && categoryOk && statusOk && searchOk;
-      });
+        return examOk && categoryOk && tagOk && favoriteOk && statusOk && searchOk;
+      }));
     }
 
     function filteredTheories() {
       const search = els.searchInput.value.trim().toLowerCase();
       const category = els.categoryFilter.value;
-      return currentExamTheories().filter(theory => {
-        const text = [theory.category, theory.title, theory.content, theory.prompt].join(" ").toLowerCase();
+      const tag = els.tagFilter.value;
+      return sortItems(currentExamTheories().filter(theory => {
+        const text = [theory.category, theory.title, theory.content, theory.prompt, normalizeTags(theory.tags).join(" ")].join(" ").toLowerCase();
         const categoryOk = !category || category === "all" || theory.category === category;
+        const tagOk = tagMatches(theory, tag);
+        const favoriteOk = favoriteMatches(theory);
         const searchOk = !search || text.includes(search);
-        return categoryOk && searchOk;
-      });
+        return categoryOk && tagOk && favoriteOk && searchOk;
+      }));
     }
 
     function render() {
       renderExamTabs();
       renderStats();
       renderFilters();
+      renderDashboard();
       renderStudy();
       renderTheories();
       renderWrongList();
@@ -2555,9 +2719,12 @@
           imageName: cloudMemo.payload.imageName || "",
           answerImage: cloudMemo.payload.answerImage || "",
           answerImageName: cloudMemo.payload.answerImageName || "",
+          tags: normalizeTags(cloudMemo.payload.tags),
+          favorite: Boolean(cloudMemo.payload.favorite),
           status: row.status || "new",
           wrongCount: row.wrong_count || 0,
-          masteredAt: row.mastered_at || ""
+          masteredAt: row.mastered_at || "",
+          updatedAt: cloudMemo.payload.updatedAt || row.updated_at || ""
         };
       });
       state.theories = [];
@@ -2664,7 +2831,10 @@
         questionImage: question.questionImage || "",
         imageName: question.imageName || "",
         answerImage: question.answerImage || "",
-        answerImageName: question.answerImageName || ""
+        answerImageName: question.answerImageName || "",
+        tags: normalizeTags(question.tags),
+        favorite: Boolean(question.favorite),
+        updatedAt: question.updatedAt || ""
       };
       const hasPayload = Object.values(payload).some(Boolean);
       if (!hasPayload) return cleanMemo;
@@ -2718,6 +2888,7 @@
 
     function renderFilters() {
       const selected = els.categoryFilter.value || "all";
+      const selectedTag = els.tagFilter.value || "all";
       const categories = studyMode === "theory"
         ? currentExamTheories().map(theory => theory.category).filter(Boolean)
         : currentExamQuestions().map(q => q.category).filter(Boolean);
@@ -2726,12 +2897,36 @@
         return `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`;
       }).join("");
       els.categoryFilter.value = uniqueCategories.includes(selected) ? selected : "all";
+
+      const source = studyMode === "theory" ? currentExamTheories() : currentExamQuestions();
+      const tags = [...new Set(source.flatMap(item => normalizeTags(item.tags)))].sort();
+      els.tagFilter.innerHTML = `<option value="all">전체</option>` + tags.map(tag => {
+        return `<option value="${escapeHtml(tag)}">#${escapeHtml(tag)}</option>`;
+      }).join("");
+      els.tagFilter.value = tags.includes(selectedTag) ? selectedTag : "all";
+    }
+
+    function renderDashboard() {
+      const source = studyMode === "theory" ? currentExamTheories() : currentExamQuestions();
+      const filtered = studyMode === "theory" ? filteredTheories() : filteredQuestions();
+      const favoriteCount = source.filter(item => item.favorite).length;
+      const tagCount = new Set(source.flatMap(item => normalizeTags(item.tags))).size;
+      const wrongCount = studyMode === "question"
+        ? source.filter(item => item.status === "wrong").length
+        : currentExamQuestions().filter(item => item.status === "wrong").length;
+      els.dashboardPanel.innerHTML = `
+        <div class="dash-tile"><b>${filtered.length}</b><span>현재 표시</span></div>
+        <div class="dash-tile"><b>${favoriteCount}</b><span>중요 표시</span></div>
+        <div class="dash-tile"><b>${tagCount}</b><span>태그 수</span></div>
+        <div class="dash-tile"><b>${wrongCount}</b><span>오답</span></div>
+      `;
     }
 
     function formatQuestionCardHtml(question) {
       const textHtml = formatQuestionHtml(question.question || "사진 문제");
-      if (!question.questionImage) return textHtml;
-      return `${textHtml}<img class="question-photo" src="${escapeHtml(question.questionImage)}" alt="${escapeHtml(question.imageName || "사진 문제")}">`;
+      const metaHtml = `${question.favorite ? `<p class="favorite-mark">★ 중요</p>` : ""}${renderTags(question.tags)}`;
+      if (!question.questionImage) return `${textHtml}${metaHtml}`;
+      return `${textHtml}<img class="question-photo" src="${escapeHtml(question.questionImage)}" alt="${escapeHtml(question.imageName || "사진 문제")}">${metaHtml}`;
     }
 
     function formatAnswerCardHtml(question) {
@@ -2950,27 +3145,13 @@
         .filter(Boolean);
       const content = blocks.length ? blocks : ["정리된 이론 내용이 없습니다."];
       const body = content.map(block => {
-        const isKey = /^(암기|공식|정의|기준|절차|비율|특징|방지대책|영향|위험성|종류|장점|단점|핵심|필답형|시험)/.test(block);
-        return `<p class="theory-study-block${isKey ? " key" : ""}">${escapeHtml(block)}</p>`;
-      }).join("");
-      return `<div class="theory-study">
-        <h3 class="theory-study-title">${escapeHtml(theory.title)}</h3>
-        <div class="theory-study-body">${body}</div>
-      </div>`;
-    }
-
-    function formatTheoryStudyHtml(theory) {
-      const blocks = String(theory.content || "")
-        .split(/\n{2,}/)
-        .map(block => block.trim())
-        .filter(Boolean);
-      const content = blocks.length ? blocks : ["정리된 이론 내용이 없습니다."];
-      const body = content.map(block => {
         const isKey = /^(암기|공식|정의|기준|절차|비율|특징|방지대책|영향|위험성|종류|요점|핵심|필답형|시험)/.test(block);
         return renderTheoryContentBlock(block, isKey);
       }).join("");
       return `<div class="theory-study">
         <h3 class="theory-study-title">${escapeHtml(theory.title)}</h3>
+        ${theory.favorite ? `<p class="favorite-mark">★ 중요</p>` : ""}
+        ${renderTags(theory.tags)}
         <div class="theory-study-body">${body}</div>
       </div>`;
     }
@@ -2986,13 +3167,15 @@
       els.theoryList.innerHTML = theories.map(theory => {
         const relatedCount = currentExamQuestions().filter(q => q.category === theory.category).length;
         return `<article class="theory-card">
-          <h3>${escapeHtml(theory.title)}</h3>
+          <h3>${theory.favorite ? `<span class="favorite-mark">★</span> ` : ""}${escapeHtml(theory.title)}</h3>
           <p>${escapeHtml(theory.category || "미분류")} · 관련 문제 ${relatedCount}개</p>
+          ${renderTags(theory.tags)}
           <div class="theory-card-content">${formatRichTextHtml(theory.content)}</div>
           ${theory.prompt ? `<p>문제화 힌트: ${escapeHtml(theory.prompt)}</p>` : ""}
           <footer>
             <button data-theory-study="${theory.id}" class="primary">관련 문제 풀기</button>
             <button data-theory-question="${theory.id}">문제로 만들기</button>
+            <button data-theory-favorite="${theory.id}" class="favorite-button${theory.favorite ? " active" : ""}">${theory.favorite ? "★ 중요" : "☆ 중요"}</button>
             <button data-theory-edit="${theory.id}">수정</button>
             <button data-theory-delete="${theory.id}" class="danger">삭제</button>
           </footer>
@@ -3004,6 +3187,9 @@
       });
       els.theoryList.querySelectorAll("[data-theory-question]").forEach(button => {
         button.addEventListener("click", () => createQuestionFromTheory(button.dataset.theoryQuestion));
+      });
+      els.theoryList.querySelectorAll("[data-theory-favorite]").forEach(button => {
+        button.addEventListener("click", () => toggleTheoryFavorite(button.dataset.theoryFavorite));
       });
       els.theoryList.querySelectorAll("[data-theory-edit]").forEach(button => {
         button.addEventListener("click", () => editTheory(button.dataset.theoryEdit));
@@ -3182,6 +3368,8 @@
         title: els.theoryTitleInput.value.trim(),
         content: els.theoryContentInput.value.trim(),
         prompt: els.theoryPromptInput.value.trim(),
+        tags: normalizeTags(els.theoryTagsInput.value),
+        favorite: els.theoryFavoriteInput.checked,
         updatedAt: new Date().toISOString()
       };
 
@@ -3207,6 +3395,8 @@
       els.theoryEditId.value = theory.id;
       els.theoryCategoryInput.value = theory.category || "";
       els.theoryTitleInput.value = theory.title || "";
+      els.theoryTagsInput.value = tagsToInput(theory.tags);
+      els.theoryFavoriteInput.checked = Boolean(theory.favorite);
       els.theoryContentInput.value = theory.content || "";
       els.theoryPromptInput.value = theory.prompt || "";
       setView("bank");
@@ -3222,6 +3412,15 @@
       render();
     }
 
+    function toggleTheoryFavorite(id) {
+      const theory = (state.theories || []).find(item => item.id === id);
+      if (!theory) return;
+      theory.favorite = !theory.favorite;
+      theory.updatedAt = new Date().toISOString();
+      persist();
+      render();
+    }
+
     function createQuestionFromTheory(id) {
       const theory = (state.theories || []).find(item => item.id === id);
       if (!theory) return;
@@ -3233,9 +3432,12 @@
         question: theory.prompt || `${theory.title}의 핵심 내용을 설명하세요.`,
         answer: theory.content,
         memo: `이론 정리: ${theory.title}`,
+        tags: normalizeTags(theory.tags),
+        favorite: Boolean(theory.favorite),
         status: "new",
         wrongCount: 0,
-        masteredAt: ""
+        masteredAt: "",
+        updatedAt: new Date().toISOString()
       };
       state.questions.unshift(question);
       persist();
@@ -3279,7 +3481,10 @@
       const isFiltered =
         Boolean(els.searchInput.value.trim()) ||
         (els.categoryFilter.value && els.categoryFilter.value !== "all") ||
-        (els.statusFilter.value && els.statusFilter.value !== "all");
+        (els.tagFilter.value && els.tagFilter.value !== "all") ||
+        (els.statusFilter.value && els.statusFilter.value !== "all") ||
+        els.favoriteFilter.checked ||
+        els.sortFilter.value !== "default";
       els.bankSummary.textContent = isFiltered
         ? `검색 결과 ${questions.length}개 / 전체 ${total}개`
         : `전체 문제 ${total}개 · 검색하면 목록이 표시됩니다`;
@@ -3298,10 +3503,11 @@
         return `<tr>
           <td>${escapeHtml(q.category || "미분류")}</td>
           <td>${escapeHtml(q.level || "중")}</td>
-          <td>${escapeHtml(q.question)}</td>
+          <td>${q.favorite ? `<span class="favorite-mark">★</span> ` : ""}${escapeHtml(q.question)}${renderTags(q.tags)}</td>
           <td>${escapeHtml(answerPreview)}</td>
           <td>${status}</td>
           <td>
+            <button data-favorite="${q.id}" class="favorite-button${q.favorite ? " active" : ""}">${q.favorite ? "★ 중요" : "☆ 중요"}</button>
             <button data-quick-edit="${q.id}">빠른 수정</button>
             <button data-edit="${q.id}">전체 수정</button>
             <button data-delete="${q.id}" class="danger">삭제</button>
@@ -3322,6 +3528,13 @@
               <select data-quick-field="level">
                 ${["상", "중", "하"].map(level => `<option value="${level}"${(q.level || "중") === level ? " selected" : ""}>${level}</option>`).join("")}
               </select>
+            </label>
+            <label class="wide">태그
+              <input data-quick-field="tags" value="${escapeHtml(tagsToInput(q.tags))}">
+            </label>
+            <label class="wide check-filter">
+              <input data-quick-field="favorite" type="checkbox"${q.favorite ? " checked" : ""}>
+              중요 표시
             </label>
             <label class="wide">문제
               <div class="text-tools" data-tools-for-quick="question"></div>
@@ -3363,6 +3576,9 @@
       root.querySelectorAll("[data-quick-save]").forEach(button => {
         button.addEventListener("click", () => saveQuickEdit(button));
       });
+      root.querySelectorAll("[data-favorite]").forEach(button => {
+        button.addEventListener("click", () => toggleFavorite(button.dataset.favorite));
+      });
       root.querySelectorAll("[data-quick-cancel]").forEach(button => {
         button.addEventListener("click", () => {
           quickEditId = "";
@@ -3381,6 +3597,7 @@
           if (q) {
             q.status = "mastered";
             q.masteredAt = new Date().toISOString();
+            q.updatedAt = new Date().toISOString();
             persist();
             render();
           }
@@ -3397,6 +3614,9 @@
       q.question = form.querySelector("[data-quick-field='question']").value.trim();
       q.answer = form.querySelector("[data-quick-field='answer']").value.trim();
       q.memo = form.querySelector("[data-quick-field='memo']").value.trim();
+      q.tags = normalizeTags(form.querySelector("[data-quick-field='tags']").value);
+      q.favorite = form.querySelector("[data-quick-field='favorite']").checked;
+      q.updatedAt = new Date().toISOString();
       if (!q.question || !q.answer) {
         alert("문제와 정답은 비워둘 수 없습니다.");
         return;
@@ -3406,10 +3626,22 @@
       render();
     }
 
+    function toggleFavorite(id) {
+      const q = state.questions.find(item => item.id === id);
+      if (!q) return;
+      q.favorite = !q.favorite;
+      q.updatedAt = new Date().toISOString();
+      persist();
+      render();
+    }
+
     function clearBankSearch() {
       els.searchInput.value = "";
       els.categoryFilter.value = "all";
+      els.tagFilter.value = "all";
       els.statusFilter.value = "all";
+      els.sortFilter.value = "default";
+      els.favoriteFilter.checked = false;
       currentIndex = 0;
       currentTheoryIndex = 0;
       render();
@@ -3426,6 +3658,7 @@
       if (mode === "question") currentIndex = Math.max(0, currentIndex);
       if (mode === "theory") currentTheoryIndex = Math.max(0, currentTheoryIndex);
       renderFilters();
+      renderDashboard();
       renderStudyModeButtons();
       renderStudy();
     }
@@ -3510,6 +3743,7 @@
       if (!q) return;
       q.status = "wrong";
       q.wrongCount = (q.wrongCount || 0) + 1;
+      q.updatedAt = new Date().toISOString();
       persist();
       advanceAfterReview(q.id);
     }
@@ -3519,6 +3753,7 @@
       if (!q) return;
       q.status = "mastered";
       q.masteredAt = new Date().toISOString();
+      q.updatedAt = new Date().toISOString();
       persist();
       advanceAfterReview(q.id);
     }
@@ -3641,6 +3876,8 @@
 
       const category = els.categoryInput.value.trim() || "사진 문제";
       const level = els.levelInput.value || "중";
+      const tags = normalizeTags(els.tagsInput.value);
+      const favorite = els.favoriteInput.checked;
       const baseQuestion = els.questionInput.value.trim();
       const pairMode = els.photoPairMode.checked;
       const answer = els.answerInput.value.trim() || (pairMode ? "정답 사진을 확인하세요." : "사진 문제입니다.");
@@ -3663,9 +3900,12 @@
           imageName: group.questionPhoto.name,
           answerImage: group.answerPhoto?.dataUrl || "",
           answerImageName: group.answerPhoto?.name || "",
+          tags,
+          favorite,
           status: "new",
           wrongCount: 0,
-          masteredAt: ""
+          masteredAt: "",
+          updatedAt: new Date().toISOString()
         };
       });
 
@@ -3724,13 +3964,16 @@
         question: els.questionInput.value.trim(),
         answer: els.answerInput.value.trim(),
         memo: els.memoInput.value.trim(),
+        tags: normalizeTags(els.tagsInput.value),
+        favorite: els.favoriteInput.checked,
         questionImage: existing?.questionImage || "",
         imageName: existing?.imageName || "",
         answerImage: existing?.answerImage || "",
         answerImageName: existing?.answerImageName || "",
         status: existing?.status || "new",
         wrongCount: existing?.wrongCount || 0,
-        masteredAt: existing?.masteredAt || ""
+        masteredAt: existing?.masteredAt || "",
+        updatedAt: new Date().toISOString()
       };
 
       if (existing) Object.assign(existing, data);
@@ -3745,6 +3988,7 @@
       els.editId.value = "";
       els.questionForm.reset();
       els.levelInput.value = "중";
+      els.favoriteInput.checked = false;
       pendingPhotoQuestions = [];
       els.photoPreview.innerHTML = "";
       els.applyOcrBtn.disabled = true;
@@ -3756,6 +4000,8 @@
       els.editId.value = q.id;
       els.categoryInput.value = q.category;
       els.levelInput.value = q.level || "중";
+      els.tagsInput.value = tagsToInput(q.tags);
+      els.favoriteInput.checked = Boolean(q.favorite);
       els.questionInput.value = q.question;
       els.answerInput.value = q.answer;
       els.memoInput.value = q.memo || "";
@@ -3830,9 +4076,12 @@
           question: (hasHeader ? get("question") : row[2])?.trim() || "",
           answer: (hasHeader ? get("answer") : row[3])?.trim() || "",
           memo: (hasHeader ? get("memo") : row[4])?.trim() || "",
+          tags: normalizeTags(hasHeader ? get("tags") : row[5]),
+          favorite: ["true", "1", "yes", "y", "중요"].includes(String(hasHeader ? get("favorite") : row[6]).trim().toLowerCase()),
           status: "new",
           wrongCount: 0,
-          masteredAt: ""
+          masteredAt: "",
+          updatedAt: new Date().toISOString()
         };
       }).filter(q => q.question && q.answer);
 
@@ -3854,15 +4103,15 @@
     }
 
     function exportCsv() {
-      const header = ["category", "level", "question", "answer", "memo", "status", "wrongCount"];
-      const rows = currentExamQuestions().map(q => [q.category, q.level, q.question, q.answer, q.memo, q.status, q.wrongCount]);
+      const header = ["category", "level", "question", "answer", "memo", "tags", "favorite", "status", "wrongCount"];
+      const rows = currentExamQuestions().map(q => [q.category, q.level, q.question, q.answer, q.memo, tagsToInput(q.tags), q.favorite ? "true" : "", q.status, q.wrongCount]);
       download(`${state.activeExamId}_questions.csv`, toCsv([header, ...rows]));
     }
 
     function downloadTemplate() {
       const rows = [
-        ["category", "level", "question", "answer", "memo"],
-        ["안전관리", "상", "문제 내용을 입력", "정답 내용을 입력", "암기 메모"]
+        ["category", "level", "question", "answer", "memo", "tags", "favorite"],
+        ["안전관리", "상", "문제 내용을 입력", "정답 내용을 입력", "암기 메모", "법령, 암기", "true"]
       ];
       download("exam_questions_template.csv", toCsv(rows));
     }
