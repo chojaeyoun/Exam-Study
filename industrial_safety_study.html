@@ -319,7 +319,7 @@
 
     .study-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 340px;
+      grid-template-columns: minmax(0, 1fr);
       gap: 18px;
     }
 
@@ -1034,6 +1034,50 @@
       display: none;
     }
 
+    .side .range-box {
+      padding: 14px;
+      border-color: rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.07);
+      color: #eef5f4;
+      box-shadow: none;
+    }
+
+    .side .range-head .mini-title,
+    .side .filters label,
+    .side .dash-tile b {
+      color: #eef5f4;
+    }
+
+    .side .filters {
+      gap: 8px;
+    }
+
+    .side .range-toggle {
+      color: #173831;
+      border-color: rgba(255,255,255,0.24);
+      background: #eef5f4;
+    }
+
+    .side .dashboard-panel {
+      grid-template-columns: 1fr;
+      margin-top: 8px;
+    }
+
+    .side .dash-tile {
+      border-color: rgba(255,255,255,0.13);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .side .dash-tile span {
+      color: #bed0ce;
+    }
+
+    .side .notice {
+      color: #f6ddb4;
+      border-color: rgba(255, 184, 77, 0.35);
+      background: rgba(255, 184, 77, 0.12);
+    }
+
     .mini-title {
       margin: 0;
       font-size: 16px;
@@ -1699,6 +1743,40 @@
         grid-template-columns: 1fr;
       }
 
+      .side .range-box {
+        padding: 18px;
+        border-color: var(--line);
+        background: #fff;
+        color: var(--text);
+        box-shadow: var(--shadow);
+      }
+
+      .side .range-head .mini-title,
+      .side .filters label,
+      .side .dash-tile b {
+        color: var(--text);
+      }
+
+      .side .dashboard-panel {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 12px;
+      }
+
+      .side .dash-tile {
+        border-color: var(--line);
+        background: #f8fafb;
+      }
+
+      .side .dash-tile span {
+        color: var(--muted);
+      }
+
+      .side .notice {
+        color: #8a4a0a;
+        border-color: #f2cf9a;
+        background: #fff3d9;
+      }
+
       .note-preview-panel {
         position: static;
       }
@@ -1850,7 +1928,7 @@
             <div class="progress-track"><div id="progressFill" class="progress-fill"></div></div>
           </div>
         </div>
-        <div class="study-grid">
+        <div id="studyGrid" class="study-grid">
           <article class="panel card">
             <div class="pillrow">
               <div class="pillgroup">
@@ -2187,6 +2265,7 @@
       mobileDrawer: document.querySelector("#mobileDrawer"),
       mobileExamTabs: document.querySelector("#mobileExamTabs"),
       mobileAddExamBtn: document.querySelector("#mobileAddExamBtn"),
+      desktopSide: document.querySelector(".side"),
       toggleSearchBtn: document.querySelector("#toggleSearchBtn"),
       searchInput: document.querySelector("#searchInput"),
       installBtn: document.querySelector("#installBtn"),
@@ -2198,6 +2277,7 @@
       questionText: document.querySelector("#questionText"),
       answerText: document.querySelector("#answerText"),
       myAnswer: document.querySelector("#myAnswer"),
+      studyGrid: document.querySelector("#studyGrid"),
       studyRangeBox: document.querySelector("#studyRangeBox"),
       toggleRangeBtn: document.querySelector("#toggleRangeBtn"),
       showAnswerBtn: document.querySelector("#showAnswerBtn"),
@@ -2374,6 +2454,7 @@
     els.signOutBtn.addEventListener("click", signOutCloud);
     els.uploadCloudBtn.addEventListener("click", uploadCloud);
     els.downloadCloudBtn.addEventListener("click", downloadCloud);
+    window.addEventListener("resize", placeStudyRangeBox);
     document.addEventListener("keydown", event => {
       if (handleCircledNumberShortcut(event)) return;
       if (event.key === "Escape") {
@@ -2389,6 +2470,7 @@
     });
 
     initCloudInputs();
+    placeStudyRangeBox();
     render();
     updateTheoryPreview();
     setupPwa();
@@ -3917,6 +3999,7 @@
       activeView = name;
       document.querySelectorAll("[data-view]").forEach(view => view.classList.toggle("active", view.dataset.view === name));
       document.querySelectorAll("[data-view-btn]").forEach(button => button.classList.toggle("active", button.dataset.viewBtn === name));
+      els.studyRangeBox.classList.toggle("hidden", name !== "study");
     }
 
     function setStudyMode(mode) {
@@ -3974,6 +4057,13 @@
       els.studyRangeBox.classList.toggle("collapsed", !willExpand);
       els.toggleRangeBtn.textContent = willExpand ? "접기" : "펼치기";
       els.toggleRangeBtn.setAttribute("aria-expanded", String(willExpand));
+    }
+
+    function placeStudyRangeBox() {
+      const isMobile = window.matchMedia("(max-width: 980px)").matches;
+      const target = isMobile ? els.studyGrid : els.desktopSide;
+      if (!target || !els.studyRangeBox || els.studyRangeBox.parentElement === target) return;
+      target.appendChild(els.studyRangeBox);
     }
 
     function moveCard(delta) {
