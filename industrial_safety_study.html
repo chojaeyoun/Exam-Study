@@ -2270,8 +2270,20 @@
 
     const WRITING_SYMBOLS = [
       "²", "³", "√", "±", "×", "÷", "≤", "≥", "≠", "°", "㎡", "㎥",
-      "①", "②", "③", "④", "⑤", "⑥", "→", "←", "∑", "π", "μ", "Ω", "※", "·", "ㆍ"
+      "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "→", "←", "∑", "π", "μ", "Ω", "※", "·", "ㆍ"
     ];
+    const CIRCLED_NUMBER_SHORTCUTS = new Map([
+      ["1", "①"],
+      ["2", "②"],
+      ["3", "③"],
+      ["4", "④"],
+      ["5", "⑤"],
+      ["6", "⑥"],
+      ["7", "⑦"],
+      ["8", "⑧"],
+      ["9", "⑨"],
+      ["0", "⑩"]
+    ]);
 
     const THEORY_BLOCKS = [
       { id: "heading", label: "제목", icon: "H", hint: "# 제목 블록", template: "\n# 새 이론 제목\n\n정리할 내용을 입력하세요.\n" },
@@ -2363,6 +2375,7 @@
     els.uploadCloudBtn.addEventListener("click", uploadCloud);
     els.downloadCloudBtn.addEventListener("click", downloadCloud);
     document.addEventListener("keydown", event => {
+      if (handleCircledNumberShortcut(event)) return;
       if (event.key === "Escape") {
         if (slashState) {
           closeSlashMenu();
@@ -4395,7 +4408,7 @@
         toolbox.innerHTML = `
           <button class="symbol-toggle" type="button" aria-expanded="false">특수기호</button>
           <div class="symbol-tools" aria-label="특수기호 입력">
-            ${WRITING_SYMBOLS.map(symbol => `<button class="symbol-tool" type="button" data-symbol="${escapeHtml(symbol)}" title="${escapeHtml(symbol)}">${escapeHtml(symbol)}</button>`).join("")}
+            ${WRITING_SYMBOLS.map(symbol => `<button class="symbol-tool" type="button" data-symbol="${escapeHtml(symbol)}" title="${escapeHtml(symbolTitle(symbol))}">${escapeHtml(symbol)}</button>`).join("")}
           </div>
         `;
         const toggle = toolbox.querySelector(".symbol-toggle");
@@ -4408,6 +4421,21 @@
           button.addEventListener("click", () => insertAtCursor(textarea, button.dataset.symbol));
         });
       });
+    }
+
+    function handleCircledNumberShortcut(event) {
+      if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return false;
+      const symbol = CIRCLED_NUMBER_SHORTCUTS.get(event.key);
+      const textarea = document.activeElement;
+      if (!symbol || !(textarea instanceof HTMLTextAreaElement)) return false;
+      event.preventDefault();
+      insertAtCursor(textarea, symbol);
+      return true;
+    }
+
+    function symbolTitle(symbol) {
+      const shortcut = [...CIRCLED_NUMBER_SHORTCUTS.entries()].find(([, value]) => value === symbol);
+      return shortcut ? `${symbol} (Alt+${shortcut[0]})` : symbol;
     }
 
     function insertAtCursor(textarea, text) {
