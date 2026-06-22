@@ -996,6 +996,72 @@
       background: #f1f8f6;
     }
 
+    .answer-assist {
+      display: grid;
+      gap: 9px;
+      padding: 12px;
+      border: 1px solid #cfe0dc;
+      border-radius: 8px;
+      background: #f8fcfb;
+    }
+
+    .answer-assist h3 {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .assist-score {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .assist-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .assist-chip {
+      padding: 5px 8px;
+      border: 1px solid #d8e5e2;
+      border-radius: 999px;
+      background: #fff;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .assist-chip.hit {
+      color: #0f6d61;
+      border-color: #aad3cb;
+      background: #edf8f5;
+    }
+
+    .assist-chip.miss {
+      color: #9f2f21;
+      border-color: #e3b0a7;
+      background: #fff8f6;
+    }
+
+    .cloze {
+      min-height: 28px;
+      padding: 3px 10px;
+      border: 1px dashed #9bc8c0;
+      border-radius: 999px;
+      background: #eef8f5;
+      color: #0f6d61;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .cloze.revealed {
+      border-style: solid;
+      background: #fff;
+      color: var(--text);
+    }
+
     .card .actions button {
       min-height: 46px;
       padding: 0 18px;
@@ -1034,6 +1100,32 @@
     .range-body {
       display: grid;
       gap: 14px;
+    }
+
+    .smart-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+    }
+
+    .smart-actions button {
+      min-height: 38px;
+      padding: 0 11px;
+      white-space: nowrap;
+    }
+
+    .smart-actions .primary {
+      color: #fff;
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .queue-status {
+      margin: -4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.4;
     }
 
     .range-box.collapsed .range-body {
@@ -1082,6 +1174,26 @@
       color: #f6ddb4;
       border-color: rgba(255, 184, 77, 0.35);
       background: rgba(255, 184, 77, 0.12);
+    }
+
+    .side .queue-status {
+      color: #bed0ce;
+    }
+
+    .side .smart-actions {
+      grid-template-columns: 1fr;
+    }
+
+    .side .smart-actions .primary {
+      color: #132c28;
+      border-color: #f7b84b;
+      background: #f7b84b;
+    }
+
+    .side .smart-actions button:not(.primary) {
+      color: #173831;
+      border-color: rgba(255,255,255,0.24);
+      background: #eef5f4;
     }
 
     .mini-title {
@@ -1177,6 +1289,21 @@
 
     .text-tools.open .symbol-tools {
       display: flex;
+    }
+
+    .template-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 7px;
+    }
+
+    .template-tools button {
+      min-height: 32px;
+      padding: 0 10px;
+      background: #f8fafb;
+      font-size: 13px;
+      font-weight: 900;
     }
 
     .symbol-tool {
@@ -1957,6 +2084,7 @@
             <div class="question">
               <div id="questionText" class="question-box">문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.</div>
               <textarea id="myAnswer" placeholder="내 답안을 적어본 뒤 정답을 확인하세요. 입력 내용은 채점되지 않고 암기용으로만 사용됩니다."></textarea>
+              <div id="answerAssist" class="answer-assist hidden"></div>
               <div id="answerText" class="answer"></div>
             </div>
             <div class="study-controls">
@@ -1973,6 +2101,11 @@
               <button type="button" id="toggleRangeBtn" class="range-toggle" aria-expanded="false" aria-controls="studyRangeBody">펼치기</button>
             </div>
             <div id="studyRangeBody" class="range-body">
+              <div class="smart-actions">
+                <button id="reviewQueueBtn" class="primary" type="button">오늘 복습 큐</button>
+                <button id="clearQueueBtn" type="button">전체</button>
+              </div>
+              <p id="queueStatus" class="queue-status">오답, 중요, 오래 안 본 문제를 자동으로 모읍니다.</p>
               <div class="filters">
                 <label>분야
                   <select id="categoryFilter"></select>
@@ -2062,10 +2195,16 @@
           </label>
           <label class="wide">문제
             <div class="text-tools" data-tools-for="questionInput"></div>
+            <div class="template-tools">
+              <button id="insertClozeBtn" type="button">암기카드 빈칸</button>
+            </div>
             <textarea id="questionInput" required placeholder="문제 내용을 입력하세요."></textarea>
           </label>
           <label class="wide">정답
             <div class="text-tools" data-tools-for="answerInput"></div>
+            <div class="template-tools">
+              <button id="insertCalcTemplateBtn" type="button">계산 풀이 템플릿</button>
+            </div>
             <textarea id="answerInput" required placeholder="정답 또는 채점 키워드를 입력하세요."></textarea>
           </label>
           <label class="wide">메모
@@ -2250,6 +2389,7 @@
     let studyMode = "question";
     let composeMode = "question";
     let quickEditId = "";
+    let reviewQueueIds = [];
     let deferredInstallPrompt = null;
     let supabaseClient = null;
     let pendingPhotoQuestions = [];
@@ -2289,9 +2429,13 @@
       questionText: document.querySelector("#questionText"),
       answerText: document.querySelector("#answerText"),
       myAnswer: document.querySelector("#myAnswer"),
+      answerAssist: document.querySelector("#answerAssist"),
       studyGrid: document.querySelector("#studyGrid"),
       studyRangeBox: document.querySelector("#studyRangeBox"),
       toggleRangeBtn: document.querySelector("#toggleRangeBtn"),
+      reviewQueueBtn: document.querySelector("#reviewQueueBtn"),
+      clearQueueBtn: document.querySelector("#clearQueueBtn"),
+      queueStatus: document.querySelector("#queueStatus"),
       showAnswerBtn: document.querySelector("#showAnswerBtn"),
       studyFavoriteBtn: document.querySelector("#studyFavoriteBtn"),
       wrongBtn: document.querySelector("#wrongBtn"),
@@ -2329,6 +2473,8 @@
       questionInput: document.querySelector("#questionInput"),
       answerInput: document.querySelector("#answerInput"),
       memoInput: document.querySelector("#memoInput"),
+      insertClozeBtn: document.querySelector("#insertClozeBtn"),
+      insertCalcTemplateBtn: document.querySelector("#insertCalcTemplateBtn"),
       ocrBox: document.querySelector("#ocrBox"),
       toggleOcrBtn: document.querySelector("#toggleOcrBtn"),
       photoFile: document.querySelector("#photoFile"),
@@ -2377,10 +2523,12 @@
       ["0", "⑩"]
     ]);
 
+    const CALCULATION_TEMPLATE = "\n공식:\n\n대입:\n\n계산:\n\n답:\n";
     const THEORY_BLOCKS = [
       { id: "heading", label: "제목", icon: "H", hint: "# 제목 블록", template: "\n# 새 이론 제목\n\n정리할 내용을 입력하세요.\n" },
       { id: "key", label: "핵심 요약", icon: "!", hint: "핵심 개념과 암기 포인트", template: "\n## 핵심 요약\n\n- 핵심 개념:\n- 암기 포인트:\n- 주의할 표현:\n" },
       { id: "formula", label: "공식", icon: "√", hint: "공식, 단위, 기준", template: "\n## 공식\n\n공식: \n단위: \n기준: \n" },
+      { id: "calc", label: "계산 풀이", icon: "=", hint: "공식, 대입, 계산, 답", template: CALCULATION_TEMPLATE },
       { id: "check", label: "체크리스트", icon: "☑", hint: "암기할 항목 확인", template: "\n- [ ] 암기할 항목\n- [ ] 헷갈리는 예외\n- [ ] 기출 연결 포인트\n" },
       { id: "callout", label: "암기 박스", icon: "※", hint: "강조해서 볼 문장", template: "\n> 암기 박스\n> 꼭 외워야 할 문장을 여기에 적으세요.\n" },
       { id: "table", label: "표", icon: "▦", hint: "3 x 3 표", template: () => buildMarkdownTable(3, 3) },
@@ -2388,11 +2536,13 @@
     ];
 
     const TABLE_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "table");
+    const CALC_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "calc");
+    const QUESTION_SLASH_BLOCKS = [TABLE_SLASH_BLOCK, CALC_SLASH_BLOCK].filter(Boolean);
     const SLASH_TARGETS = new Map([
       [els.theoryContentInput, THEORY_BLOCKS],
-      [els.questionInput, TABLE_SLASH_BLOCK ? [TABLE_SLASH_BLOCK] : []],
-      [els.answerInput, TABLE_SLASH_BLOCK ? [TABLE_SLASH_BLOCK] : []],
-      [els.memoInput, TABLE_SLASH_BLOCK ? [TABLE_SLASH_BLOCK] : []]
+      [els.questionInput, QUESTION_SLASH_BLOCKS],
+      [els.answerInput, QUESTION_SLASH_BLOCKS],
+      [els.memoInput, QUESTION_SLASH_BLOCKS]
     ]);
     const DYNAMIC_SLASH_TARGETS = new WeakMap();
 
@@ -2427,6 +2577,8 @@
     els.shuffleBtn.addEventListener("click", shuffleQuestions);
     els.resetBtn.addEventListener("click", resetProgress);
     els.toggleRangeBtn.addEventListener("click", toggleStudyRange);
+    els.reviewQueueBtn.addEventListener("click", startReviewQueue);
+    els.clearQueueBtn.addEventListener("click", clearReviewQueue);
     els.studyQuestionModeBtn.addEventListener("click", () => setStudyMode("question"));
     els.studyTheoryModeBtn.addEventListener("click", () => setStudyMode("theory"));
     els.studyFavoriteBtn.addEventListener("click", toggleCurrentStudyFavorite);
@@ -2438,6 +2590,7 @@
     els.nextBtn.addEventListener("click", () => moveCard(1));
     els.wrongBtn.addEventListener("click", markWrong);
     els.masterBtn.addEventListener("click", markMastered);
+    els.myAnswer.addEventListener("input", updateAnswerAssist);
     els.theoryForm.addEventListener("submit", saveTheory);
     [els.theoryTitleInput, els.theoryCategoryInput, els.theoryContentInput, els.theoryPromptInput].forEach(input => {
       input.addEventListener("input", updateTheoryPreview);
@@ -2449,6 +2602,8 @@
     els.insertTheoryQuestionHintBtn.addEventListener("click", buildTheoryQuestionHint);
     els.clearTheoryBtn.addEventListener("click", clearTheoryForm);
     els.questionForm.addEventListener("submit", saveQuestion);
+    els.insertClozeBtn.addEventListener("click", insertClozeTemplate);
+    els.insertCalcTemplateBtn.addEventListener("click", insertCalculationTemplate);
     els.clearFormBtn.addEventListener("click", clearForm);
     els.exportBtn.addEventListener("click", exportCsv);
     els.clearBankSearchBtn.addEventListener("click", clearBankSearch);
@@ -2479,6 +2634,12 @@
         els.toggleSearchBtn.textContent = "⌕";
         els.toggleSearchBtn.setAttribute("aria-label", "검색 열기");
       }
+    });
+    document.addEventListener("click", event => {
+      const cloze = event.target.closest(".cloze");
+      if (!cloze) return;
+      cloze.classList.toggle("revealed");
+      cloze.textContent = cloze.classList.contains("revealed") ? cloze.dataset.answer : "빈칸";
     });
 
     initCloudInputs();
@@ -2701,7 +2862,7 @@
       const category = els.categoryFilter.value;
       const tag = els.tagFilter.value;
       const status = els.statusFilter.value;
-      return sortItems(state.questions.filter(q => {
+      const matches = state.questions.filter(q => {
         const text = [q.category, q.level, q.question, q.answer, q.memo, q.imageName, normalizeTags(q.tags).join(" ")].join(" ").toLowerCase();
         const examOk = (q.examId || DEFAULT_EXAM_ID) === state.activeExamId;
         const categoryOk = !category || category === "all" || q.category === category;
@@ -2710,7 +2871,11 @@
         const statusOk = status === "all" || q.status === status;
         const searchOk = !search || text.includes(search);
         return examOk && categoryOk && tagOk && favoriteOk && statusOk && searchOk;
-      }));
+      });
+      if (!reviewQueueIds.length) return sortItems(matches);
+      return reviewQueueIds
+        .map(id => matches.find(q => q.id === id))
+        .filter(Boolean);
     }
 
     function filteredTheories() {
@@ -2771,6 +2936,7 @@
       root.querySelectorAll("[data-exam-id]").forEach(button => {
         button.addEventListener("click", () => {
           state.activeExamId = button.dataset.examId;
+          reviewQueueIds = [];
           currentIndex = 0;
           persist();
           render();
@@ -2799,6 +2965,7 @@
       };
       state.exams.push(exam);
       state.activeExamId = exam.id;
+      reviewQueueIds = [];
       currentIndex = 0;
       persist();
       render();
@@ -2834,6 +3001,7 @@
       state.questions = state.questions.filter(q => (q.examId || DEFAULT_EXAM_ID) !== id);
       state.theories = (state.theories || []).filter(theory => (theory.examId || DEFAULT_EXAM_ID) !== id);
       if (state.activeExamId === id) state.activeExamId = state.exams[0].id;
+      reviewQueueIds = [];
       currentIndex = 0;
       persist();
       render();
@@ -3144,6 +3312,11 @@
         <div class="dash-tile"><b>${tagCount}</b><span>태그 수</span></div>
         <div class="dash-tile"><b>${wrongCount}</b><span>오답</span></div>
       `;
+      const queueActive = studyMode === "question" && reviewQueueIds.length > 0;
+      els.clearQueueBtn.classList.toggle("hidden", !queueActive);
+      els.queueStatus.textContent = queueActive
+        ? `오늘 복습 큐 ${reviewQueueIds.length}개를 학습 중입니다.`
+        : "오답, 중요, 오래 안 본 문제를 자동으로 모읍니다.";
     }
 
     function formatQuestionCardHtml(question) {
@@ -3320,10 +3493,10 @@
       if (parts.options.length >= 2) {
         const main = parts.body || "다음 조건을 보고 답하세요.";
         return [
-          `<p class="question-main">${escapeHtml(main)}</p>`,
+          `<p class="question-main">${formatInlineHtml(main)}</p>`,
           `<div class="question-list">`,
           ...parts.options.map(option => {
-            return `<div class="question-option"><b>${escapeHtml(option.number)}</b><span>${escapeHtml(option.text)}</span></div>`;
+            return `<div class="question-option"><b>${escapeHtml(option.number)}</b><span>${formatInlineHtml(option.text)}</span></div>`;
           }),
           `</div>`
         ].join("");
@@ -3344,28 +3517,42 @@
       }).join("");
     }
 
+    function formatInlineHtml(text) {
+      const source = String(text || "");
+      const parts = [];
+      let cursor = 0;
+      source.replace(/\{\{([^{}]+)\}\}/g, (match, answer, index) => {
+        parts.push(escapeHtml(source.slice(cursor, index)));
+        parts.push(`<button class="cloze" type="button" data-answer="${escapeHtml(answer.trim())}">빈칸</button>`);
+        cursor = index + match.length;
+        return match;
+      });
+      parts.push(escapeHtml(source.slice(cursor)));
+      return parts.join("");
+    }
+
     function renderRichTextBlock(block) {
       const source = String(block || "").trim();
       if (!source) return "";
       if (/^---+$/.test(source)) return `<hr class="rich-divider">`;
-      if (source.startsWith("## ")) return `<h4 class="rich-subheading">${escapeHtml(source.slice(3).trim())}</h4>`;
-      if (source.startsWith("# ")) return `<h3 class="rich-heading">${escapeHtml(source.slice(2).trim())}</h3>`;
+      if (source.startsWith("## ")) return `<h4 class="rich-subheading">${formatInlineHtml(source.slice(3).trim())}</h4>`;
+      if (source.startsWith("# ")) return `<h3 class="rich-heading">${formatInlineHtml(source.slice(2).trim())}</h3>`;
       if (source.startsWith(">")) {
-        return `<div class="rich-callout">${escapeHtml(source.replace(/^>\s?/gm, "").trim())}</div>`;
+        return `<div class="rich-callout">${formatInlineHtml(source.replace(/^>\s?/gm, "").trim())}</div>`;
       }
       if (/^-\s+\[[ xX]\]\s+/m.test(source)) {
         const items = source.split("\n").map(line => line.trim()).filter(Boolean);
         return `<ul class="rich-checklist">${items.map(line => {
           const done = /^-\s+\[[xX]\]\s+/.test(line);
           const text = line.replace(/^-\s+\[[ xX]\]\s+/, "");
-          return `<li><span class="box${done ? " done" : ""}"></span><span>${escapeHtml(text)}</span></li>`;
+          return `<li><span class="box${done ? " done" : ""}"></span><span>${formatInlineHtml(text)}</span></li>`;
         }).join("")}</ul>`;
       }
       if (/^-\s+/m.test(source)) {
         const items = source.split("\n").map(line => line.replace(/^-\s+/, "").trim()).filter(Boolean);
-        return `<ul class="rich-list">${items.map(item => `<li><span>•</span><span>${escapeHtml(item)}</span></li>`).join("")}</ul>`;
+        return `<ul class="rich-list">${items.map(item => `<li><span>•</span><span>${formatInlineHtml(item)}</span></li>`).join("")}</ul>`;
       }
-      return `<p class="rich-paragraph question-paragraph">${escapeHtml(source)}</p>`;
+      return `<p class="rich-paragraph question-paragraph">${formatInlineHtml(source)}</p>`;
     }
 
     function isMarkdownTable(block) {
@@ -3473,6 +3660,7 @@
         els.answerText.innerHTML = "";
         els.answerText.classList.remove("visible");
         els.myAnswer.value = "";
+        hideAnswerAssist();
         els.myAnswer.classList.remove("hidden");
         els.showAnswerBtn.textContent = "정답 보기";
         updateStudyFavoriteButton(null);
@@ -3489,6 +3677,7 @@
       els.answerText.innerHTML = formatAnswerCardHtml(current);
       els.answerText.classList.remove("visible");
       els.myAnswer.value = "";
+      hideAnswerAssist();
       els.myAnswer.classList.remove("hidden");
       els.showAnswerBtn.textContent = "정답 보기";
       updateStudyFavoriteButton(current);
@@ -3508,6 +3697,7 @@
       els.cardType.textContent = current?.category || "분야";
       els.cardLevel.textContent = "이론";
       els.myAnswer.value = "";
+      hideAnswerAssist();
       els.myAnswer.classList.add("hidden");
       els.wrongBtn.classList.add("hidden");
       els.masterBtn.classList.add("hidden");
@@ -3591,6 +3781,25 @@
       const block = THEORY_BLOCKS.find(item => item.id === type);
       insertAtCursor(els.theoryContentInput, blockTemplate(block));
       updateTheoryPreview();
+    }
+
+    function insertClozeTemplate() {
+      const textarea = els.questionInput;
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? textarea.value.length;
+      const selected = textarea.value.slice(start, end).trim();
+      const text = selected ? `{{${selected}}}` : "{{암기할 내용}}";
+      const before = textarea.value.slice(0, start);
+      const after = textarea.value.slice(end);
+      textarea.value = `${before}${text}${after}`;
+      const cursor = before.length + text.length;
+      textarea.focus();
+      textarea.setSelectionRange(cursor, cursor);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function insertCalculationTemplate() {
+      insertAtCursor(els.answerInput, CALCULATION_TEMPLATE);
     }
 
     function blockTemplate(block) {
@@ -3933,7 +4142,7 @@
     function bindListButtons(root) {
       setupTextTools(root);
       root.querySelectorAll("[data-quick-field='question'], [data-quick-field='answer'], [data-quick-field='memo']").forEach(textarea => {
-        registerSlashTextarea(textarea, TABLE_SLASH_BLOCK ? [TABLE_SLASH_BLOCK] : []);
+        registerSlashTextarea(textarea, QUESTION_SLASH_BLOCKS);
       });
       root.querySelectorAll("[data-quick-edit]").forEach(button => {
         button.addEventListener("click", () => {
@@ -4071,6 +4280,39 @@
       els.toggleRangeBtn.setAttribute("aria-expanded", String(willExpand));
     }
 
+    function startReviewQueue() {
+      const candidates = currentExamQuestions();
+      if (!candidates.length) return alert("복습 큐에 넣을 문제가 없습니다.");
+      reviewQueueIds = candidates
+        .map(q => ({ id: q.id, score: reviewScore(q), time: itemTime(q) }))
+        .sort((a, b) => b.score - a.score || a.time - b.time)
+        .slice(0, 20)
+        .map(item => item.id);
+      currentIndex = 0;
+      studyMode = "question";
+      setView("study");
+      renderFilters();
+      renderDashboard();
+      renderStudy();
+    }
+
+    function clearReviewQueue() {
+      reviewQueueIds = [];
+      currentIndex = 0;
+      renderDashboard();
+      renderStudy();
+    }
+
+    function reviewScore(q) {
+      const daysSinceUpdate = Math.min(30, Math.floor((Date.now() - itemTime(q)) / 86400000) || 0);
+      return (q.status === "wrong" ? 40 : 0)
+        + ((q.wrongCount || 0) * 8)
+        + (q.favorite ? 18 : 0)
+        + (q.level === "상" ? 10 : q.level === "중" ? 5 : 0)
+        + (q.status === "new" ? 8 : 0)
+        + daysSinceUpdate;
+    }
+
     function placeStudyRangeBox() {
       const isMobile = window.matchMedia("(max-width: 980px)").matches;
       const target = isMobile ? els.studyGrid : els.desktopSide;
@@ -4099,6 +4341,66 @@
         return;
       }
       els.answerText.classList.toggle("visible");
+      if (els.answerText.classList.contains("visible")) updateAnswerAssist();
+      else hideAnswerAssist();
+    }
+
+    function updateAnswerAssist() {
+      const q = getCurrentQuestion();
+      if (!q || studyMode !== "question" || !els.answerText.classList.contains("visible")) {
+        hideAnswerAssist();
+        return;
+      }
+      const keywords = answerKeywords(q.answer);
+      if (!keywords.length) {
+        hideAnswerAssist();
+        return;
+      }
+      const mine = compactText(els.myAnswer.value);
+      const hits = [];
+      const misses = [];
+      keywords.forEach(keyword => {
+        const bucket = mine.includes(compactText(keyword)) ? hits : misses;
+        bucket.push(keyword);
+      });
+      const score = Math.round((hits.length / keywords.length) * 100);
+      els.answerAssist.innerHTML = `
+        <h3>채점 보조</h3>
+        <div class="assist-score">핵심어 ${hits.length}/${keywords.length}개 포함 · ${score}%</div>
+        <div class="assist-row">
+          ${hits.slice(0, 10).map(word => `<span class="assist-chip hit">✓ ${escapeHtml(word)}</span>`).join("")}
+          ${misses.slice(0, 10).map(word => `<span class="assist-chip miss">+ ${escapeHtml(word)}</span>`).join("")}
+        </div>
+      `;
+      els.answerAssist.classList.remove("hidden");
+    }
+
+    function hideAnswerAssist() {
+      els.answerAssist.classList.add("hidden");
+      els.answerAssist.innerHTML = "";
+    }
+
+    function answerKeywords(answer) {
+      const stop = new Set(["정답", "답", "메모", "출처", "공식", "대입", "계산", "이상", "이하", "한다", "시오", "쓰기", "쓰시오"]);
+      const chunks = String(answer || "")
+        .replace(/\|/g, "\n")
+        .replace(/[①-⑳]/g, "\n")
+        .split(/[\n,，;；/]+/)
+        .map(text => text.replace(/^[\s\-•*]+/, "").replace(/^(정답|답|메모|공식|대입|계산|풀이|결과)\s*[:：]\s*/i, "").trim())
+        .filter(Boolean);
+      const words = chunks.flatMap(chunk => {
+        const clean = chunk.replace(/[()[\]{}]/g, " ").replace(/\s+/g, " ").trim();
+        const pieces = clean.split(/\s+/).filter(Boolean);
+        return clean.length <= 18 ? [clean, ...pieces] : pieces;
+      });
+      return [...new Set(words.map(word => word.replace(/[.。]+$/g, "").trim()).filter(word => {
+        const compact = compactText(word);
+        return compact.length >= 2 && !stop.has(compact) && !/^[-=]+$/.test(compact);
+      }))].slice(0, 14);
+    }
+
+    function compactText(value) {
+      return String(value || "").toLowerCase().replace(/\s+/g, "");
     }
 
     function updateStudyFavoriteButton(item) {
