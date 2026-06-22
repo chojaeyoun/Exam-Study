@@ -962,8 +962,14 @@
     }
 
     .step-controls button {
-      min-height: 42px;
+      min-height: 38px;
+      padding: 0 13px;
       background: #f8fafb;
+    }
+
+    .pillrow .step-controls {
+      flex: 0 1 260px;
+      margin-left: auto;
     }
 
     .review-actions {
@@ -1743,6 +1749,12 @@
         grid-template-columns: 1fr;
       }
 
+      .pillrow .step-controls {
+        flex: 1 0 100%;
+        order: 3;
+        margin-left: 0;
+      }
+
       .side .range-box {
         padding: 18px;
         border-color: var(--line);
@@ -1936,6 +1948,10 @@
                 <span class="pill" id="cardType">분야</span>
                 <span class="pill" id="cardLevel">중요도</span>
               </div>
+              <div class="step-controls" aria-label="문제 이동">
+                <button id="prevBtn">← 이전 문제</button>
+                <button id="nextBtn">다음 문제 →</button>
+              </div>
               <button id="studyFavoriteBtn" type="button" class="favorite-button study-favorite">☆ 중요</button>
             </div>
             <div class="question">
@@ -1944,10 +1960,6 @@
               <div id="answerText" class="answer"></div>
             </div>
             <div class="study-controls">
-              <div class="step-controls" aria-label="문제 이동">
-                <button id="prevBtn">← 이전 문제</button>
-                <button id="nextBtn">다음 문제 →</button>
-              </div>
               <div class="review-actions" aria-label="정답 확인과 학습 결과">
                 <button id="showAnswerBtn" class="primary">정답 보기</button>
                 <button id="wrongBtn" class="wrong-action">틀렸음</button>
