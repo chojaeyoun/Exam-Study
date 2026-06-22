@@ -1670,6 +1670,39 @@
       overflow-wrap: anywhere;
     }
 
+    .photo-preview .photo-role {
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .quick-photo-tools {
+      display: grid;
+      gap: 8px;
+    }
+
+    .quick-photo-current {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .quick-photo-current img {
+      width: 84px;
+      height: 60px;
+      object-fit: contain;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #f8fafb;
+    }
+
+    .quick-photo-current span {
+      overflow-wrap: anywhere;
+    }
+
     .photo-option {
       display: flex;
       align-items: center;
@@ -2178,6 +2211,9 @@
               </label>
               <div id="ocrStatus" class="ocr-status">사진을 고르면 미리보기가 표시됩니다.</div>
               <div id="photoPreview" class="photo-preview"></div>
+              <div class="actions">
+                <button type="button" id="clearPhotoBtn">첨부 사진 비우기</button>
+              </div>
             </div>
           </div>
           <label>분야
@@ -2393,6 +2429,8 @@
     let deferredInstallPrompt = null;
     let supabaseClient = null;
     let pendingPhotoQuestions = [];
+    let removeQuestionImageOnSave = false;
+    let removeAnswerImageOnSave = false;
     const PHOTO_MAX_EDGE = 1600;
     const PHOTO_QUALITY = 0.82;
 
@@ -2483,6 +2521,7 @@
       photoPairMode: document.querySelector("#photoPairMode"),
       ocrStatus: document.querySelector("#ocrStatus"),
       photoPreview: document.querySelector("#photoPreview"),
+      clearPhotoBtn: document.querySelector("#clearPhotoBtn"),
       clearFormBtn: document.querySelector("#clearFormBtn"),
       exportBtn: document.querySelector("#exportBtn"),
       bankTable: document.querySelector("#bankTable"),
@@ -2610,7 +2649,9 @@
     els.toggleOcrBtn.addEventListener("click", toggleOcrBox);
     els.pickPhotoBtn.addEventListener("click", () => els.photoFile.click());
     els.photoFile.addEventListener("change", readQuestionPhoto);
+    els.photoPairMode.addEventListener("change", renderPhotoPreview);
     els.applyOcrBtn.addEventListener("click", applyOcrText);
+    els.clearPhotoBtn.addEventListener("click", clearAttachedPhotos);
     els.pickCsvBtn.addEventListener("click", () => els.csvFile.click());
     els.csvFile.addEventListener("change", importCsvFile);
     els.importPasteBtn.addEventListener("click", () => importCsvText(els.csvPaste.value));
@@ -4130,6 +4171,20 @@
               <div class="text-tools" data-tools-for-quick="memo"></div>
               <textarea data-quick-field="memo">${escapeHtml(q.memo || "")}</textarea>
             </label>
+            <div class="wide quick-photo-tools">
+              <div class="quick-photo-current">
+                ${q.questionImage ? `<img src="${escapeHtml(q.questionImage)}" alt="${escapeHtml(q.imageName || "문제 사진")}">` : ""}
+                <span data-quick-image-name>${q.questionImage ? `현재 사진: ${escapeHtml(q.imageName || "문제 사진")}` : "문제 사진 없음"}</span>
+              </div>
+              <input class="hidden-file" type="file" accept="image/*" data-quick-image-file>
+              <div class="actions">
+                <button type="button" data-quick-image-pick="${q.id}">사진 선택</button>
+                <label class="photo-option">
+                  <input type="checkbox" data-quick-image-remove>
+                  기존 사진 삭제
+                </label>
+              </div>
+            </div>
             <div class="wide quick-edit-actions">
               <button type="button" class="primary" data-quick-save="${q.id}">저장</button>
               <button type="button" data-quick-cancel>취소</button>
@@ -4158,6 +4213,20 @@
       root.querySelectorAll("[data-quick-save]").forEach(button => {
         button.addEventListener("click", () => saveQuickEdit(button));
       });
+      root.querySelectorAll("[data-quick-image-pick]").forEach(button => {
+        button.addEventListener("click", () => {
+          button.closest("[data-quick-form]")?.querySelector("[data-quick-image-file]")?.click();
+        });
+      });
+      root.querySelectorAll("[data-quick-image-file]").forEach(input => {
+        input.addEventListener("change", () => {
+          const form = input.closest("[data-quick-form]");
+          const name = input.files?.[0]?.name || "선택한 사진 없음";
+          form?.querySelector("[data-quick-image-name]")?.replaceChildren(document.createTextNode(`선택한 사진: ${name}`));
+          const remove = form?.querySelector("[data-quick-image-remove]");
+          if (remove) remove.checked = false;
+        });
+      });
       root.querySelectorAll("[data-quick-cancel]").forEach(button => {
         button.addEventListener("click", () => {
           quickEditId = "";
@@ -4184,7 +4253,7 @@
       });
     }
 
-    function saveQuickEdit(button) {
+    async function saveQuickEdit(button) {
       const form = button.closest("[data-quick-form]");
       const q = state.questions.find(item => item.id === button.dataset.quickSave);
       if (!form || !q) return;
@@ -4198,6 +4267,24 @@
       if (!q.question || !q.answer) {
         alert("문제와 정답은 비워둘 수 없습니다.");
         return;
+      }
+      const imageFile = form.querySelector("[data-quick-image-file]")?.files?.[0];
+      const removeImage = form.querySelector("[data-quick-image-remove]")?.checked;
+      if (imageFile) {
+        button.disabled = true;
+        try {
+          const photo = await readPhotoFile(imageFile);
+          q.questionImage = photo.dataUrl;
+          q.imageName = photo.name;
+        } catch (error) {
+          console.warn(error);
+          alert("사진을 저장하지 못했습니다. 다른 이미지로 다시 선택하세요.");
+          button.disabled = false;
+          return;
+        }
+      } else if (removeImage) {
+        q.questionImage = "";
+        q.imageName = "";
       }
       persist();
       quickEditId = "";
@@ -4478,6 +4565,8 @@
 
       try {
         pendingPhotoQuestions = await Promise.all(files.map(readPhotoFile));
+        removeQuestionImageOnSave = false;
+        removeAnswerImageOnSave = false;
         renderPhotoPreview();
         els.applyOcrBtn.disabled = !pendingPhotoQuestions.length;
         const totalSize = pendingPhotoQuestions.reduce((sum, photo) => sum + photo.dataUrl.length, 0);
@@ -4551,12 +4640,55 @@
     }
 
     function renderPhotoPreview() {
-      els.photoPreview.innerHTML = pendingPhotoQuestions.map((photo, index) => {
+      const editing = currentEditingQuestion();
+      const selectedPhotos = pendingPhotoQuestions.map((photo, index) => ({
+        dataUrl: photo.dataUrl,
+        name: photo.name,
+        role: index === 0 ? "문제 사진" : (els.photoPairMode.checked && index === 1 ? "정답 사진" : `추가 사진 ${index + 1}`)
+      }));
+      const existingPhotos = [];
+      if (!pendingPhotoQuestions.length && editing) {
+        if (editing.questionImage && !removeQuestionImageOnSave) {
+          existingPhotos.push({
+            dataUrl: editing.questionImage,
+            name: editing.imageName || "저장된 문제 사진",
+            role: "현재 문제 사진"
+          });
+        }
+        if (editing.answerImage && !removeAnswerImageOnSave) {
+          existingPhotos.push({
+            dataUrl: editing.answerImage,
+            name: editing.answerImageName || "저장된 정답 사진",
+            role: "현재 정답 사진"
+          });
+        }
+      }
+      const photos = selectedPhotos.length ? selectedPhotos : existingPhotos;
+      els.photoPreview.innerHTML = photos.map((photo, index) => {
         return `<figure>
           <img src="${escapeHtml(photo.dataUrl)}" alt="사진 문제 미리보기 ${index + 1}">
-          <figcaption>${index + 1}. ${escapeHtml(photo.name)}</figcaption>
+          <figcaption><span class="photo-role">${escapeHtml(photo.role)}</span><br>${escapeHtml(photo.name)}</figcaption>
         </figure>`;
       }).join("");
+      els.clearPhotoBtn.disabled = !photos.length;
+    }
+
+    function currentEditingQuestion() {
+      return state.questions.find(q => q.id === els.editId.value) || null;
+    }
+
+    function clearAttachedPhotos() {
+      const editing = currentEditingQuestion();
+      pendingPhotoQuestions = [];
+      if (editing) {
+        removeQuestionImageOnSave = true;
+        removeAnswerImageOnSave = true;
+        setOcrStatus("저장하면 기존 첨부 사진이 삭제됩니다.");
+      } else {
+        setOcrStatus("선택한 사진을 비웠습니다.");
+      }
+      els.applyOcrBtn.disabled = true;
+      renderPhotoPreview();
     }
 
     function applyOcrText() {
@@ -4643,6 +4775,8 @@
       event.preventDefault();
       const id = els.editId.value || crypto.randomUUID();
       const existing = state.questions.find(q => q.id === id);
+      const questionPhoto = pendingPhotoQuestions[0] || null;
+      const answerPhoto = els.photoPairMode.checked ? (pendingPhotoQuestions[1] || null) : null;
       const data = {
         id,
         examId: existing?.examId || state.activeExamId,
@@ -4653,10 +4787,10 @@
         memo: els.memoInput.value.trim(),
         tags: normalizeTags(els.tagsInput.value),
         favorite: Boolean(existing?.favorite),
-        questionImage: existing?.questionImage || "",
-        imageName: existing?.imageName || "",
-        answerImage: existing?.answerImage || "",
-        answerImageName: existing?.answerImageName || "",
+        questionImage: questionPhoto?.dataUrl || (removeQuestionImageOnSave ? "" : existing?.questionImage || ""),
+        imageName: questionPhoto?.name || (removeQuestionImageOnSave ? "" : existing?.imageName || ""),
+        answerImage: answerPhoto?.dataUrl || (removeAnswerImageOnSave ? "" : existing?.answerImage || ""),
+        answerImageName: answerPhoto?.name || (removeAnswerImageOnSave ? "" : existing?.answerImageName || ""),
         status: existing?.status || "new",
         wrongCount: existing?.wrongCount || 0,
         masteredAt: existing?.masteredAt || "",
@@ -4676,13 +4810,20 @@
       els.questionForm.reset();
       els.levelInput.value = "중";
       pendingPhotoQuestions = [];
+      removeQuestionImageOnSave = false;
+      removeAnswerImageOnSave = false;
       els.photoPreview.innerHTML = "";
       els.applyOcrBtn.disabled = true;
+      els.clearPhotoBtn.disabled = true;
+      setOcrStatus("사진을 고르면 미리보기가 표시됩니다.");
     }
 
     function editQuestion(id) {
       const q = state.questions.find(item => item.id === id);
       if (!q) return;
+      pendingPhotoQuestions = [];
+      removeQuestionImageOnSave = false;
+      removeAnswerImageOnSave = false;
       els.editId.value = q.id;
       els.categoryInput.value = q.category;
       els.levelInput.value = q.level || "중";
@@ -4690,6 +4831,8 @@
       els.questionInput.value = q.question;
       els.answerInput.value = q.answer;
       els.memoInput.value = q.memo || "";
+      renderPhotoPreview();
+      setOcrStatus(q.questionImage || q.answerImage ? "저장된 첨부 사진이 있습니다." : "사진을 고르면 미리보기가 표시됩니다.");
       setView("bank");
       setComposeMode("question");
       window.scrollTo({ top: 0, behavior: "smooth" });
