@@ -2195,7 +2195,7 @@
             <div class="ocr-header">
               <div class="ocr-title">
                 <h2>사진 문제 만들기</h2>
-                <p>사진을 그대로 문제 카드에 저장합니다. 여러 장을 고르면 각각 별도 문제로 나눠 저장합니다.</p>
+                <p>사진을 선택하거나 Ctrl+V로 붙여넣어 문제 카드에 저장합니다. 여러 장을 고르면 각각 별도 문제로 나눠 저장합니다.</p>
               </div>
               <button type="button" id="toggleOcrBtn" class="ocr-toggle" aria-expanded="false" aria-controls="ocrBody">펼치기</button>
             </div>
@@ -2209,7 +2209,7 @@
                 <input id="photoPairMode" type="checkbox">
                 두 장씩 문제/정답으로 묶기
               </label>
-              <div id="ocrStatus" class="ocr-status">사진을 고르면 미리보기가 표시됩니다.</div>
+              <div id="ocrStatus" class="ocr-status">사진을 고르거나 캡처 이미지를 Ctrl+V로 붙여넣으면 미리보기가 표시됩니다.</div>
               <div id="photoPreview" class="photo-preview"></div>
               <div class="actions">
                 <button type="button" id="clearPhotoBtn">첨부 사진 비우기</button>
@@ -2649,6 +2649,7 @@
     els.toggleOcrBtn.addEventListener("click", toggleOcrBox);
     els.pickPhotoBtn.addEventListener("click", () => els.photoFile.click());
     els.photoFile.addEventListener("change", readQuestionPhoto);
+    els.questionForm.addEventListener("paste", pasteQuestionPhoto);
     els.photoPairMode.addEventListener("change", renderPhotoPreview);
     els.applyOcrBtn.addEventListener("click", applyOcrText);
     els.clearPhotoBtn.addEventListener("click", clearAttachedPhotos);
@@ -4556,7 +4557,21 @@
     async function readQuestionPhoto(event) {
       const files = [...event.target.files].filter(file => file.type.startsWith("image/"));
       if (!files.length) return;
+      await loadPendingPhotoFiles(files, "선택됨");
+      event.target.value = "";
+    }
 
+    async function pasteQuestionPhoto(event) {
+      const files = [...event.clipboardData?.items || []]
+        .filter(item => item.kind === "file" && item.type.startsWith("image/"))
+        .map(item => item.getAsFile())
+        .filter(Boolean);
+      if (!files.length) return;
+      event.preventDefault();
+      await loadPendingPhotoFiles(files, "붙여넣음");
+    }
+
+    async function loadPendingPhotoFiles(files, actionLabel) {
       pendingPhotoQuestions = [];
       els.applyOcrBtn.disabled = true;
       els.pickPhotoBtn.disabled = true;
@@ -4571,7 +4586,7 @@
         els.applyOcrBtn.disabled = !pendingPhotoQuestions.length;
         const totalSize = pendingPhotoQuestions.reduce((sum, photo) => sum + photo.dataUrl.length, 0);
         const sizeMb = (totalSize / 1024 / 1024).toFixed(1);
-        setOcrStatus(`${pendingPhotoQuestions.length}장 선택됨. 저장용으로 압축했습니다. 약 ${sizeMb}MB`);
+        setOcrStatus(`${pendingPhotoQuestions.length}장 ${actionLabel}. 저장용으로 압축했습니다. 약 ${sizeMb}MB`);
       } catch (error) {
         console.warn(error);
         pendingPhotoQuestions = [];
@@ -4579,7 +4594,6 @@
         setOcrStatus("사진을 불러오지 못했습니다. 다른 이미지로 다시 선택하세요.", true);
       } finally {
         els.pickPhotoBtn.disabled = false;
-        event.target.value = "";
       }
     }
 
@@ -4815,7 +4829,7 @@
       els.photoPreview.innerHTML = "";
       els.applyOcrBtn.disabled = true;
       els.clearPhotoBtn.disabled = true;
-      setOcrStatus("사진을 고르면 미리보기가 표시됩니다.");
+      setOcrStatus("사진을 고르거나 캡처 이미지를 Ctrl+V로 붙여넣으면 미리보기가 표시됩니다.");
     }
 
     function editQuestion(id) {
@@ -4832,7 +4846,7 @@
       els.answerInput.value = q.answer;
       els.memoInput.value = q.memo || "";
       renderPhotoPreview();
-      setOcrStatus(q.questionImage || q.answerImage ? "저장된 첨부 사진이 있습니다." : "사진을 고르면 미리보기가 표시됩니다.");
+      setOcrStatus(q.questionImage || q.answerImage ? "저장된 첨부 사진이 있습니다." : "사진을 고르거나 캡처 이미지를 Ctrl+V로 붙여넣으면 미리보기가 표시됩니다.");
       setView("bank");
       setComposeMode("question");
       window.scrollTo({ top: 0, behavior: "smooth" });
