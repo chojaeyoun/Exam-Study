@@ -1437,6 +1437,85 @@
       gap: 14px;
     }
 
+    .notion-compose {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 28px;
+      gap: 18px;
+    }
+
+    .compose-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 14px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .compose-head h2 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.25;
+      color: var(--ink);
+    }
+
+    .compose-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 700;
+    }
+
+    .notion-textarea {
+      border-color: transparent;
+      background: transparent;
+      border-radius: 0;
+      padding: 8px 0;
+      box-shadow: none !important;
+    }
+
+    .notion-textarea:focus {
+      border-color: transparent;
+      box-shadow: none;
+    }
+
+    .question-draft {
+      min-height: 160px;
+      font-size: 24px;
+      line-height: 1.65;
+      font-weight: 800;
+    }
+
+    .answer-draft {
+      min-height: 130px;
+      font-size: 18px;
+      line-height: 1.65;
+    }
+
+    .quick-compose-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding-top: 4px;
+    }
+
+    .quick-compose-actions button {
+      min-height: 38px;
+    }
+
+    .compose-option-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .compose-option-grid .wide {
+      grid-column: 1 / -1;
+    }
+
     .form-grid .wide {
       grid-column: 1 / -1;
     }
@@ -2394,21 +2473,56 @@
           <button id="composeManageModeBtn" type="button">목록 관리</button>
         </div>
 
-        <form id="questionForm" class="panel form-grid bank-panel active" data-bank-panel="question">
+        <form id="questionForm" class="panel form-grid notion-compose bank-panel active" data-bank-panel="question">
           <input type="hidden" id="editId">
-          <div id="ocrBox" class="wide ocr-box collapsed">
-            <div class="ocr-header">
-              <div class="ocr-title">
-                <h2>사진 문제 만들기</h2>
-                <p>사진을 선택하거나 Ctrl+V로 붙여넣어 문제 카드에 저장합니다. 여러 장을 고르면 각각 별도 문제로 나눠 저장합니다.</p>
-              </div>
-              <button type="button" id="toggleOcrBtn" class="ocr-toggle" aria-expanded="false" aria-controls="ocrBody">펼치기</button>
+          <div class="wide compose-head">
+            <div>
+              <h2>새 문제</h2>
+              <p>/표, /계산, /빈칸, /사진처럼 입력해서 필요한 블록만 꺼내 쓰세요.</p>
             </div>
+            <button type="button" id="toggleOcrBtn" class="ocr-toggle" aria-expanded="false" aria-controls="ocrBody">상세 옵션</button>
+          </div>
+          <label class="wide">문제
+            <div class="text-tools" data-tools-for="questionInput"></div>
+            <textarea id="questionInput" class="notion-textarea question-draft" required placeholder="문제를 입력하세요. /표 /계산 /빈칸 /사진"></textarea>
+          </label>
+          <label class="wide">정답
+            <div class="text-tools" data-tools-for="answerInput"></div>
+            <textarea id="answerInput" class="notion-textarea answer-draft" required placeholder="정답을 입력하세요. /계산 /표"></textarea>
+          </label>
+          <div class="wide quick-compose-actions">
+            <button class="primary" type="submit">저장하고 계속 작성</button>
+            <button type="button" id="clearFormBtn">새 문제</button>
+            <button type="button" id="pickPhotoBtn">+ 사진</button>
+            <button type="button" id="insertClozeBtn">+ 빈칸</button>
+            <button type="button" id="insertCalcTemplateBtn">+ 계산</button>
+          </div>
+          <div id="ocrBox" class="wide ocr-box collapsed">
             <div id="ocrBody" class="ocr-body">
               <input id="photoFile" class="hidden-file" type="file" accept="image/*" multiple>
+              <div class="compose-option-grid">
+                <label>분야
+                  <input id="categoryInput" placeholder="예: 안전관리, 전기, 화학, 건설">
+                </label>
+                <label>중요도
+                  <select id="levelInput">
+                    <option value="상">상</option>
+                    <option value="중" selected>중</option>
+                    <option value="하">하</option>
+                  </select>
+                </label>
+                <label class="wide">태그
+                  <input id="tagsInput" placeholder="예: 법령, 계산, 암기">
+                </label>
+                <label class="wide">메모
+                  <div class="text-tools" data-tools-for="memoInput"></div>
+                  <textarea id="memoInput" placeholder="헷갈리는 포인트, 암기법, 관련 회차 등을 적어두세요."></textarea>
+                </label>
+              </div>
               <div class="actions">
-                <button type="button" id="pickPhotoBtn" class="primary">사진 선택</button>
-                <button type="button" id="applyOcrBtn" disabled>사진 문제 저장</button>
+                <button type="button" id="applyOcrBtn" disabled>선택한 사진을 여러 문제로 저장</button>
+                <button type="button" id="clearPhotoBtn">첨부 사진 비우기</button>
+                <button type="button" id="exportBtn">CSV 내보내기</button>
               </div>
               <label class="photo-option">
                 <input id="photoPairMode" type="checkbox">
@@ -2416,46 +2530,7 @@
               </label>
               <div id="ocrStatus" class="ocr-status">사진을 고르거나 캡처 이미지를 Ctrl+V로 붙여넣으면 미리보기가 표시됩니다.</div>
               <div id="photoPreview" class="photo-preview"></div>
-              <div class="actions">
-                <button type="button" id="clearPhotoBtn">첨부 사진 비우기</button>
-              </div>
             </div>
-          </div>
-          <label>분야
-            <input id="categoryInput" placeholder="예: 안전관리, 전기, 화학, 건설">
-          </label>
-          <label>중요도
-            <select id="levelInput">
-              <option value="상">상</option>
-              <option value="중" selected>중</option>
-              <option value="하">하</option>
-            </select>
-          </label>
-          <label class="wide">태그
-            <input id="tagsInput" placeholder="예: 법령, 계산, 암기">
-          </label>
-          <label class="wide">문제
-            <div class="text-tools" data-tools-for="questionInput"></div>
-            <div class="template-tools">
-              <button id="insertClozeBtn" type="button">암기카드 빈칸</button>
-            </div>
-            <textarea id="questionInput" required placeholder="문제 내용을 입력하세요."></textarea>
-          </label>
-          <label class="wide">정답
-            <div class="text-tools" data-tools-for="answerInput"></div>
-            <div class="template-tools">
-              <button id="insertCalcTemplateBtn" type="button">계산 풀이 템플릿</button>
-            </div>
-            <textarea id="answerInput" required placeholder="정답 또는 채점 키워드를 입력하세요."></textarea>
-          </label>
-          <label class="wide">메모
-            <div class="text-tools" data-tools-for="memoInput"></div>
-            <textarea id="memoInput" placeholder="헷갈리는 포인트, 암기법, 관련 회차 등을 적어두세요."></textarea>
-          </label>
-          <div class="wide actions">
-            <button class="primary" type="submit">저장</button>
-            <button type="button" id="clearFormBtn">새 문제</button>
-            <button type="button" id="exportBtn">CSV 내보내기</button>
           </div>
         </form>
 
@@ -2788,7 +2863,13 @@
 
     const TABLE_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "table");
     const CALC_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "calc");
-    const QUESTION_SLASH_BLOCKS = [TABLE_SLASH_BLOCK, CALC_SLASH_BLOCK].filter(Boolean);
+    const QUESTION_EXTRA_BLOCKS = [
+      { id: "cloze", label: "빈칸", icon: "□", hint: "암기카드 빈칸 삽입", template: "{{정답}}" },
+      { id: "photo", label: "사진", icon: "⌁", hint: "사진 선택 또는 붙여넣기", action: "photo" },
+      { id: "memo", label: "메모", icon: "M", hint: "메모 입력칸 열기", action: "memo" },
+      { id: "tag", label: "태그", icon: "#", hint: "태그 입력칸 열기", action: "tag" }
+    ];
+    const QUESTION_SLASH_BLOCKS = [TABLE_SLASH_BLOCK, CALC_SLASH_BLOCK, ...QUESTION_EXTRA_BLOCKS].filter(Boolean);
     const SLASH_TARGETS = new Map([
       [els.theoryContentInput, THEORY_BLOCKS],
       [els.questionInput, QUESTION_SLASH_BLOCKS],
@@ -4317,6 +4398,15 @@
       const textarea = slashState.textarea || els.theoryContentInput;
       const before = textarea.value.slice(0, slashState.start);
       const after = textarea.value.slice(slashState.end);
+      if (block.action) {
+        textarea.value = `${before}${after}`;
+        textarea.focus();
+        textarea.setSelectionRange(before.length, before.length);
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        closeSlashMenu();
+        runSlashAction(block.action);
+        return;
+      }
       const text = blockTemplate(block);
       textarea.value = `${before}${text}${after}`;
       const cursor = before.length + text.length;
@@ -4327,6 +4417,23 @@
       if (textarea === els.theoryContentInput) {
         updateTheoryPreview();
       }
+    }
+
+    function runSlashAction(action) {
+      openComposeDetails();
+      if (action === "photo") {
+        requestAnimationFrame(() => els.photoFile.click());
+      } else if (action === "memo") {
+        requestAnimationFrame(() => els.memoInput.focus());
+      } else if (action === "tag") {
+        requestAnimationFrame(() => els.tagsInput.focus());
+      }
+    }
+
+    function openComposeDetails() {
+      els.ocrBox.classList.remove("collapsed");
+      els.toggleOcrBtn.textContent = "옵션 접기";
+      els.toggleOcrBtn.setAttribute("aria-expanded", "true");
     }
 
     function closeSlashMenu() {
@@ -4946,7 +5053,7 @@
     function toggleOcrBox() {
       const willExpand = els.ocrBox.classList.contains("collapsed");
       els.ocrBox.classList.toggle("collapsed", !willExpand);
-      els.toggleOcrBtn.textContent = willExpand ? "접기" : "펼치기";
+      els.toggleOcrBtn.textContent = willExpand ? "옵션 접기" : "상세 옵션";
       els.toggleOcrBtn.setAttribute("aria-expanded", String(willExpand));
     }
 
@@ -5211,14 +5318,24 @@
       else state.questions.unshift(data);
 
       persist();
-      clearForm();
+      clearForm({ keepContext: !existing });
       render();
+      requestAnimationFrame(() => els.questionInput.focus());
     }
 
-    function clearForm() {
+    function clearForm(options = {}) {
+      const keepContext = Boolean(options.keepContext);
+      const context = keepContext ? {
+        category: els.categoryInput.value,
+        level: els.levelInput.value,
+        tags: els.tagsInput.value
+      } : null;
       els.editId.value = "";
+      els.questionForm.querySelector(".compose-head h2").textContent = "새 문제";
       els.questionForm.reset();
-      els.levelInput.value = "중";
+      els.categoryInput.value = context?.category || "";
+      els.levelInput.value = context?.level || "중";
+      els.tagsInput.value = context?.tags || "";
       pendingPhotoQuestions = [];
       removeQuestionImageOnSave = false;
       removeAnswerImageOnSave = false;
@@ -5235,6 +5352,7 @@
       removeQuestionImageOnSave = false;
       removeAnswerImageOnSave = false;
       els.editId.value = q.id;
+      els.questionForm.querySelector(".compose-head h2").textContent = "문제 수정";
       els.categoryInput.value = q.category;
       els.levelInput.value = q.level || "중";
       els.tagsInput.value = tagsToInput(q.tags);
@@ -5245,6 +5363,7 @@
       setOcrStatus(q.questionImage || q.answerImage ? "저장된 첨부 사진이 있습니다." : "사진을 고르거나 캡처 이미지를 Ctrl+V로 붙여넣으면 미리보기가 표시됩니다.");
       setView("bank");
       setComposeMode("question");
+      openComposeDetails();
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
