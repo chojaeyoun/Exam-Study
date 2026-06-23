@@ -1045,6 +1045,102 @@
       background: #fff8f6;
     }
 
+    .study-options {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .answer-stage-tabs {
+      display: inline-flex;
+      gap: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbfa;
+    }
+
+    .answer-stage-tabs button,
+    .memory-toggle {
+      min-height: 34px;
+      padding: 0 10px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .answer-stage-tabs button {
+      border-color: transparent;
+      background: transparent;
+    }
+
+    .answer-stage-tabs button.active,
+    .memory-toggle.active {
+      color: #fff;
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .answer-hint-card {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid #cfe3df;
+      border-radius: 8px;
+      background: #f8fbfa;
+    }
+
+    .hint-title {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .hint-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hint-chip {
+      padding: 7px 10px;
+      border: 1px solid #cfe3df;
+      border-radius: 999px;
+      background: #fff;
+      color: #173831;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .memory-mode .study-summary,
+    .memory-mode .range-box,
+    .memory-mode .my-answer-wrap,
+    .memory-mode #answerAssist {
+      display: none;
+    }
+
+    .memory-mode .study-grid {
+      grid-template-columns: minmax(0, 760px);
+      justify-content: center;
+    }
+
+    .memory-mode .card {
+      min-height: min(720px, calc(100vh - 88px));
+      align-content: center;
+    }
+
+    .memory-mode .study-options {
+      justify-content: center;
+    }
+
+    .memory-mode .question-box {
+      font-size: 24px;
+      line-height: 1.72;
+    }
+
     .cloze {
       min-height: 28px;
       padding: 3px 10px;
@@ -1159,6 +1255,90 @@
     .side .dashboard-panel {
       grid-template-columns: 1fr;
       margin-top: 8px;
+    }
+
+    .insight-panel {
+      display: grid;
+      gap: 14px;
+    }
+
+    .insight-section {
+      display: grid;
+      gap: 8px;
+    }
+
+    .insight-section h3 {
+      margin: 0;
+      color: inherit;
+      font-size: 13px;
+    }
+
+    .weak-list,
+    .round-progress-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .weak-item,
+    .round-progress-item {
+      display: grid;
+      gap: 6px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .weak-item strong,
+    .round-progress-top strong {
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .weak-item span,
+    .round-progress-top span,
+    .round-progress-meta {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .round-progress-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .mini-progress {
+      height: 7px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e7efed;
+    }
+
+    .mini-progress i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    .side .weak-item,
+    .side .round-progress-item {
+      border-color: rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .side .weak-item strong,
+    .side .round-progress-top strong {
+      color: #eef5f4;
+    }
+
+    .side .weak-item span,
+    .side .round-progress-top span,
+    .side .round-progress-meta {
+      color: #c9ddda;
     }
 
     .side .dash-tile {
@@ -1909,6 +2089,14 @@
         grid-template-columns: 1fr;
       }
 
+      .memory-mode .card {
+        min-height: auto;
+      }
+
+      .memory-mode .question-box {
+        font-size: 20px;
+      }
+
       .pillrow .step-controls {
         flex: 1 0 100%;
         order: 3;
@@ -2102,6 +2290,14 @@
         </div>
         <div id="studyGrid" class="study-grid">
           <article class="panel card">
+            <div class="study-options" aria-label="학습 표시 옵션">
+              <div class="answer-stage-tabs" aria-label="정답 보기 단계">
+                <button id="answerHintBtn" type="button" data-answer-stage="hint">힌트</button>
+                <button id="answerKeywordBtn" type="button" data-answer-stage="keywords">키워드</button>
+                <button id="answerFullBtn" class="active" type="button" data-answer-stage="full">전체</button>
+              </div>
+              <button id="memoryModeBtn" class="memory-toggle" type="button">빠른 암기</button>
+            </div>
             <div class="pillrow">
               <div class="pillgroup">
                 <span class="pill" id="cardIndex">0 / 0</span>
@@ -2116,7 +2312,9 @@
             </div>
             <div class="question">
               <div id="questionText" class="question-box">문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.</div>
-              <textarea id="myAnswer" placeholder="내 답안을 적어본 뒤 정답을 확인하세요. 입력 내용은 채점되지 않고 암기용으로만 사용됩니다."></textarea>
+              <div class="my-answer-wrap">
+                <textarea id="myAnswer" placeholder="내 답안을 적어본 뒤 정답을 확인하세요. 입력 내용은 채점되지 않고 암기용으로만 사용됩니다."></textarea>
+              </div>
               <div id="answerAssist" class="answer-assist hidden"></div>
               <div id="answerText" class="answer"></div>
             </div>
@@ -2167,6 +2365,7 @@
                 </label>
               </div>
               <div id="dashboardPanel" class="dashboard-panel"></div>
+              <div id="insightPanel" class="insight-panel"></div>
               <div class="notice">
                 문제 데이터는 브라우저 저장소에만 저장됩니다. 다른 PC로 옮기려면 작성에서 CSV로 내보내세요.
               </div>
@@ -2431,6 +2630,8 @@
     let pendingPhotoQuestions = [];
     let removeQuestionImageOnSave = false;
     let removeAnswerImageOnSave = false;
+    let answerStage = "full";
+    let memoryMode = false;
     const PHOTO_MAX_EDGE = 1600;
     const PHOTO_QUALITY = 0.82;
 
@@ -2468,6 +2669,10 @@
       answerText: document.querySelector("#answerText"),
       myAnswer: document.querySelector("#myAnswer"),
       answerAssist: document.querySelector("#answerAssist"),
+      answerHintBtn: document.querySelector("#answerHintBtn"),
+      answerKeywordBtn: document.querySelector("#answerKeywordBtn"),
+      answerFullBtn: document.querySelector("#answerFullBtn"),
+      memoryModeBtn: document.querySelector("#memoryModeBtn"),
       studyGrid: document.querySelector("#studyGrid"),
       studyRangeBox: document.querySelector("#studyRangeBox"),
       toggleRangeBtn: document.querySelector("#toggleRangeBtn"),
@@ -2486,6 +2691,7 @@
       sortFilter: document.querySelector("#sortFilter"),
       favoriteFilter: document.querySelector("#favoriteFilter"),
       dashboardPanel: document.querySelector("#dashboardPanel"),
+      insightPanel: document.querySelector("#insightPanel"),
       wrongList: document.querySelector("#wrongList"),
       composeQuestionModeBtn: document.querySelector("#composeQuestionModeBtn"),
       composeTheoryModeBtn: document.querySelector("#composeTheoryModeBtn"),
@@ -2625,6 +2831,10 @@
     els.composeTheoryModeBtn.addEventListener("click", () => setComposeMode("theory"));
     els.composeManageModeBtn.addEventListener("click", () => setComposeMode("manage"));
     els.showAnswerBtn.addEventListener("click", handlePrimaryStudyAction);
+    [els.answerHintBtn, els.answerKeywordBtn, els.answerFullBtn].forEach(button => {
+      button.addEventListener("click", () => setAnswerStage(button.dataset.answerStage));
+    });
+    els.memoryModeBtn.addEventListener("click", toggleMemoryMode);
     els.prevBtn.addEventListener("click", () => moveCard(-1));
     els.nextBtn.addEventListener("click", () => moveCard(1));
     els.wrongBtn.addEventListener("click", markWrong);
@@ -3354,11 +3564,76 @@
         <div class="dash-tile"><b>${tagCount}</b><span>태그 수</span></div>
         <div class="dash-tile"><b>${wrongCount}</b><span>오답</span></div>
       `;
+      renderInsights(source);
       const queueActive = studyMode === "question" && reviewQueueIds.length > 0;
       els.clearQueueBtn.classList.toggle("hidden", !queueActive);
       els.queueStatus.textContent = queueActive
         ? `오늘 복습 큐 ${reviewQueueIds.length}개를 학습 중입니다.`
         : "오답, 중요, 오래 안 본 문제를 자동으로 모읍니다.";
+    }
+
+    function renderInsights(source) {
+      if (studyMode !== "question") {
+        els.insightPanel.innerHTML = "";
+        return;
+      }
+      const weakItems = weakKeywordStats(source).slice(0, 5);
+      const roundItems = roundProgressStats(source).slice(0, 8);
+      const weakHtml = weakItems.length
+        ? weakItems.map(item => `<div class="weak-item"><strong>${escapeHtml(item.word)}</strong><span>오답 문제 ${item.count}개에서 반복</span></div>`).join("")
+        : `<div class="empty">오답이 쌓이면 자주 틀리는 키워드가 표시됩니다.</div>`;
+      const roundHtml = roundItems.length
+        ? roundItems.map(item => {
+            return `<div class="round-progress-item">
+              <div class="round-progress-top"><strong>${escapeHtml(item.category)}</strong><span>${item.progress}%</span></div>
+              <div class="mini-progress"><i style="width:${item.progress}%"></i></div>
+              <div class="round-progress-meta">${item.total}문제 · 완료 ${item.mastered} · 오답 ${item.wrong}</div>
+            </div>`;
+          }).join("")
+        : `<div class="empty">문제를 추가하면 회차별 진행률이 표시됩니다.</div>`;
+      els.insightPanel.innerHTML = `
+        <section class="insight-section">
+          <h3>자주 틀리는 키워드</h3>
+          <div class="weak-list">${weakHtml}</div>
+        </section>
+        <section class="insight-section">
+          <h3>회차별 진행률</h3>
+          <div class="round-progress-list">${roundHtml}</div>
+        </section>
+      `;
+    }
+
+    function weakKeywordStats(questions) {
+      const counts = new Map();
+      questions
+        .filter(q => q.status === "wrong" || (q.wrongCount || 0) > 0)
+        .forEach(q => {
+          answerKeywords(`${q.category || ""}\n${q.question || ""}\n${q.answer || ""}`)
+            .slice(0, 10)
+            .forEach(word => counts.set(word, (counts.get(word) || 0) + 1));
+        });
+      return [...counts.entries()]
+        .map(([word, count]) => ({ word, count }))
+        .filter(item => item.count >= 1)
+        .sort((a, b) => b.count - a.count || a.word.localeCompare(b.word));
+    }
+
+    function roundProgressStats(questions) {
+      const groups = new Map();
+      questions.forEach(q => {
+        const category = q.category || "미분류";
+        if (!groups.has(category)) groups.set(category, { category, total: 0, mastered: 0, wrong: 0 });
+        const item = groups.get(category);
+        item.total += 1;
+        if (q.status === "mastered") item.mastered += 1;
+        if (q.status === "wrong") item.wrong += 1;
+      });
+      return [...groups.values()]
+        .map(item => ({
+          ...item,
+          progress: item.total ? Math.round((item.mastered / item.total) * 100) : 0
+        }))
+        .sort((a, b) => b.total - a.total || a.category.localeCompare(b.category));
     }
 
     function formatQuestionCardHtml(question) {
@@ -3689,6 +3964,7 @@
         return;
       }
 
+      renderStudyDisplayOptions();
       const questions = filteredQuestions();
       if (currentIndex >= questions.length) currentIndex = Math.max(0, questions.length - 1);
       const current = questions[currentIndex];
@@ -3704,7 +3980,7 @@
         els.myAnswer.value = "";
         hideAnswerAssist();
         els.myAnswer.classList.remove("hidden");
-        els.showAnswerBtn.textContent = "정답 보기";
+        els.showAnswerBtn.textContent = answerActionLabel();
         updateStudyFavoriteButton(null);
         els.prevBtn.textContent = "← 이전 문제";
         els.nextBtn.textContent = "다음 문제 →";
@@ -3716,12 +3992,12 @@
       els.cardType.textContent = current.category || "미분류";
       els.cardLevel.textContent = `중요도 ${current.level || "중"}`;
       els.questionText.innerHTML = formatQuestionCardHtml(current);
-      els.answerText.innerHTML = formatAnswerCardHtml(current);
+      els.answerText.innerHTML = formatStagedAnswerHtml(current);
       els.answerText.classList.remove("visible");
       els.myAnswer.value = "";
       hideAnswerAssist();
       els.myAnswer.classList.remove("hidden");
-      els.showAnswerBtn.textContent = "정답 보기";
+      els.showAnswerBtn.textContent = answerActionLabel();
       updateStudyFavoriteButton(current);
       els.prevBtn.textContent = "← 이전 문제";
       els.nextBtn.textContent = "다음 문제 →";
@@ -3730,6 +4006,7 @@
     }
 
     function renderTheoryStudy() {
+      renderStudyDisplayOptions();
       const theories = filteredTheories();
       if (currentTheoryIndex >= theories.length) currentTheoryIndex = Math.max(0, theories.length - 1);
       const current = theories[currentTheoryIndex];
@@ -3760,6 +4037,70 @@
         ? `<p class="theory-study-hint">문제화 힌트: ${escapeHtml(current.prompt)}</p>`
         : `<p class="theory-study-hint">이 이론을 문제로 만들면 제목을 기준으로 자동 질문을 생성합니다.</p>`;
       els.answerText.classList.add("visible");
+    }
+
+    function renderStudyDisplayOptions() {
+      [els.answerHintBtn, els.answerKeywordBtn, els.answerFullBtn].forEach(button => {
+        button.classList.toggle("active", button.dataset.answerStage === answerStage);
+        button.disabled = studyMode !== "question";
+      });
+      els.memoryModeBtn.classList.toggle("active", memoryMode);
+      document.body.classList.toggle("memory-mode", memoryMode && studyMode === "question" && activeView === "study");
+    }
+
+    function setAnswerStage(stage) {
+      answerStage = ["hint", "keywords", "full"].includes(stage) ? stage : "full";
+      const current = getCurrentQuestion();
+      if (current) els.answerText.innerHTML = formatStagedAnswerHtml(current);
+      els.showAnswerBtn.textContent = answerActionLabel();
+      if (els.answerText.classList.contains("visible")) updateAnswerAssist();
+      renderStudyDisplayOptions();
+    }
+
+    function toggleMemoryMode() {
+      memoryMode = !memoryMode;
+      renderStudyDisplayOptions();
+    }
+
+    function formatStagedAnswerHtml(question) {
+      if (answerStage === "hint") return formatAnswerHintHtml(question);
+      if (answerStage === "keywords") return formatAnswerKeywordsHtml(question);
+      return formatAnswerCardHtml(question);
+    }
+
+    function answerActionLabel() {
+      if (answerStage === "hint") return "힌트 보기";
+      if (answerStage === "keywords") return "키워드 보기";
+      return "정답 보기";
+    }
+
+    function formatAnswerHintHtml(question) {
+      const keywords = answerKeywords(question.answer).slice(0, 6);
+      const hintText = keywords.length
+        ? keywords.map(word => maskHintWord(word)).join(" / ")
+        : "정답의 첫 글자와 핵심 흐름을 떠올려보세요.";
+      return `<div class="answer-hint-card">
+        <p class="hint-title">힌트</p>
+        <div class="hint-chips"><span class="hint-chip">${escapeHtml(hintText)}</span></div>
+      </div>`;
+    }
+
+    function formatAnswerKeywordsHtml(question) {
+      const keywords = answerKeywords(question.answer).slice(0, 10);
+      const chips = keywords.length
+        ? keywords.map(word => `<span class="hint-chip">${escapeHtml(word)}</span>`).join("")
+        : `<span class="hint-chip">핵심어를 만들 정답 내용이 부족합니다.</span>`;
+      return `<div class="answer-hint-card">
+        <p class="hint-title">핵심 키워드</p>
+        <div class="hint-chips">${chips}</div>
+      </div>`;
+    }
+
+    function maskHintWord(word) {
+      const chars = [...String(word || "").trim()];
+      if (chars.length <= 1) return chars.join("");
+      if (chars.length === 2) return `${chars[0]}?`;
+      return `${chars[0]}${"·".repeat(Math.min(chars.length - 2, 4))}${chars[chars.length - 1]}`;
     }
 
     function formatTheoryStudyHtml(theory) {
@@ -4309,6 +4650,7 @@
       document.querySelectorAll("[data-view]").forEach(view => view.classList.toggle("active", view.dataset.view === name));
       document.querySelectorAll("[data-view-btn]").forEach(button => button.classList.toggle("active", button.dataset.viewBtn === name));
       els.studyRangeBox.classList.toggle("hidden", name !== "study");
+      renderStudyDisplayOptions();
     }
 
     function setStudyMode(mode) {
@@ -4428,6 +4770,8 @@
         if (theory) createQuestionFromTheory(theory.id);
         return;
       }
+      const current = getCurrentQuestion();
+      if (current) els.answerText.innerHTML = formatStagedAnswerHtml(current);
       els.answerText.classList.toggle("visible");
       if (els.answerText.classList.contains("visible")) updateAnswerAssist();
       else hideAnswerAssist();
@@ -4435,7 +4779,7 @@
 
     function updateAnswerAssist() {
       const q = getCurrentQuestion();
-      if (!q || studyMode !== "question" || !els.answerText.classList.contains("visible")) {
+      if (!q || studyMode !== "question" || answerStage === "hint" || !els.answerText.classList.contains("visible")) {
         hideAnswerAssist();
         return;
       }
