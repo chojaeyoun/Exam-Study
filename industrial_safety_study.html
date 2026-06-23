@@ -1113,6 +1113,7 @@
       color: #173831;
       font-size: 13px;
       font-weight: 900;
+      line-height: 1.45;
     }
 
     .memory-mode .study-summary,
@@ -3608,7 +3609,7 @@
       questions
         .filter(q => q.status === "wrong" || (q.wrongCount || 0) > 0)
         .forEach(q => {
-          answerKeywords(`${q.category || ""}\n${q.question || ""}\n${q.answer || ""}`)
+          answerKeywords(q.answer || q.question || q.category || "")
             .slice(0, 10)
             .forEach(word => counts.set(word, (counts.get(word) || 0) + 1));
         });
@@ -4075,32 +4076,48 @@
     }
 
     function formatAnswerHintHtml(question) {
-      const keywords = answerKeywords(question.answer).slice(0, 6);
-      const hintText = keywords.length
-        ? keywords.map(word => maskHintWord(word)).join(" / ")
-        : "정답의 첫 글자와 핵심 흐름을 떠올려보세요.";
+      const phrases = answerPhrases(question.answer).slice(0, 6);
+      const formatText = phrases.length > 1
+        ? `${phrases.length}개 항목을 쓰는 문제`
+        : "핵심 구문을 떠올리는 문제";
+      const chips = phrases.length
+        ? phrases.map((phrase, index) => `<span class="hint-chip">${index + 1}. ${escapeHtml(maskHintPhrase(phrase))}</span>`).join("")
+        : `<span class="hint-chip">정답의 형식과 핵심 흐름을 먼저 떠올려보세요.</span>`;
       return `<div class="answer-hint-card">
-        <p class="hint-title">힌트</p>
-        <div class="hint-chips"><span class="hint-chip">${escapeHtml(hintText)}</span></div>
-      </div>`;
-    }
-
-    function formatAnswerKeywordsHtml(question) {
-      const keywords = answerKeywords(question.answer).slice(0, 10);
-      const chips = keywords.length
-        ? keywords.map(word => `<span class="hint-chip">${escapeHtml(word)}</span>`).join("")
-        : `<span class="hint-chip">핵심어를 만들 정답 내용이 부족합니다.</span>`;
-      return `<div class="answer-hint-card">
-        <p class="hint-title">핵심 키워드</p>
+        <p class="hint-title">힌트 · ${escapeHtml(formatText)}</p>
         <div class="hint-chips">${chips}</div>
       </div>`;
     }
 
+    function formatAnswerKeywordsHtml(question) {
+      const phrases = answerPhrases(question.answer).slice(0, 10);
+      const chips = phrases.length
+        ? phrases.map(phrase => `<span class="hint-chip">${escapeHtml(phrase)}</span>`).join("")
+        : `<span class="hint-chip">핵심어를 만들 정답 내용이 부족합니다.</span>`;
+      return `<div class="answer-hint-card">
+        <p class="hint-title">핵심 구문</p>
+        <div class="hint-chips">${chips}</div>
+      </div>`;
+    }
+
+    function maskHintPhrase(phrase) {
+      const words = String(phrase || "")
+        .replace(/[()[\]{}]/g, " ")
+        .split(/\s+/)
+        .filter(Boolean);
+      if (words.length >= 2) {
+        return words.map(word => maskHintWord(word)).join(" ");
+      }
+      return maskHintWord(phrase);
+    }
+
     function maskHintWord(word) {
-      const chars = [...String(word || "").trim()];
+      const source = String(word || "").trim();
+      if (/^[\d.:/%×+\-=]+$/.test(source)) return source;
+      const chars = [...source];
       if (chars.length <= 1) return chars.join("");
       if (chars.length === 2) return `${chars[0]}?`;
-      return `${chars[0]}${"·".repeat(Math.min(chars.length - 2, 4))}${chars[chars.length - 1]}`;
+      return `${chars[0]}${"·".repeat(Math.min(chars.length - 2, 3))}`;
     }
 
     function formatTheoryStudyHtml(theory) {
@@ -4813,22 +4830,52 @@
     }
 
     function answerKeywords(answer) {
-      const stop = new Set(["정답", "답", "메모", "출처", "공식", "대입", "계산", "이상", "이하", "한다", "시오", "쓰기", "쓰시오"]);
-      const chunks = String(answer || "")
-        .replace(/\|/g, "\n")
-        .replace(/[①-⑳]/g, "\n")
-        .split(/[\n,，;；/]+/)
-        .map(text => text.replace(/^[\s\-•*]+/, "").replace(/^(정답|답|메모|공식|대입|계산|풀이|결과)\s*[:：]\s*/i, "").trim())
-        .filter(Boolean);
-      const words = chunks.flatMap(chunk => {
-        const clean = chunk.replace(/[()[\]{}]/g, " ").replace(/\s+/g, " ").trim();
-        const pieces = clean.split(/\s+/).filter(Boolean);
-        return clean.length <= 18 ? [clean, ...pieces] : pieces;
+      const phrases = answerPhrases(answer);
+      const shortWords = phrases.flatMap(phrase => {
+        if (phrase.length <= 12) return [];
+        return phrase
+          .replace(/[()[\]{}]/g, " ")
+          .split(/\s+/)
+          .map(word => normalizeAnswerPhrase(word))
+          .filter(word => word.length >= 2 && word.length <= 8);
       });
-      return [...new Set(words.map(word => word.replace(/[.。]+$/g, "").trim()).filter(word => {
+      return uniqueMeaningfulPhrases([...phrases, ...shortWords]).slice(0, 14);
+    }
+
+    function answerPhrases(answer) {
+      const source = String(answer || "")
+        .replace(/\|/g, "\n")
+        .replace(/([①-⑳])/g, "\n$1 ")
+        .replace(/(\d+)\s*[.)]\s*/g, "\n$1. ");
+      const chunks = source
+        .split(/[\n,，;；]+/)
+        .map(normalizeAnswerPhrase)
+        .filter(Boolean);
+      return uniqueMeaningfulPhrases(chunks).slice(0, 20);
+    }
+
+    function normalizeAnswerPhrase(value) {
+      return String(value || "")
+        .replace(/^[\s\-•*]+/, "")
+        .replace(/^[①-⑳]\s*/, "")
+        .replace(/^\d+\s*[.)]\s*/, "")
+        .replace(/^(정답|답|메모|공식|대입|계산|풀이|결과|출처)\s*[:：]\s*/i, "")
+        .replace(/\s+/g, " ")
+        .replace(/[.。]+$/g, "")
+        .trim();
+    }
+
+    function uniqueMeaningfulPhrases(items) {
+      const stop = new Set(["정답", "답", "메모", "출처", "공식", "대입", "계산", "풀이", "결과", "이상", "이하", "한다", "시오", "쓰기", "쓰시오"]);
+      const seen = new Set();
+      return items.filter(item => {
+        const word = normalizeAnswerPhrase(item);
         const compact = compactText(word);
-        return compact.length >= 2 && !stop.has(compact) && !/^[-=]+$/.test(compact);
-      }))].slice(0, 14);
+        if (compact.length < 2 || stop.has(compact) || /^[-=]+$/.test(compact)) return false;
+        if (seen.has(compact)) return false;
+        seen.add(compact);
+        return true;
+      }).map(normalizeAnswerPhrase);
     }
 
     function compactText(value) {
