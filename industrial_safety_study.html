@@ -14,19 +14,21 @@
   <style>
     :root {
       color-scheme: light;
-      --bg: #f5f7f8;
+      --bg: #eef4f1;
       --panel: #ffffff;
-      --ink: #1f2933;
-      --muted: #66737f;
-      --line: #d9e0e6;
-      --accent: #146c5f;
-      --accent-dark: #0d4f45;
-      --accent-warm: #d9912b;
-      --accent-2: #b9412e;
-      --soft: #e7f2ef;
-      --soft-warm: #fff6e6;
-      --warn: #fff2dc;
-      --shadow: 0 14px 34px rgba(31, 41, 51, 0.09);
+      --panel-soft: #f7faf8;
+      --ink: #132d2a;
+      --text: #132d2a;
+      --muted: #667a75;
+      --line: #d7e3df;
+      --accent: #137463;
+      --accent-dark: #0c4e44;
+      --accent-warm: #f2b94b;
+      --accent-2: #c84634;
+      --soft: #eaf6f2;
+      --soft-warm: #fff3d5;
+      --warn: #fff3d5;
+      --shadow: 0 18px 44px rgba(19, 45, 42, 0.08);
       font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
     }
 
@@ -35,8 +37,7 @@
     body {
       margin: 0;
       background:
-        radial-gradient(circle at top left, rgba(217, 145, 43, 0.16), transparent 280px),
-        linear-gradient(180deg, #e9f3ef 0, #f7f8f6 340px, var(--bg) 100%);
+        linear-gradient(180deg, #edf5f2 0, var(--bg) 360px, #f7faf8 100%);
       color: var(--ink);
     }
 
@@ -50,7 +51,7 @@
       color: var(--ink);
       min-height: 40px;
       padding: 0 14px;
-      border-radius: 6px;
+      border-radius: 7px;
       cursor: pointer;
       font-weight: 700;
       transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
@@ -86,7 +87,7 @@
       border: 1px solid var(--line);
       background: #fff;
       color: var(--ink);
-      border-radius: 6px;
+      border-radius: 7px;
       padding: 10px 12px;
       outline: none;
     }
@@ -123,9 +124,9 @@
     }
 
     .side {
-      background: linear-gradient(180deg, #173d39 0, #26323a 100%);
+      background: linear-gradient(180deg, #113f39 0, #0d302c 100%);
       color: #eef5f4;
-      padding: 24px;
+      padding: 24px 20px;
       display: flex;
       flex-direction: column;
       gap: 18px;
@@ -149,13 +150,13 @@
 
     .brand p {
       margin: 0;
-      color: #b9c8c7;
+      color: #c8dcd8;
       font-size: 13px;
     }
 
     .section-label {
       margin: 0;
-      color: #a9bbb9;
+      color: #b9ccc8;
       font-size: 12px;
       font-weight: 700;
     }
@@ -184,9 +185,9 @@
       width: 100%;
       min-height: 44px;
       text-align: left;
-      color: #edf5f3;
-      background: rgba(255,255,255,0.06);
-      border-color: rgba(255,255,255,0.12);
+      color: #eef5f4;
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.14);
       display: grid;
       gap: 3px;
       align-content: center;
@@ -194,9 +195,9 @@
     }
 
     .exam-row button:first-child.active {
-      background: var(--soft);
-      border-color: var(--soft);
-      color: #173831;
+      background: #eaf6f2;
+      border-color: #eaf6f2;
+      color: var(--ink);
     }
 
     .exam-tabs button span {
@@ -229,7 +230,7 @@
       width: 100%;
       justify-content: flex-start;
       text-align: left;
-      color: #edf5f3;
+      color: #eef5f4;
       background: transparent;
       border-color: transparent;
       display: flex;
@@ -239,9 +240,9 @@
     }
 
     .nav button.active {
-      background: #f3b24f;
-      border-color: #f3b24f;
-      color: #203033;
+      background: var(--accent-warm);
+      border-color: var(--accent-warm);
+      color: var(--ink);
     }
 
     .stats {
@@ -256,7 +257,7 @@
       padding: 12px;
       border: 1px solid rgba(255,255,255,0.14);
       border-radius: 8px;
-      background: rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.08);
     }
 
     .stat b { font-size: 22px; }
@@ -282,6 +283,8 @@
 
     .search input {
       padding-left: 38px;
+      min-height: 44px;
+      background: rgba(255,255,255,0.92);
     }
 
     .search::before {
@@ -329,8 +332,8 @@
       display: grid;
       grid-template-rows: auto 1fr auto;
       gap: 22px;
-      border-color: #cddbd7;
-      border-top: 7px solid var(--accent);
+      border-color: #cfe0dc;
+      border-top: 6px solid var(--accent);
     }
 
     .study-summary {
@@ -339,13 +342,13 @@
       gap: 18px;
       align-items: center;
       padding: 22px;
-      border: 1px solid rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.14);
       background:
-        linear-gradient(135deg, rgba(255,255,255,0.09), transparent 40%),
-        linear-gradient(135deg, #123d37 0, #1f5650 62%, #805f28 100%);
+        linear-gradient(135deg, rgba(255,255,255,0.1), transparent 40%),
+        linear-gradient(135deg, #0c4e44 0, #176e61 68%, #80652b 100%);
       border-radius: 8px;
       color: #f7fbfa;
-      box-shadow: 0 18px 38px rgba(31, 65, 57, 0.18);
+      box-shadow: 0 18px 38px rgba(19, 63, 57, 0.18);
     }
 
     .study-summary h2 {
@@ -357,7 +360,7 @@
 
     .study-summary p {
       margin: 0;
-      color: #cfe1dc;
+      color: #d2e9e4;
       font-size: 13px;
       line-height: 1.5;
     }
@@ -374,7 +377,7 @@
       padding: 10px 12px;
       border: 1px solid rgba(255,255,255,0.16);
       border-radius: 8px;
-      background: rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.12);
     }
 
     .summary-chip b {
@@ -406,8 +409,8 @@
     }
 
     .mode-tabs button.active {
-      background: #f3b24f;
-      border-color: #f3b24f;
+      background: var(--accent-warm);
+      border-color: var(--accent-warm);
       color: #203033;
     }
 
@@ -434,7 +437,7 @@
       width: 0%;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, #f5d06b, #f3b24f);
+      background: linear-gradient(90deg, #f7d77a, var(--accent-warm));
       transition: width 0.24s ease;
     }
 
@@ -455,7 +458,7 @@
 
     .pill {
       border: 1px solid var(--line);
-      background: #f8fafb;
+      background: #fbfcfb;
       border-radius: 999px;
       padding: 6px 10px;
       color: var(--muted);
@@ -485,8 +488,8 @@
       letter-spacing: 0;
       padding: 18px;
       border-radius: 8px;
-      background: #fbfcfb;
-      border: 1px solid #e4ece9;
+      background: var(--panel-soft);
+      border: 1px solid #dfeae6;
       overflow-wrap: anywhere;
       word-break: keep-all;
     }
@@ -1232,7 +1235,7 @@
     .side .range-box {
       padding: 14px;
       border-color: rgba(255,255,255,0.15);
-      background: rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.08);
       color: #eef5f4;
       box-shadow: none;
     }
@@ -1272,6 +1275,7 @@
       margin: 0;
       color: inherit;
       font-size: 13px;
+      font-weight: 900;
     }
 
     .weak-list,
@@ -1287,7 +1291,7 @@
       padding: 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fff;
+      background: #fbfcfb;
     }
 
     .weak-item strong,
@@ -1396,7 +1400,7 @@
       padding: 13px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fff;
+      background: #fbfcfb;
       display: grid;
       gap: 8px;
       transition: border-color 0.16s ease, box-shadow 0.16s ease;
@@ -1404,7 +1408,7 @@
 
     .item:hover {
       border-color: #b7c9c4;
-      box-shadow: 0 8px 18px rgba(31, 41, 51, 0.06);
+      box-shadow: 0 8px 18px rgba(19, 45, 42, 0.06);
     }
 
     .item h3 {
@@ -1427,7 +1431,7 @@
     }
 
     .form-grid {
-      padding: 18px;
+      padding: 20px;
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 14px;
@@ -1465,7 +1469,7 @@
       padding: 10px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #f8faf9;
+      background: var(--panel-soft);
     }
 
     .text-tools.open .symbol-tools {
@@ -1482,7 +1486,7 @@
     .template-tools button {
       min-height: 32px;
       padding: 0 10px;
-      background: #f8fafb;
+      background: var(--panel-soft);
       font-size: 13px;
       font-weight: 900;
     }
@@ -1499,6 +1503,7 @@
 
     .table-wrap {
       overflow: auto;
+      border-color: #d3e1dc;
     }
 
     .content-table-wrap {
@@ -1608,7 +1613,7 @@
       justify-content: space-between;
       padding: 14px 16px;
       border-bottom: 1px solid var(--line);
-      background: #f8fafb;
+      background: var(--panel-soft);
     }
 
     .manage-head p {
@@ -1619,7 +1624,7 @@
     }
 
     .quick-edit-row td {
-      background: #f7fbfa;
+      background: var(--panel-soft);
       padding: 0;
     }
 
