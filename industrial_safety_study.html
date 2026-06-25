@@ -1540,6 +1540,48 @@
       min-height: 38px;
     }
 
+    .compose-block-panel {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #d7e6e1;
+      border-radius: 8px;
+      background: #f7fbfa;
+    }
+
+    .compose-block-panel strong {
+      color: var(--accent-dark);
+      font-size: 13px;
+    }
+
+    .compose-block-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .compose-block-buttons button {
+      min-height: 34px;
+      padding: 0 10px;
+      background: #fff;
+      color: var(--accent-dark);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .compose-diagnostics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .compose-diagnostics .warn {
+      color: #a85d00;
+    }
+
     .compose-option-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1741,6 +1783,106 @@
       padding: 0;
     }
 
+    .bank-card-table {
+      min-width: 0;
+      border-collapse: separate;
+      border-spacing: 0 10px;
+    }
+
+    .bank-card-table thead {
+      display: none;
+    }
+
+    .bank-card-row td {
+      padding: 0;
+      border: 0;
+    }
+
+    .bank-card {
+      display: grid;
+      gap: 12px;
+      padding: 15px;
+      border: 1px solid #d9e7e2;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .bank-card-top {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .bank-card-title {
+      margin: 0;
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .bank-card-answer {
+      margin: 0;
+      color: #315049;
+      font-size: 14px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .bank-card-meta,
+    .wrong-card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .bank-card-actions,
+    .wrong-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .wrong-section {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .wrong-section-title {
+      margin: 0;
+      color: var(--accent-dark);
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .wrong-card {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid #e6d2cc;
+      border-radius: 8px;
+      background: #fffafa;
+    }
+
+    .wrong-card h3 {
+      margin: 0;
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    .wrong-card p {
+      margin: 0;
+      color: #405b55;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
     .quick-edit-form {
       display: grid;
       grid-template-columns: 1fr 140px;
@@ -1825,6 +1967,26 @@
       color: #24524a;
       font-size: 12px;
       font-weight: 900;
+    }
+
+    .type-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border: 1px solid #d8e5e1;
+      border-radius: 999px;
+      background: #fff;
+      color: #385c55;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .type-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
     }
 
     .favorite-mark {
@@ -2520,10 +2682,19 @@
             <div class="text-tools" data-tools-for="questionInput"></div>
             <textarea id="questionInput" class="notion-textarea question-draft" required placeholder="문제를 입력하세요. /표 /계산 /빈칸 /사진"></textarea>
           </label>
+          <div class="wide compose-block-panel" aria-label="문제 블록 빠른 추가">
+            <strong>문제 블록</strong>
+            <div id="questionBlockButtons" class="compose-block-buttons"></div>
+            <div id="questionDiagnostics" class="compose-diagnostics"></div>
+          </div>
           <label class="wide">정답
             <div class="text-tools" data-tools-for="answerInput"></div>
             <textarea id="answerInput" class="notion-textarea answer-draft" required placeholder="정답을 입력하세요. /계산 /표"></textarea>
           </label>
+          <div class="wide compose-block-panel" aria-label="정답 블록 빠른 추가">
+            <strong>정답 블록</strong>
+            <div id="answerBlockButtons" class="compose-block-buttons"></div>
+          </div>
           <div class="wide quick-compose-actions">
             <button class="primary" type="submit">저장하고 계속 작성</button>
             <button type="button" id="clearFormBtn">새 문제</button>
@@ -2625,7 +2796,7 @@
               <p id="bankSummary">전체 문제 0개</p>
               <button id="clearBankSearchBtn" type="button">검색 초기화</button>
             </div>
-            <table>
+            <table class="bank-card-table">
               <thead>
                 <tr>
                   <th>분야</th>
@@ -2831,6 +3002,9 @@
       tagsInput: document.querySelector("#tagsInput"),
       questionInput: document.querySelector("#questionInput"),
       answerInput: document.querySelector("#answerInput"),
+      questionBlockButtons: document.querySelector("#questionBlockButtons"),
+      answerBlockButtons: document.querySelector("#answerBlockButtons"),
+      questionDiagnostics: document.querySelector("#questionDiagnostics"),
       memoInput: document.querySelector("#memoInput"),
       insertClozeBtn: document.querySelector("#insertClozeBtn"),
       insertCalcTemplateBtn: document.querySelector("#insertCalcTemplateBtn"),
@@ -2916,6 +3090,8 @@
     let slashState = null;
 
     setupTextTools();
+    setupComposeBlocks();
+    updateQuestionDiagnostics();
 
     document.querySelectorAll("[data-view-btn]").forEach(button => {
       button.addEventListener("click", () => setView(button.dataset.viewBtn));
@@ -2973,6 +3149,10 @@
     els.insertTheoryQuestionHintBtn.addEventListener("click", buildTheoryQuestionHint);
     els.clearTheoryBtn.addEventListener("click", clearTheoryForm);
     els.questionForm.addEventListener("submit", saveQuestion);
+    [els.questionInput, els.answerInput, els.categoryInput, els.levelInput, els.tagsInput].forEach(input => {
+      input.addEventListener("input", updateQuestionDiagnostics);
+      input.addEventListener("change", updateQuestionDiagnostics);
+    });
     els.insertClozeBtn.addEventListener("click", insertClozeTemplate);
     els.insertCalcTemplateBtn.addEventListener("click", insertCalculationTemplate);
     els.clearFormBtn.addEventListener("click", clearForm);
@@ -3206,6 +3386,26 @@
       const normalized = normalizeTags(tags);
       if (!normalized.length) return "";
       return `<div class="tag-row">${normalized.map(tag => `<span class="tag-chip">#${escapeHtml(tag)}</span>`).join("")}</div>`;
+    }
+
+    function renderTypeChips(question) {
+      const types = detectQuestionTypes(question);
+      if (!types.length) return "";
+      return `<div class="type-row">${types.map(type => `<span class="type-chip">${escapeHtml(type)}</span>`).join("")}</div>`;
+    }
+
+    function detectQuestionTypes(question) {
+      const q = String(question?.question || "");
+      const a = String(question?.answer || "");
+      const combined = `${q}\n${a}`;
+      const types = [];
+      if (question?.questionImage || question?.answerImage || /\[사진\]|사진 문제|도면|그림|이미지|TF도|SIGN/i.test(combined)) types.push("사진형");
+      if (extractChoiceBank(q).items.length || splitQuestionOptions(q).options.length >= 2 || /\[보기\]|보기\s*[:：]/.test(q)) types.push("보기형");
+      if (/\{\{[^{}]+\}\}|빈칸|괄호|____|___/.test(combined)) types.push("빈칸형");
+      if (isMarkdownTable(q) || isMarkdownTable(a) || /\|.+\|/.test(combined)) types.push("표형");
+      if (/계산|공식|풀이|=\s*|×|÷|\b\d+\s*[%xX*/+\-]\s*\d+/.test(combined)) types.push("계산형");
+      if (!types.length) types.push("서술형");
+      return [...new Set(types)].slice(0, 4);
     }
 
     function tagMatches(item, tag) {
@@ -3760,7 +3960,7 @@
 
     function formatQuestionCardHtml(question) {
       const textHtml = formatQuestionHtml(question.question || "사진 문제");
-      const metaHtml = `${question.favorite ? `<p class="favorite-mark">★ 중요</p>` : ""}${renderTags(question.tags)}`;
+      const metaHtml = `${question.favorite ? `<p class="favorite-mark">★ 중요</p>` : ""}${renderTypeChips(question)}${renderTags(question.tags)}`;
       if (!question.questionImage) return `${textHtml}${metaHtml}`;
       return `${textHtml}<img class="question-photo" src="${escapeHtml(question.questionImage)}" alt="${escapeHtml(question.imageName || "사진 문제")}">${metaHtml}`;
     }
@@ -3779,6 +3979,8 @@
       if (!answer && !memo) return "";
       const calculation = parseCalculationAnswer(answer);
       if (calculation) return renderCalculationAnswerHtml(calculation, memo);
+      const numberedItems = parseNumberedAnswerItems(answer);
+      if (numberedItems.length >= 2) return renderNumberedAnswerHtml(numberedItems, memo);
       const parsed = parseAnswerSections(answer);
       const coreHtml = parsed.core
         ? `<section class="answer-section">
@@ -3807,6 +4009,32 @@
           </section>`
         : "";
       return `<div class="answer-card">${coreHtml}${pointsHtml}${extraHtml}${memoHtml}</div>`;
+    }
+
+    function parseNumberedAnswerItems(answer) {
+      const lines = String(answer || "")
+        .split("\n")
+        .map(line => line.trim())
+        .filter(Boolean);
+      const items = lines.map(parseAnswerPoint).filter(Boolean);
+      if (items.length < 2 || items.length !== lines.length) return [];
+      return items;
+    }
+
+    function renderNumberedAnswerHtml(items, memo) {
+      const itemsHtml = `<section class="answer-section">
+        <h4 class="answer-section-title">정답 항목</h4>
+        <div class="answer-points">${items.map(point => {
+          return `<div class="answer-point"><b>${escapeHtml(point.label)}</b><span>${escapeHtml(point.text)}</span></div>`;
+        }).join("")}</div>
+      </section>`;
+      const memoHtml = memo
+        ? `<section class="answer-section">
+            <h4 class="answer-section-title">메모</h4>
+            <p class="answer-note">${escapeHtml(memo.replace(/^메모:\s*/i, ""))}</p>
+          </section>`
+        : "";
+      return `<div class="answer-card">${itemsHtml}${memoHtml}</div>`;
     }
 
     function parseCalculationAnswer(answer) {
@@ -4161,7 +4389,7 @@
       }
 
       els.cardType.textContent = current.category || "미분류";
-      els.cardLevel.textContent = `중요도 ${current.level || "중"}`;
+      els.cardLevel.textContent = `${detectQuestionTypes(current)[0]} · 중요도 ${current.level || "중"}`;
       els.questionText.innerHTML = formatQuestionCardHtml(current);
       els.answerText.innerHTML = formatStagedAnswerHtml(current);
       els.answerText.classList.remove("visible");
@@ -4375,6 +4603,83 @@
     function blockTemplate(block) {
       if (!block) return "";
       return typeof block.template === "function" ? block.template() : block.template;
+    }
+
+    function setupComposeBlocks() {
+      renderComposeBlockButtons(els.questionBlockButtons, [
+        ...QUESTION_SLASH_BLOCKS.filter(block => ["choices", "table", "cloze", "photo"].includes(block.id)),
+        { id: "hint", label: "힌트", icon: "H", hint: "정답 힌트", template: "\n힌트: \n" }
+      ], els.questionInput);
+      renderComposeBlockButtons(els.answerBlockButtons, [
+        CALC_SLASH_BLOCK,
+        TABLE_SLASH_BLOCK,
+        { id: "explain", label: "해설", icon: "E", hint: "해설 구역", template: "\n해설:\n- \n" },
+        { id: "source", label: "출처", icon: "S", hint: "출처 메모", template: "\n출처: \n" }
+      ].filter(Boolean), els.answerInput);
+    }
+
+    function renderComposeBlockButtons(container, blocks, textarea) {
+      if (!container) return;
+      container.innerHTML = blocks.map(block => {
+        return `<button type="button" data-compose-block="${escapeHtml(block.id)}" title="${escapeHtml(block.hint || block.label)}">${escapeHtml(block.label)}</button>`;
+      }).join("");
+      container.querySelectorAll("[data-compose-block]").forEach(button => {
+        button.addEventListener("click", () => {
+          const block = blocks.find(item => item.id === button.dataset.composeBlock);
+          if (!block) return;
+          if (block.action) {
+            applyDirectBlockAction(block.action);
+            return;
+          }
+          insertAtCursor(textarea, blockTemplate(block));
+          updateQuestionDiagnostics();
+        });
+      });
+    }
+
+    function applyDirectBlockAction(action) {
+      if (action === "photo") {
+        els.photoFile.click();
+      } else if (action === "memo") {
+        openComposeDetails();
+        requestAnimationFrame(() => els.memoInput.focus());
+      } else if (action === "tag") {
+        openComposeDetails();
+        requestAnimationFrame(() => els.tagsInput.focus());
+      }
+    }
+
+    function updateQuestionDiagnostics() {
+      if (!els.questionDiagnostics) return;
+      const draft = {
+        question: els.questionInput.value,
+        answer: els.answerInput.value,
+        category: els.categoryInput.value,
+        level: els.levelInput.value,
+        tags: normalizeTags(els.tagsInput.value),
+        questionImage: pendingPhotoQuestions[0]?.dataUrl || currentEditingQuestion()?.questionImage || "",
+        answerImage: pendingPhotoQuestions[1]?.dataUrl || currentEditingQuestion()?.answerImage || ""
+      };
+      const types = detectQuestionTypes(draft);
+      const warnings = composeWarnings(draft, types);
+      els.questionDiagnostics.innerHTML = [
+        ...types.map(type => `<span class="type-chip">${escapeHtml(type)}</span>`),
+        ...warnings.map(text => `<span class="warn">${escapeHtml(text)}</span>`)
+      ].join("");
+    }
+
+    function composeWarnings(draft, types) {
+      const warnings = [];
+      if (!draft.question.trim()) warnings.push("문제 내용 필요");
+      if (!draft.answer.trim() && !draft.answerImage) warnings.push("정답 필요");
+      if (!draft.category.trim()) warnings.push("분야 미입력");
+      if (types.includes("보기형") && splitQuestionOptions(extractChoiceBank(draft.question).body || "").options.length < 2) {
+        warnings.push("보기형 번호 항목 확인");
+      }
+      if (types.includes("사진형") && !draft.questionImage && !/\[사진\]|사진/.test(draft.question)) {
+        warnings.push("사진 첨부 확인");
+      }
+      return warnings;
     }
 
     function registerSlashTextarea(textarea, options) {
@@ -4647,15 +4952,41 @@
 
     function renderWrongList() {
       const wrong = currentExamQuestions().filter(q => q.status === "wrong");
-      els.wrongList.innerHTML = wrong.map(q => `<article class="item">
-        <h3>${escapeHtml(q.question)}</h3>
-        <p>${escapeHtml(q.answer)}</p>
-        <footer>
-          <button data-edit="${q.id}">수정</button>
-          <button data-master="${q.id}">암기 완료</button>
-        </footer>
-      </article>`).join("") || `<div class="empty">아직 오답 표시한 문제가 없습니다.</div>`;
+      const groups = groupByCategory(wrong);
+      els.wrongList.innerHTML = groups.map(group => `<section class="wrong-section">
+        <h3 class="wrong-section-title">${escapeHtml(group.category)} · ${group.items.length}개</h3>
+        ${group.items.map(q => `<article class="wrong-card">
+          <div class="wrong-card-meta">
+            <span class="pill">오답 ${q.wrongCount || 1}회</span>
+            <span class="pill">중요도 ${escapeHtml(q.level || "중")}</span>
+            ${q.favorite ? `<span class="favorite-mark">★ 중요</span>` : ""}
+          </div>
+          <h3>${escapeHtml(q.question)}</h3>
+          ${renderTypeChips(q)}
+          ${renderTags(q.tags)}
+          <p>${escapeHtml(q.answer || q.answerImageName || "정답 없음")}</p>
+          <footer class="wrong-card-actions">
+            <button data-edit="${q.id}">수정</button>
+            <button data-master="${q.id}">암기 완료</button>
+          </footer>
+        </article>`).join("")}
+      </section>`).join("") || `<div class="empty">아직 오답 표시한 문제가 없습니다.</div>`;
       bindListButtons(els.wrongList);
+    }
+
+    function groupByCategory(items) {
+      const groups = new Map();
+      items.forEach(item => {
+        const category = item.category || "미분류";
+        if (!groups.has(category)) groups.set(category, []);
+        groups.get(category).push(item);
+      });
+      return [...groups.entries()]
+        .map(([category, groupItems]) => ({
+          category,
+          items: groupItems.sort((a, b) => (b.wrongCount || 0) - (a.wrongCount || 0) || itemTime(b) - itemTime(a))
+        }))
+        .sort((a, b) => b.items.length - a.items.length || a.category.localeCompare(b.category));
     }
 
     function renderBank() {
@@ -4683,16 +5014,27 @@
         const status = q.status === "wrong" ? "오답" : q.status === "mastered" ? "암기 완료" : "미학습";
         const answerPreview = q.answer || q.answerImageName || "";
         const quickEdit = quickEditId === q.id ? quickEditRow(q) : "";
-        return `<tr>
-          <td>${escapeHtml(q.category || "미분류")}</td>
-          <td>${escapeHtml(q.level || "중")}</td>
-          <td>${q.favorite ? `<span class="favorite-mark">★</span> ` : ""}${escapeHtml(q.question)}${renderTags(q.tags)}</td>
-          <td>${escapeHtml(answerPreview)}</td>
-          <td>${status}</td>
-          <td>
-            <button data-quick-edit="${q.id}">빠른 수정</button>
-            <button data-edit="${q.id}">전체 수정</button>
-            <button data-delete="${q.id}" class="danger">삭제</button>
+        return `<tr class="bank-card-row">
+          <td colspan="6">
+            <article class="bank-card">
+              <div class="bank-card-top">
+                <div class="bank-card-meta">
+                  <span class="pill">${escapeHtml(q.category || "미분류")}</span>
+                  <span class="pill">중요도 ${escapeHtml(q.level || "중")}</span>
+                  <span class="pill">${status}</span>
+                  ${q.favorite ? `<span class="favorite-mark">★ 중요</span>` : ""}
+                </div>
+                <div class="bank-card-actions">
+                  <button data-quick-edit="${q.id}">빠른 수정</button>
+                  <button data-edit="${q.id}">전체 수정</button>
+                  <button data-delete="${q.id}" class="danger">삭제</button>
+                </div>
+              </div>
+              <h3 class="bank-card-title">${escapeHtml(q.question)}</h3>
+              ${renderTypeChips(q)}
+              ${renderTags(q.tags)}
+              <p class="bank-card-answer">${escapeHtml(answerPreview || "정답 없음")}</p>
+            </article>
           </td>
         </tr>${quickEdit}`;
       }).join("") || `<tr><td colspan="6" class="empty">${isFiltered ? "검색 결과가 없습니다." : "작성한 문제가 없습니다."}</td></tr>`;
@@ -5170,6 +5512,7 @@
         removeQuestionImageOnSave = false;
         removeAnswerImageOnSave = false;
         renderPhotoPreview();
+        updateQuestionDiagnostics();
         els.applyOcrBtn.disabled = !pendingPhotoQuestions.length;
         const totalSize = pendingPhotoQuestions.reduce((sum, photo) => sum + photo.dataUrl.length, 0);
         const sizeMb = (totalSize / 1024 / 1024).toFixed(1);
@@ -5290,6 +5633,7 @@
       }
       els.applyOcrBtn.disabled = true;
       renderPhotoPreview();
+      updateQuestionDiagnostics();
     }
 
     function applyOcrText() {
@@ -5427,6 +5771,7 @@
       els.applyOcrBtn.disabled = true;
       els.clearPhotoBtn.disabled = true;
       setOcrStatus("사진을 고르거나 캡처 이미지를 Ctrl+V로 붙여넣으면 미리보기가 표시됩니다.");
+      updateQuestionDiagnostics();
     }
 
     function editQuestion(id) {
@@ -5445,6 +5790,7 @@
       els.memoInput.value = q.memo || "";
       renderPhotoPreview();
       setOcrStatus(q.questionImage || q.answerImage ? "저장된 첨부 사진이 있습니다." : "사진을 고르거나 캡처 이미지를 Ctrl+V로 붙여넣으면 미리보기가 표시됩니다.");
+      updateQuestionDiagnostics();
       setView("bank");
       setComposeMode("question");
       openComposeDetails();
