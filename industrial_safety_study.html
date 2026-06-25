@@ -834,6 +834,103 @@
       display: none;
     }
 
+    .table-editor-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(11, 31, 28, 0.42);
+    }
+
+    .table-editor-backdrop.hidden {
+      display: none;
+    }
+
+    .table-editor {
+      width: min(920px, 100%);
+      max-height: min(760px, calc(100vh - 40px));
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 14px;
+      padding: 18px;
+      border: 1px solid #cfe0dc;
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 22px 60px rgba(18, 45, 39, 0.24);
+    }
+
+    .table-editor-head,
+    .table-editor-actions,
+    .table-editor-size {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .table-editor-head h3 {
+      margin: 0;
+      color: var(--text);
+      font-size: 18px;
+    }
+
+    .table-editor-size {
+      justify-content: flex-start;
+    }
+
+    .table-editor-size label {
+      width: 92px;
+      gap: 4px;
+      font-size: 12px;
+    }
+
+    .table-editor-size input {
+      min-height: 34px;
+    }
+
+    .table-editor-grid-wrap {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbfa;
+    }
+
+    .table-editor-grid {
+      width: 100%;
+      min-width: 520px;
+      border-collapse: collapse;
+    }
+
+    .table-editor-grid th,
+    .table-editor-grid td {
+      min-width: 130px;
+      padding: 6px;
+      border: 1px solid #dbe7e3;
+      background: #fff;
+    }
+
+    .table-editor-grid th {
+      background: #f0f6f4;
+    }
+
+    .table-editor-grid input {
+      width: 100%;
+      min-height: 38px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      box-shadow: none;
+      font-weight: 800;
+    }
+
+    .table-editor-grid input:focus {
+      background: #fff;
+      box-shadow: inset 0 0 0 2px rgba(17, 124, 109, 0.2);
+    }
+
     .slash-option {
       width: 100%;
       min-height: 48px;
@@ -2883,6 +2980,35 @@
       </section>
     </main>
   </div>
+  <div id="tableEditorBackdrop" class="table-editor-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="tableEditorTitle">
+    <div class="table-editor">
+      <div class="table-editor-head">
+        <h3 id="tableEditorTitle">표 만들기</h3>
+        <button id="closeTableEditorBtn" type="button" aria-label="표 편집기 닫기">×</button>
+      </div>
+      <div class="table-editor-size">
+        <label>행
+          <input id="tableRowsInput" type="number" min="2" max="12" value="3">
+        </label>
+        <label>열
+          <input id="tableColsInput" type="number" min="1" max="8" value="3">
+        </label>
+        <button id="applyTableSizeBtn" type="button">크기 적용</button>
+        <button id="addTableRowBtn" type="button">+ 행</button>
+        <button id="addTableColBtn" type="button">+ 열</button>
+      </div>
+      <div class="table-editor-grid-wrap">
+        <table id="tableEditorGrid" class="table-editor-grid"></table>
+      </div>
+      <div class="table-editor-actions">
+        <span class="notice">첫 줄은 제목 행으로 저장됩니다.</span>
+        <div class="actions">
+          <button id="cancelTableEditorBtn" type="button">취소</button>
+          <button id="insertTableEditorBtn" class="primary" type="button">작성칸에 넣기</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <div id="slashMenu" class="slash-menu hidden" role="listbox" aria-label="입력 블록 선택"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2993,6 +3119,16 @@
       theoryPreviewMeta: document.querySelector("#theoryPreviewMeta"),
       insertTheoryQuestionHintBtn: document.querySelector("#insertTheoryQuestionHintBtn"),
       slashMenu: document.querySelector("#slashMenu"),
+      tableEditorBackdrop: document.querySelector("#tableEditorBackdrop"),
+      tableEditorGrid: document.querySelector("#tableEditorGrid"),
+      tableRowsInput: document.querySelector("#tableRowsInput"),
+      tableColsInput: document.querySelector("#tableColsInput"),
+      applyTableSizeBtn: document.querySelector("#applyTableSizeBtn"),
+      addTableRowBtn: document.querySelector("#addTableRowBtn"),
+      addTableColBtn: document.querySelector("#addTableColBtn"),
+      closeTableEditorBtn: document.querySelector("#closeTableEditorBtn"),
+      cancelTableEditorBtn: document.querySelector("#cancelTableEditorBtn"),
+      insertTableEditorBtn: document.querySelector("#insertTableEditorBtn"),
       clearTheoryBtn: document.querySelector("#clearTheoryBtn"),
       theoryList: document.querySelector("#theoryList"),
       questionForm: document.querySelector("#questionForm"),
@@ -3088,6 +3224,7 @@
     const DYNAMIC_SLASH_TARGETS = new WeakMap();
 
     let slashState = null;
+    let tableEditorState = null;
 
     setupTextTools();
     setupComposeBlocks();
@@ -3156,6 +3293,15 @@
     els.insertClozeBtn.addEventListener("click", insertClozeTemplate);
     els.insertCalcTemplateBtn.addEventListener("click", insertCalculationTemplate);
     els.clearFormBtn.addEventListener("click", clearForm);
+    els.closeTableEditorBtn.addEventListener("click", closeTableEditor);
+    els.cancelTableEditorBtn.addEventListener("click", closeTableEditor);
+    els.tableEditorBackdrop.addEventListener("mousedown", event => {
+      if (event.target === els.tableEditorBackdrop) closeTableEditor();
+    });
+    els.applyTableSizeBtn.addEventListener("click", applyTableEditorSize);
+    els.addTableRowBtn.addEventListener("click", () => resizeTableEditor(tableEditorData().length + 1, tableEditorData()[0]?.length || 3));
+    els.addTableColBtn.addEventListener("click", () => resizeTableEditor(tableEditorData().length || 3, (tableEditorData()[0]?.length || 3) + 1));
+    els.insertTableEditorBtn.addEventListener("click", insertTableFromEditor);
     els.exportBtn.addEventListener("click", exportCsv);
     els.clearBankSearchBtn.addEventListener("click", clearBankSearch);
     els.toggleOcrBtn.addEventListener("click", toggleOcrBox);
@@ -3179,6 +3325,10 @@
     document.addEventListener("keydown", event => {
       if (handleCircledNumberShortcut(event)) return;
       if (event.key === "Escape") {
+        if (tableEditorState) {
+          closeTableEditor();
+          return;
+        }
         if (slashState) {
           closeSlashMenu();
           return;
@@ -4577,6 +4727,10 @@
 
     function insertTheoryBlock(type) {
       const block = THEORY_BLOCKS.find(item => item.id === type);
+      if (block?.id === "table") {
+        openTableEditor(els.theoryContentInput);
+        return;
+      }
       insertAtCursor(els.theoryContentInput, blockTemplate(block));
       updateTheoryPreview();
     }
@@ -4629,6 +4783,10 @@
           if (!block) return;
           if (block.action) {
             applyDirectBlockAction(block.action);
+            return;
+          }
+          if (block.id === "table") {
+            openTableEditor(textarea);
             return;
           }
           insertAtCursor(textarea, blockTemplate(block));
@@ -4794,6 +4952,15 @@
         textarea.dispatchEvent(new Event("input", { bubbles: true }));
         closeSlashMenu();
         runSlashAction(block.action);
+        return;
+      }
+      if (block.id === "table") {
+        textarea.value = `${before}${after}`;
+        textarea.focus();
+        textarea.setSelectionRange(before.length, before.length);
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        closeSlashMenu();
+        openTableEditor(textarea);
         return;
       }
       const text = blockTemplate(block);
@@ -5942,6 +6109,140 @@
     function symbolTitle(symbol) {
       const shortcut = [...CIRCLED_NUMBER_SHORTCUTS.entries()].find(([, value]) => value === symbol);
       return shortcut ? `${symbol} (Alt+${shortcut[0]})` : symbol;
+    }
+
+    function openTableEditor(textarea) {
+      if (!(textarea instanceof HTMLTextAreaElement)) return;
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? start;
+      const selected = textarea.value.slice(start, end);
+      const parsed = parseMarkdownTable(selected);
+      tableEditorState = {
+        textarea,
+        start,
+        end,
+        data: parsed?.length ? parsed : defaultTableData(3, 3)
+      };
+      renderTableEditor();
+      els.tableEditorBackdrop.classList.remove("hidden");
+      requestAnimationFrame(() => els.tableEditorGrid.querySelector("input")?.focus());
+    }
+
+    function closeTableEditor() {
+      tableEditorState = null;
+      els.tableEditorBackdrop.classList.add("hidden");
+    }
+
+    function renderTableEditor() {
+      const data = tableEditorState?.data?.length ? tableEditorState.data : defaultTableData(3, 3);
+      els.tableRowsInput.value = data.length;
+      els.tableColsInput.value = data[0]?.length || 1;
+      els.tableEditorGrid.innerHTML = data.map((row, rowIndex) => {
+        const cells = row.map((cell, colIndex) => {
+          const tag = rowIndex === 0 ? "th" : "td";
+          return `<${tag}><input data-table-cell="${rowIndex}:${colIndex}" value="${escapeHtml(cell)}" aria-label="${rowIndex + 1}행 ${colIndex + 1}열"></${tag}>`;
+        }).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+    }
+
+    function tableEditorData() {
+      if (!tableEditorState) return defaultTableData(3, 3);
+      const rows = clampNumber(els.tableRowsInput.value, 2, 12, tableEditorState.data.length || 3);
+      const cols = clampNumber(els.tableColsInput.value, 1, 8, tableEditorState.data[0]?.length || 3);
+      const data = defaultTableData(rows, cols, "");
+      els.tableEditorGrid.querySelectorAll("[data-table-cell]").forEach(input => {
+        const [row, col] = input.dataset.tableCell.split(":").map(Number);
+        if (data[row]) data[row][col] = input.value;
+      });
+      return data;
+    }
+
+    function applyTableEditorSize() {
+      resizeTableEditor(
+        clampNumber(els.tableRowsInput.value, 2, 12, 3),
+        clampNumber(els.tableColsInput.value, 1, 8, 3)
+      );
+    }
+
+    function resizeTableEditor(rows, cols) {
+      if (!tableEditorState) return;
+      const current = tableEditorData();
+      const next = defaultTableData(clampNumber(rows, 2, 12, 3), clampNumber(cols, 1, 8, 3), "");
+      next.forEach((row, rowIndex) => {
+        row.forEach((_, colIndex) => {
+          next[rowIndex][colIndex] = current[rowIndex]?.[colIndex] ?? defaultTableCell(rowIndex, colIndex);
+        });
+      });
+      tableEditorState.data = next;
+      renderTableEditor();
+    }
+
+    function insertTableFromEditor() {
+      if (!tableEditorState) return;
+      const data = tableEditorData();
+      const markdown = tableDataToMarkdown(data);
+      const { textarea, start, end } = tableEditorState;
+      const before = textarea.value.slice(0, start);
+      const after = textarea.value.slice(end);
+      const insertText = needsLeadingLineBreak(before, markdown) ? `\n${markdown}` : markdown;
+      textarea.value = `${before}${insertText}${after}`;
+      const cursor = before.length + insertText.length;
+      closeTableEditor();
+      textarea.focus();
+      textarea.setSelectionRange(cursor, cursor);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      if (textarea === els.theoryContentInput) updateTheoryPreview();
+      updateQuestionDiagnostics();
+    }
+
+    function defaultTableData(rows, cols, fill = null) {
+      return Array.from({ length: rows }, (_, rowIndex) => {
+        return Array.from({ length: cols }, (_, colIndex) => {
+          return fill === null ? defaultTableCell(rowIndex, colIndex) : fill;
+        });
+      });
+    }
+
+    function defaultTableCell(rowIndex, colIndex) {
+      return rowIndex === 0 ? `항목 ${colIndex + 1}` : "내용";
+    }
+
+    function parseMarkdownTable(text) {
+      const lines = String(text || "").split("\n").map(line => line.trim()).filter(Boolean);
+      if (lines.length < 2 || !isMarkdownTable(lines.join("\n"))) return null;
+      return lines
+        .filter((_, index) => index !== 1)
+        .map(splitTableRow)
+        .filter(row => row.length);
+    }
+
+    function tableDataToMarkdown(data) {
+      const normalized = normalizeTableData(data);
+      const header = normalized[0];
+      const separator = header.map(() => "---");
+      const body = normalized.slice(1);
+      return [
+        "",
+        `| ${header.map(escapeMarkdownTableCell).join(" | ")} |`,
+        `| ${separator.join(" | ")} |`,
+        ...body.map(row => `| ${row.map(escapeMarkdownTableCell).join(" | ")} |`),
+        ""
+      ].join("\n");
+    }
+
+    function normalizeTableData(data) {
+      const rows = data.length;
+      const cols = Math.max(1, ...data.map(row => row.length));
+      return Array.from({ length: Math.max(2, rows) }, (_, rowIndex) => {
+        return Array.from({ length: cols }, (_, colIndex) => {
+          return String(data[rowIndex]?.[colIndex] || "").trim() || defaultTableCell(rowIndex, colIndex);
+        });
+      });
+    }
+
+    function escapeMarkdownTableCell(value) {
+      return String(value || "").replace(/\|/g, "\\|").replace(/\n/g, " ").trim();
     }
 
     function insertAtCursor(textarea, text) {
