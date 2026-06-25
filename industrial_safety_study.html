@@ -533,6 +533,40 @@
       font-size: 13px;
     }
 
+    .question-choice-bank {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #cfe0dc;
+      border-radius: 8px;
+      background: #f7fbfa;
+    }
+
+    .choice-bank-title {
+      margin: 0;
+      color: var(--accent-dark);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .choice-bank-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .choice-bank-chip {
+      padding: 7px 10px;
+      border: 1px solid #cfe0dc;
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
     .question-paragraph {
       margin: 0;
       white-space: pre-wrap;
@@ -2864,6 +2898,7 @@
     const TABLE_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "table");
     const CALC_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "calc");
     const QUESTION_EXTRA_BLOCKS = [
+      { id: "choices", label: "보기", icon: "V", hint: "통짜 보기 묶음", template: "\n[보기]\n보기1, 보기2, 보기3\n\n" },
       { id: "cloze", label: "빈칸", icon: "□", hint: "암기카드 빈칸 삽입", template: "{{정답}}" },
       { id: "photo", label: "사진", icon: "⌁", hint: "사진 선택 또는 붙여넣기", action: "photo" },
       { id: "memo", label: "메모", icon: "M", hint: "메모 입력칸 열기", action: "memo" },
@@ -3893,11 +3928,15 @@
       const source = String(text || "").trim();
       if (!source) return "";
 
-      const parts = splitQuestionOptions(source);
+      const choiceBank = extractChoiceBank(source);
+      const questionSource = choiceBank.body || source;
+      const choiceHtml = choiceBank.items.length ? renderChoiceBank(choiceBank.items) : "";
+      const parts = splitQuestionOptions(questionSource);
       if (parts.options.length >= 2) {
         const main = parts.body || "다음 조건을 보고 답하세요.";
         return [
           `<p class="question-main">${formatInlineHtml(main)}</p>`,
+          choiceHtml,
           `<div class="question-list">`,
           ...parts.options.map(option => {
             return `<div class="question-option"><b>${escapeHtml(option.number)}</b><span>${formatInlineHtml(option.text)}</span></div>`;
@@ -3906,7 +3945,52 @@
         ].join("");
       }
 
-      return formatRichTextHtml(source);
+      return `${formatRichTextHtml(questionSource)}${choiceHtml}`;
+    }
+
+    function extractChoiceBank(text) {
+      const lines = String(text || "").split("\n");
+      const markerIndex = lines.findIndex(line => /^\s*(?:\[보기\]|보기)\s*[:：]?\s*$/i.test(line.trim()));
+      if (markerIndex < 0) {
+        const inline = String(text || "").match(/(?:\[보기\]|보기)\s*[:：]\s*(.+?)(?=\n\s*(?:\d+[.)]|[①-⑳])\s+|$)/s);
+        if (!inline) return { body: text, items: [] };
+        const items = splitChoiceItems(inline[1]);
+        const body = `${text.slice(0, inline.index)}${text.slice(inline.index + inline[0].length)}`.trim();
+        return { body, items };
+      }
+
+      const bodyLines = lines.slice(0, markerIndex);
+      const choiceLines = [];
+      let index = markerIndex + 1;
+      for (; index < lines.length; index += 1) {
+        const line = lines[index];
+        if (/^\s*(?:\d+[.)]|[①-⑳])\s+/.test(line) || /^\s*#{1,3}\s+/.test(line)) break;
+        if (/^\s*\[\/보기\]\s*$/i.test(line.trim())) {
+          index += 1;
+          break;
+        }
+        choiceLines.push(line);
+      }
+      const tailLines = lines.slice(index);
+      return {
+        body: [...bodyLines, ...tailLines].join("\n").trim(),
+        items: splitChoiceItems(choiceLines.join("\n"))
+      };
+    }
+
+    function splitChoiceItems(text) {
+      return String(text || "")
+        .split(/[,，;；\n]+/)
+        .map(item => item.replace(/^[\s\-•*]+/, "").trim())
+        .filter(Boolean);
+    }
+
+    function renderChoiceBank(items) {
+      if (!items.length) return "";
+      return `<div class="question-choice-bank">
+        <p class="choice-bank-title">보기</p>
+        <div class="choice-bank-items">${items.map(item => `<span class="choice-bank-chip">${formatInlineHtml(item)}</span>`).join("")}</div>
+      </div>`;
     }
 
     function formatRichTextHtml(text) {
