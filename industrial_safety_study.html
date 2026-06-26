@@ -4959,6 +4959,29 @@
         });
       });
 
+      const leadingSymbols = [...source.matchAll(/(?:^|\n)\s*([^\s\w가-힣ㄱ-ㅎㅏ-ㅣ#\-*•·※①-⑳])\s+(?=[가-힣A-Za-z])/g)]
+        .map(match => match[1])
+        .filter(symbol => !["|", ">", "(", "[", "{", "\"", "'", "“", "‘"].includes(symbol));
+      uniqueSmall(leadingSymbols).forEach(token => {
+        issues.push({
+          field,
+          short: `줄 앞 기호 '${token}'`,
+          detail: "문장 맨 앞에 특수기호가 붙어 있습니다. OCR이 글머리표를 잘못 읽었거나 불필요한 기호인지 확인하세요."
+        });
+      });
+
+      const latinFragments = [...source.matchAll(/(?:^|[\s()[\]{}.,:;!?])([A-Za-zÀ-ÿ]{1,3})(?=\s*(?:및|와|과|은|는|을|를|이|가|에|의|$))/g)]
+        .map(match => match[1])
+        .filter(token => !allowedUpper.has(token.toUpperCase()))
+        .filter(token => !/^[UHICT]$/i.test(token));
+      uniqueSmall(latinFragments).forEach(token => {
+        issues.push({
+          field,
+          short: `낯선 영문 조각 '${token}'`,
+          detail: "한글 문장 안에 짧은 영문 조각이 있습니다. D링, 각행 같은 단어가 OCR로 깨진 것인지 확인하세요."
+        });
+      });
+
       const oddShortWords = [...source.matchAll(/(?:^|[\s()[\]{}.,:;!?])([가-힣ㄱ-ㅎㅏ-ㅣ]{1,2})(?=[\s()[\]{}.,:;!?]|$)/g)]
         .map(match => match[1])
         .filter(token => ["취관", "기"].includes(token));
