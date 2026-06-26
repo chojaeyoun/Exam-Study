@@ -4927,7 +4927,7 @@
     function lintOddTokens(field, text) {
       const source = String(text || "");
       const issues = [];
-      const allowedUpper = new Set(["FTA", "HAZOP", "AND", "OR", "LEL", "UEL", "FSI", "TF", "SIGN", "K", "A", "B", "C", "D"]);
+      const allowedUpper = new Set(["FTA", "HAZOP", "AND", "OR", "LEL", "UEL", "FSI", "TF", "SIGN", "PDF", "CSV", "OCR", "API", "URL", "HTML", "K", "A", "B", "C", "D"]);
       const compactSource = source.replace(/[A-Z]{2,}/g, token => allowedUpper.has(token) ? "" : token);
 
       const loneLetters = [...compactSource.matchAll(/(?:^|[^\w가-힣])([A-Za-z])(?:[^\w가-힣]|$)/g)]
