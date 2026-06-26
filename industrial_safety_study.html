@@ -1679,6 +1679,56 @@
       color: #a85d00;
     }
 
+    .lint-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border: 1px solid #f0c38d;
+      border-radius: 999px;
+      background: #fff8ed;
+      color: #8a4a0a;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .lint-panel {
+      display: grid;
+      gap: 8px;
+      padding: 11px 12px;
+      border: 1px solid #f0d0a0;
+      border-radius: 8px;
+      background: #fffaf2;
+      color: #513817;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .lint-panel strong {
+      color: #7b4309;
+    }
+
+    .lint-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .lint-list li {
+      display: grid;
+      gap: 2px;
+    }
+
+    .lint-list b {
+      color: #a0470c;
+    }
+
+    .lint-list span {
+      color: #644b28;
+    }
+
     .compose-option-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3215,6 +3265,17 @@
       { id: "tag", label: "태그", icon: "#", hint: "태그 입력칸 열기", action: "tag" }
     ];
     const QUESTION_SLASH_BLOCKS = [TABLE_SLASH_BLOCK, CALC_SLASH_BLOCK, ...QUESTION_EXTRA_BLOCKS].filter(Boolean);
+    const TEXT_LINT_RULES = [
+      { pattern: /됬/g, suggestion: "됐", message: "'됬'은 보통 '됐'으로 씁니다." },
+      { pattern: /안되/g, suggestion: "안 돼", message: "'안되'는 문맥상 '안 돼'가 자연스러울 수 있습니다." },
+      { pattern: /되요/g, suggestion: "돼요", message: "'되요'보다 '돼요'가 맞습니다." },
+      { pattern: /몇일/g, suggestion: "며칠", message: "'몇일'보다 '며칠'이 표준어입니다." },
+      { pattern: /왠만/g, suggestion: "웬만", message: "'왠만'보다 '웬만'이 표준어입니다." },
+      { pattern: /금새/g, suggestion: "금세", message: "'금새'보다 '금세'가 표준어입니다." },
+      { pattern: /할께/g, suggestion: "할게", message: "'할께'보다 '할게'가 맞습니다." },
+      { pattern: /어떻해/g, suggestion: "어떡해", message: "'어떻해'는 '어떡해' 또는 '어떻게 해'로 고칩니다." },
+      { pattern: /바램/g, suggestion: "바람", message: "기대나 희망의 뜻이면 '바람'이 자연스럽습니다." }
+    ];
     const SLASH_TARGETS = new Map([
       [els.theoryContentInput, THEORY_BLOCKS],
       [els.questionInput, QUESTION_SLASH_BLOCKS],
@@ -4820,9 +4881,11 @@
       };
       const types = detectQuestionTypes(draft);
       const warnings = composeWarnings(draft, types);
+      const lintIssues = lintQuestion(draft).slice(0, 4);
       els.questionDiagnostics.innerHTML = [
         ...types.map(type => `<span class="type-chip">${escapeHtml(type)}</span>`),
-        ...warnings.map(text => `<span class="warn">${escapeHtml(text)}</span>`)
+        ...warnings.map(text => `<span class="warn">${escapeHtml(text)}</span>`),
+        ...lintIssues.map(issue => `<span class="lint-chip">${escapeHtml(issue.field)}: ${escapeHtml(issue.short)}</span>`)
       ].join("");
     }
 
@@ -4838,6 +4901,94 @@
         warnings.push("사진 첨부 확인");
       }
       return warnings;
+    }
+
+    function lintQuestion(question) {
+      return [
+        ...lintText("문제", question.question),
+        ...lintText("정답", question.answer),
+        ...lintText("메모", question.memo),
+        ...lintStructure(question)
+      ].slice(0, 12);
+    }
+
+    function lintText(field, text) {
+      const source = String(text || "");
+      if (!source.trim()) return [];
+      const issues = [];
+      TEXT_LINT_RULES.forEach(rule => {
+        const matches = [...source.matchAll(rule.pattern)];
+        matches.slice(0, 2).forEach(match => {
+          issues.push({
+            field,
+            short: `${match[0]} → ${rule.suggestion}`,
+            detail: rule.message
+          });
+        });
+      });
+      if (/[^\S\r\n]{2,}/.test(source)) {
+        issues.push({ field, short: "중복 공백", detail: "띄어쓰기가 두 칸 이상 이어진 곳이 있습니다." });
+      }
+      if (hasUnbalancedPairs(source, "(", ")")) {
+        issues.push({ field, short: "괄호 짝 확인", detail: "소괄호의 여는/닫는 개수가 맞지 않습니다." });
+      }
+      if (hasUnbalancedPairs(source, "[", "]")) {
+        issues.push({ field, short: "대괄호 짝 확인", detail: "대괄호의 여는/닫는 개수가 맞지 않습니다." });
+      }
+      if (hasUnbalancedPairs(source, "{", "}")) {
+        issues.push({ field, short: "중괄호 짝 확인", detail: "{{빈칸}} 또는 중괄호 개수를 확인하세요." });
+      }
+      if (/[,，;；]\s*$/.test(source.trim())) {
+        issues.push({ field, short: "끝 문장부호 확인", detail: "쉼표나 세미콜론으로 문장이 끝났습니다." });
+      }
+      return issues;
+    }
+
+    function lintStructure(question) {
+      const issues = [];
+      const q = String(question.question || "");
+      const a = String(question.answer || "");
+      const choiceBank = extractChoiceBank(q);
+      if ((/\[보기\]|보기\s*[:：]/.test(q) || choiceBank.items.length) && !choiceBank.items.length) {
+        issues.push({ field: "문제", short: "보기 항목 없음", detail: "[보기] 아래에 실제 보기 항목을 입력했는지 확인하세요." });
+      }
+      if (choiceBank.items.length && splitQuestionOptions(choiceBank.body || "").options.length < 2) {
+        issues.push({ field: "문제", short: "보기형 번호 부족", detail: "보기형 문제라면 1., 2.처럼 답할 항목을 함께 적어두면 좋습니다." });
+      }
+      if (q.includes("|") && !findMarkdownTables(q).every(isMarkdownTable)) {
+        issues.push({ field: "문제", short: "표 형식 확인", detail: "표에 구분선 줄(| --- | --- |)이 빠졌거나 열 개수가 맞지 않을 수 있습니다." });
+      }
+      if (a.includes("|") && !findMarkdownTables(a).every(isMarkdownTable)) {
+        issues.push({ field: "정답", short: "표 형식 확인", detail: "정답 표의 구분선 줄이나 열 개수를 확인하세요." });
+      }
+      if (!a.trim() && !question.answerImage) {
+        issues.push({ field: "정답", short: "정답 없음", detail: "채점용은 아니어도 암기 확인을 위해 정답을 넣어두는 편이 좋습니다." });
+      }
+      return issues;
+    }
+
+    function hasUnbalancedPairs(text, open, close) {
+      const source = String(text || "");
+      return [...source].filter(char => char === open).length !== [...source].filter(char => char === close).length;
+    }
+
+    function findMarkdownTables(text) {
+      const blocks = String(text || "")
+        .split(/\n{2,}/)
+        .map(block => block.trim())
+        .filter(block => block.includes("|"));
+      return blocks.length ? blocks : [String(text || "")].filter(block => block.includes("|"));
+    }
+
+    function renderLintPanel(question) {
+      const issues = lintQuestion(question);
+      if (!issues.length) return "";
+      return `<div class="lint-panel">
+        <strong>문장 점검 ${issues.length}개</strong>
+        <ul class="lint-list">${issues.slice(0, 5).map(issue => {
+          return `<li><b>${escapeHtml(issue.field)} · ${escapeHtml(issue.short)}</b><span>${escapeHtml(issue.detail)}</span></li>`;
+        }).join("")}</ul>
+      </div>`;
     }
 
     function registerSlashTextarea(textarea, options) {
@@ -5201,6 +5352,7 @@
               ${renderTypeChips(q)}
               ${renderTags(q.tags)}
               <p class="bank-card-answer">${escapeHtml(answerPreview || "정답 없음")}</p>
+              ${renderLintPanel(q)}
             </article>
           </td>
         </tr>${quickEdit}`;
