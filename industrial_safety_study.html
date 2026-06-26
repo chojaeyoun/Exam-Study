@@ -4920,7 +4920,61 @@
       if (/[,，;；]\s*$/.test(source.trim())) {
         issues.push({ field, short: "끝 문장부호 확인", detail: "쉼표나 세미콜론으로 문장이 끝났습니다." });
       }
+      issues.push(...lintOddTokens(field, source));
       return issues;
+    }
+
+    function lintOddTokens(field, text) {
+      const source = String(text || "");
+      const issues = [];
+      const allowedUpper = new Set(["FTA", "HAZOP", "AND", "OR", "LEL", "UEL", "FSI", "TF", "SIGN", "K", "A", "B", "C", "D"]);
+      const compactSource = source.replace(/[A-Z]{2,}/g, token => allowedUpper.has(token) ? "" : token);
+
+      const loneLetters = [...compactSource.matchAll(/(?:^|[^\w가-힣])([A-Za-z])(?:[^\w가-힣]|$)/g)]
+        .map(match => match[1])
+        .filter(letter => !["A", "B", "C", "D", "K"].includes(letter));
+      uniqueSmall(loneLetters).forEach(token => {
+        issues.push({
+          field,
+          short: `이상 문자 '${token}'`,
+          detail: "한글 문제 안에 영문자 한 글자가 섞여 있습니다. OCR 인식 오류인지 확인하세요."
+        });
+      });
+
+      const parenthesized = [...source.matchAll(/\(\s*([A-Za-z0-9가-힣ㄱ-ㅎㅏ-ㅣ]{1,2})\s*\)/g)].map(match => match[1]);
+      uniqueSmall(parenthesized.filter(token => /^[A-Za-z0-9]$/.test(token))).forEach(token => {
+        issues.push({
+          field,
+          short: `괄호 안 '${token}'`,
+          detail: "괄호 안에 숫자나 영문자만 있습니다. 빈칸 기호인지 OCR 오류인지 확인하세요."
+        });
+      });
+
+      const suspiciousLabels = [...source.matchAll(/(?:^|\n)\s*([기니디己])\s*[.)]\s*([^\n]{1,12})/g)];
+      suspiciousLabels.slice(0, 3).forEach(match => {
+        issues.push({
+          field,
+          short: `보기 기호 '${match[1]}.'`,
+          detail: `'${match[1]}. ${match[2].trim()}' 부분이 보기 번호 OCR 오류처럼 보입니다. 가/나/다 또는 ㄱ/ㄴ/ㄷ인지 확인하세요.`
+        });
+      });
+
+      const oddShortWords = [...source.matchAll(/(?:^|[\s()[\]{}.,:;!?])([가-힣ㄱ-ㅎㅏ-ㅣ]{1,2})(?=[\s()[\]{}.,:;!?]|$)/g)]
+        .map(match => match[1])
+        .filter(token => ["취관", "기"].includes(token));
+      uniqueSmall(oddShortWords).forEach(token => {
+        issues.push({
+          field,
+          short: `낯선 짧은 단어 '${token}'`,
+          detail: "짧거나 자모가 섞인 단어입니다. OCR이 잘못 읽은 표현인지 확인하세요."
+        });
+      });
+
+      return issues.slice(0, 5);
+    }
+
+    function uniqueSmall(items) {
+      return [...new Set(items)].slice(0, 4);
     }
 
     function lintStructure(question) {
