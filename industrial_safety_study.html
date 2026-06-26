@@ -3265,17 +3265,6 @@
       { id: "tag", label: "태그", icon: "#", hint: "태그 입력칸 열기", action: "tag" }
     ];
     const QUESTION_SLASH_BLOCKS = [TABLE_SLASH_BLOCK, CALC_SLASH_BLOCK, ...QUESTION_EXTRA_BLOCKS].filter(Boolean);
-    const TEXT_LINT_RULES = [
-      { pattern: /됬/g, suggestion: "됐", message: "'됬'은 보통 '됐'으로 씁니다." },
-      { pattern: /안되/g, suggestion: "안 돼", message: "'안되'는 문맥상 '안 돼'가 자연스러울 수 있습니다." },
-      { pattern: /되요/g, suggestion: "돼요", message: "'되요'보다 '돼요'가 맞습니다." },
-      { pattern: /몇일/g, suggestion: "며칠", message: "'몇일'보다 '며칠'이 표준어입니다." },
-      { pattern: /왠만/g, suggestion: "웬만", message: "'왠만'보다 '웬만'이 표준어입니다." },
-      { pattern: /금새/g, suggestion: "금세", message: "'금새'보다 '금세'가 표준어입니다." },
-      { pattern: /할께/g, suggestion: "할게", message: "'할께'보다 '할게'가 맞습니다." },
-      { pattern: /어떻해/g, suggestion: "어떡해", message: "'어떻해'는 '어떡해' 또는 '어떻게 해'로 고칩니다." },
-      { pattern: /바램/g, suggestion: "바람", message: "기대나 희망의 뜻이면 '바람'이 자연스럽습니다." }
-    ];
     const SLASH_TARGETS = new Map([
       [els.theoryContentInput, THEORY_BLOCKS],
       [els.questionInput, QUESTION_SLASH_BLOCKS],
@@ -4916,16 +4905,6 @@
       const source = String(text || "");
       if (!source.trim()) return [];
       const issues = [];
-      TEXT_LINT_RULES.forEach(rule => {
-        const matches = [...source.matchAll(rule.pattern)];
-        matches.slice(0, 2).forEach(match => {
-          issues.push({
-            field,
-            short: `${match[0]} → ${rule.suggestion}`,
-            detail: rule.message
-          });
-        });
-      });
       if (/[^\S\r\n]{2,}/.test(source)) {
         issues.push({ field, short: "중복 공백", detail: "띄어쓰기가 두 칸 이상 이어진 곳이 있습니다." });
       }
