@@ -2639,6 +2639,162 @@
         min-width: 680px;
       }
     }
+
+    .local-ai-toggle {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 60;
+      min-height: 46px;
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 12px 28px rgba(19, 116, 99, 0.24);
+    }
+
+    .local-ai-panel {
+      position: fixed;
+      right: 18px;
+      bottom: 76px;
+      z-index: 61;
+      width: min(420px, calc(100vw - 28px));
+      max-height: min(680px, calc(100vh - 104px));
+      display: grid;
+      grid-template-rows: auto auto minmax(180px, 1fr) auto;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 22px 58px rgba(19, 45, 42, 0.18);
+    }
+
+    .local-ai-panel.hidden {
+      display: none;
+    }
+
+    .local-ai-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #f7faf8;
+    }
+
+    .local-ai-title {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .local-ai-status {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .local-ai-status.ok {
+      color: var(--accent);
+    }
+
+    .local-ai-status.error {
+      color: var(--accent-2);
+    }
+
+    .local-ai-close {
+      min-width: 38px;
+      padding: 0;
+    }
+
+    .local-ai-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .local-ai-options label {
+      min-width: 0;
+    }
+
+    .local-ai-messages {
+      overflow: auto;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #fbfcfb;
+    }
+
+    .local-ai-message {
+      max-width: 94%;
+      white-space: pre-wrap;
+      line-height: 1.55;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #fff;
+      font-size: 14px;
+    }
+
+    .local-ai-message.user {
+      align-self: flex-end;
+      background: var(--soft);
+    }
+
+    .local-ai-message.system {
+      align-self: center;
+      max-width: 100%;
+      color: var(--muted);
+      background: transparent;
+      border-style: dashed;
+    }
+
+    .local-ai-form {
+      display: grid;
+      gap: 10px;
+      padding: 12px 16px 16px;
+      border-top: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .local-ai-context {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .local-ai-input-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 74px;
+      gap: 8px;
+    }
+
+    .local-ai-input-row textarea {
+      min-height: 72px;
+    }
+
+    @media (max-width: 760px) {
+      .local-ai-toggle {
+        right: 12px;
+        bottom: 12px;
+      }
+
+      .local-ai-panel {
+        right: 8px;
+        bottom: 66px;
+        width: calc(100vw - 16px);
+        max-height: calc(100vh - 86px);
+      }
+
+      .local-ai-options,
+      .local-ai-context,
+      .local-ai-input-row {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -3060,6 +3216,38 @@
     </div>
   </div>
   <div id="slashMenu" class="slash-menu hidden" role="listbox" aria-label="입력 블록 선택"></div>
+
+  <button id="localAiToggle" class="local-ai-toggle" type="button" aria-expanded="false" aria-controls="localAiPanel">AI 질문</button>
+  <section id="localAiPanel" class="local-ai-panel hidden" aria-label="로컬 AI 질문 패널">
+    <div class="local-ai-head">
+      <div>
+        <h2 class="local-ai-title">로컬 AI 질문</h2>
+        <p id="localAiStatus" class="local-ai-status">브릿지 서버 확인 중</p>
+      </div>
+      <button id="localAiClose" class="local-ai-close" type="button" aria-label="AI 패널 닫기">×</button>
+    </div>
+    <div class="local-ai-options">
+      <label>브릿지 주소
+        <input id="localAiEndpoint" type="text" value="http://127.0.0.1:8765">
+      </label>
+      <label>모델
+        <input id="localAiModel" type="text" value="llama3.2:3b">
+      </label>
+    </div>
+    <div id="localAiMessages" class="local-ai-messages">
+      <div class="local-ai-message system">PC에서 Ollama와 ollama-chatbot 브릿지가 켜져 있으면 이 페이지 안에서 질문할 수 있습니다.</div>
+    </div>
+    <form id="localAiForm" class="local-ai-form">
+      <div class="local-ai-context">
+        <button id="localAiUseQuestion" type="button">현재 문제 넣기</button>
+        <button id="localAiUseAnswer" type="button">정답까지 넣기</button>
+      </div>
+      <div class="local-ai-input-row">
+        <textarea id="localAiPrompt" placeholder="이 문제를 쉽게 설명해줘"></textarea>
+        <button id="localAiSend" class="primary" type="submit">전송</button>
+      </div>
+    </form>
+  </section>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -6571,6 +6759,187 @@
       deferredInstallPrompt = null;
       els.installBtn.classList.add("hidden");
     }
+  </script>
+  <script>
+    (() => {
+      const storageKey = "examStudyApp.localAi.v1";
+      const defaultEndpoint = "http://127.0.0.1:8765";
+      const localAi = {
+        toggle: document.querySelector("#localAiToggle"),
+        panel: document.querySelector("#localAiPanel"),
+        close: document.querySelector("#localAiClose"),
+        status: document.querySelector("#localAiStatus"),
+        endpoint: document.querySelector("#localAiEndpoint"),
+        model: document.querySelector("#localAiModel"),
+        messages: document.querySelector("#localAiMessages"),
+        form: document.querySelector("#localAiForm"),
+        prompt: document.querySelector("#localAiPrompt"),
+        send: document.querySelector("#localAiSend"),
+        useQuestion: document.querySelector("#localAiUseQuestion"),
+        useAnswer: document.querySelector("#localAiUseAnswer")
+      };
+      const history = [];
+
+      function loadSettings() {
+        try {
+          const saved = JSON.parse(localStorage.getItem(storageKey));
+          if (saved?.endpoint) localAi.endpoint.value = saved.endpoint;
+          if (saved?.model) localAi.model.value = saved.model;
+        } catch (error) {
+          console.warn(error);
+        }
+      }
+
+      function saveSettings() {
+        localStorage.setItem(storageKey, JSON.stringify({
+          endpoint: endpoint(),
+          model: modelName()
+        }));
+      }
+
+      function endpoint() {
+        return (localAi.endpoint.value || defaultEndpoint).trim().replace(/\/+$/, "");
+      }
+
+      function modelName() {
+        return (localAi.model.value || "llama3.2:3b").trim();
+      }
+
+      function setStatus(text, type = "") {
+        localAi.status.textContent = text;
+        localAi.status.className = `local-ai-status ${type}`.trim();
+      }
+
+      function addMessage(role, text) {
+        const message = document.createElement("div");
+        message.className = `local-ai-message ${role}`;
+        message.textContent = text;
+        localAi.messages.appendChild(message);
+        localAi.messages.scrollTop = localAi.messages.scrollHeight;
+        return message;
+      }
+
+      function currentStudyText(includeAnswer = false) {
+        const question = document.querySelector("#questionText")?.innerText?.trim() || "";
+        const answer = document.querySelector("#answerText")?.innerText?.trim() || "";
+        const title = document.querySelector("#currentExamTitle")?.innerText?.trim() || "";
+        const parts = [];
+        if (title) parts.push(`시험: ${title}`);
+        if (question) parts.push(`문제:\n${question}`);
+        if (includeAnswer && answer) parts.push(`정답/해설:\n${answer}`);
+        return parts.join("\n\n");
+      }
+
+      function appendContext(includeAnswer) {
+        const text = currentStudyText(includeAnswer);
+        if (!text) {
+          addMessage("system", "현재 화면에서 가져올 문제가 없습니다.");
+          return;
+        }
+        const current = localAi.prompt.value.trim();
+        localAi.prompt.value = `${current ? `${current}\n\n` : ""}${text}`;
+        localAi.prompt.focus();
+      }
+
+      async function checkHealth() {
+        try {
+          const response = await fetch(`${endpoint()}/api/health`);
+          const data = await response.json();
+          if (!response.ok || !data.ok) throw new Error(data.hint || data.error || "연결 실패");
+          const firstModel = data.models?.[0]?.name;
+          if (firstModel && !localAi.model.value.trim()) localAi.model.value = firstModel;
+          setStatus(`연결됨: ${data.models?.length || 0}개 모델`, "ok");
+        } catch (error) {
+          setStatus("브릿지 서버가 꺼져 있습니다. ollama-chatbot의 Start-Chatbot.ps1을 실행하세요.", "error");
+        }
+      }
+
+      async function sendMessage(event) {
+        event.preventDefault();
+        const content = localAi.prompt.value.trim();
+        if (!content) return;
+        saveSettings();
+        localAi.prompt.value = "";
+        localAi.send.disabled = true;
+        addMessage("user", content);
+        history.push({ role: "user", content });
+        const assistant = addMessage("assistant", "");
+
+        const messages = [
+          {
+            role: "system",
+            content: "너는 산업안전 학습을 돕는 한국어 튜터다. 답은 짧고 정확하게, 암기 포인트와 헷갈리는 부분을 중심으로 설명한다."
+          },
+          ...history.slice(-10)
+        ];
+
+        try {
+          const response = await fetch(`${endpoint()}/api/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model: modelName(), messages, stream: true })
+          });
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || `HTTP ${response.status}`);
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          let answer = "";
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              const chunk = JSON.parse(line);
+              const text = chunk.message?.content || "";
+              if (!text) continue;
+              answer += text;
+              assistant.textContent = answer;
+              localAi.messages.scrollTop = localAi.messages.scrollHeight;
+            }
+          }
+
+          history.push({ role: "assistant", content: answer });
+          setStatus("응답 완료", "ok");
+        } catch (error) {
+          assistant.textContent = `오류: ${error.message}`;
+          setStatus("응답 실패", "error");
+        } finally {
+          localAi.send.disabled = false;
+          localAi.prompt.focus();
+        }
+      }
+
+      function openPanel() {
+        localAi.panel.classList.remove("hidden");
+        localAi.toggle.setAttribute("aria-expanded", "true");
+        checkHealth();
+        localAi.prompt.focus();
+      }
+
+      function closePanel() {
+        localAi.panel.classList.add("hidden");
+        localAi.toggle.setAttribute("aria-expanded", "false");
+      }
+
+      loadSettings();
+      localAi.toggle.addEventListener("click", () => {
+        localAi.panel.classList.contains("hidden") ? openPanel() : closePanel();
+      });
+      localAi.close.addEventListener("click", closePanel);
+      localAi.endpoint.addEventListener("change", () => { saveSettings(); checkHealth(); });
+      localAi.model.addEventListener("change", saveSettings);
+      localAi.useQuestion.addEventListener("click", () => appendContext(false));
+      localAi.useAnswer.addEventListener("click", () => appendContext(true));
+      localAi.form.addEventListener("submit", sendMessage);
+    })();
   </script>
 </body>
 </html>
