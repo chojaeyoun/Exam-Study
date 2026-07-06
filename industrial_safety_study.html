@@ -3231,7 +3231,7 @@
         <input id="localAiEndpoint" type="text" value="http://127.0.0.1:8765">
       </label>
       <label>모델
-        <input id="localAiModel" type="text" value="llama3.2:3b">
+        <input id="localAiModel" type="text" value="gemma3:4b">
       </label>
     </div>
     <div id="localAiMessages" class="local-ai-messages">
@@ -6802,7 +6802,7 @@
       }
 
       function modelName() {
-        return (localAi.model.value || "llama3.2:3b").trim();
+        return (localAi.model.value || "gemma3:4b").trim();
       }
 
       function setStatus(text, type = "") {
@@ -6868,7 +6868,7 @@
         const messages = [
           {
             role: "system",
-            content: "너는 산업안전 학습을 돕는 한국어 튜터다. 답은 짧고 정확하게, 암기 포인트와 헷갈리는 부분을 중심으로 설명한다."
+            content: "너는 산업안전 학습을 돕는 한국어 튜터다. 반드시 한국어로만 답하고, 중국어와 영어를 섞지 않는다. 답은 짧고 정확하게, 암기 포인트와 헷갈리는 부분을 중심으로 설명한다."
           },
           ...history.slice(-10)
         ];
