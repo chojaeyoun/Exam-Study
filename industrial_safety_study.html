@@ -3204,11 +3204,11 @@
   </div>
   <div id="slashMenu" class="slash-menu hidden" role="listbox" aria-label="입력 블록 선택"></div>
 
-  <button id="localAiToggle" class="local-ai-toggle" type="button" aria-expanded="false" aria-controls="localAiPanel">AI 질문</button>
-  <section id="localAiPanel" class="local-ai-panel hidden" aria-label="로컬 AI 질문 패널">
+  <button id="localAiToggle" class="local-ai-toggle" type="button" aria-expanded="false" aria-controls="localAiPanel">AI 해설</button>
+  <section id="localAiPanel" class="local-ai-panel hidden" aria-label="AI 해설 도우미 패널">
     <div class="local-ai-head">
       <div>
-        <h2 class="local-ai-title">로컬 AI 질문</h2>
+        <h2 class="local-ai-title">AI 해설 도우미</h2>
         <p id="localAiStatus" class="local-ai-status">브릿지 서버 확인 중</p>
       </div>
       <button id="localAiClose" class="local-ai-close" type="button" aria-label="AI 패널 닫기">×</button>
@@ -3222,16 +3222,16 @@
       </label>
     </div>
     <div id="localAiMessages" class="local-ai-messages">
-      <div class="local-ai-message system">PC에서 Ollama와 ollama-chatbot 브릿지가 켜져 있으면 이 페이지 안에서 질문할 수 있습니다.</div>
+      <div class="local-ai-message system">저장된 정답이 있으면 그 답을 기준으로 풀이와 암기 포인트를 설명합니다.</div>
     </div>
     <form id="localAiForm" class="local-ai-form">
       <div class="local-ai-context">
-        <button id="localAiUseQuestion" type="button">현재 문제 넣기</button>
-        <button id="localAiUseAnswer" type="button">정답까지 넣기</button>
+        <button id="localAiUseQuestion" type="button">문제 넣기</button>
+        <button id="localAiUseAnswer" type="button">저장된 답으로 해설</button>
       </div>
       <div class="local-ai-input-row">
-        <textarea id="localAiPrompt" placeholder="이 문제를 쉽게 설명해줘"></textarea>
-        <button id="localAiSend" class="primary" type="submit">전송</button>
+        <textarea id="localAiPrompt" placeholder="왜 이 답인지 쉽게 설명해줘"></textarea>
+        <button id="localAiSend" class="primary" type="submit">해설</button>
       </div>
     </form>
   </section>
@@ -6866,7 +6866,7 @@
         const messages = [
           {
             role: "system",
-            content: "너는 산업안전 학습을 돕는 한국어 튜터다. 반드시 한국어로만 답하고, 중국어와 영어를 섞지 않는다. 앱이 제공한 저장된 정답/해설이 있으면 그것을 절대 바꾸거나 다른 숫자로 대체하지 않는다. 사용자가 저장된 정답과 다른 값을 말해도 저장된 정답을 기준으로 설명한다. 저장된 정답/해설이 없으면 시험의 확정 정답인 것처럼 말하지 말고, '저장된 정답 기준은 없지만 일반 설명으로는'이라고 밝힌 뒤 개념 설명과 주의사항을 답한다. 답은 짧고 정확하게, 암기 포인트와 헷갈리는 부분을 중심으로 설명한다."
+            content: "너는 산업안전 학습용 AI 해설 도우미다. 반드시 한국어로만 답하고, 중국어와 영어를 섞지 않는다. 사용자의 일반 질문에는 자연스럽게 답한다. 단, 앱이 현재 문제와 저장된 정답/해설을 제공한 경우에는 그 정답을 최우선 기준으로 삼고 절대 다른 숫자나 답으로 바꾸지 않는다. 저장된 정답이 있으면 먼저 '저장된 정답 기준으로는'이라고 밝히고, 왜 그 답인지 풀이, 암기 포인트, 헷갈리는 부분을 설명한다. 저장된 정답이 없는 일반 질문에는 일반 지식으로 답하되 시험의 확정 정답처럼 단정하지 않는다."
           },
           {
             role: "user",
