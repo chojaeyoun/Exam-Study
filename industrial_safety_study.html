@@ -503,8 +503,12 @@
 
     .question-list {
       display: grid;
-      gap: 8px;
+      gap: 6px;
       margin-top: 16px;
+      padding: 14px 16px;
+      border: 1px solid #b8c9c4;
+      border-radius: 4px;
+      background: #fff;
     }
 
     .question-option {
@@ -512,10 +516,10 @@
       grid-template-columns: 34px minmax(0, 1fr);
       gap: 10px;
       align-items: start;
-      padding: 10px 12px;
-      border: 1px solid #dfe8e5;
-      border-radius: 8px;
-      background: #fff;
+      padding: 4px 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
       font-size: 16px;
       line-height: 1.5;
       font-weight: 700;
@@ -528,9 +532,37 @@
       place-items: center;
       min-height: 28px;
       border-radius: 999px;
-      background: var(--soft);
+      background: transparent;
       color: var(--accent-dark);
       font-size: 13px;
+    }
+
+    .question-paper-box {
+      margin: 14px 0;
+      padding: 14px 16px;
+      border: 1px solid #b8c9c4;
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .question-paper-box > :first-child {
+      margin-top: 0;
+    }
+
+    .question-paper-box > :last-child {
+      margin-bottom: 0;
+    }
+
+    .question-paper-line {
+      margin: 0 0 8px;
+      font-weight: 700;
+      line-height: 1.65;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .question-paper-line:last-child {
+      margin-bottom: 0;
     }
 
     .question-choice-bank {
@@ -4606,8 +4638,10 @@
       if (!source) return "";
 
       const choiceBank = extractChoiceBank(source);
-      const questionSource = choiceBank.body || source;
+      const boxed = extractQuestionBoxes(choiceBank.body || source);
+      const questionSource = boxed.body;
       const choiceHtml = choiceBank.items.length ? renderChoiceBank(choiceBank.items) : "";
+      const boxHtml = renderQuestionBoxes(boxed.boxes);
       const parts = splitQuestionOptions(questionSource);
       if (parts.options.length >= 2) {
         const main = parts.body || "다음 조건을 보고 답하세요.";
@@ -4618,11 +4652,32 @@
           ...parts.options.map(option => {
             return `<div class="question-option"><b>${escapeHtml(option.number)}</b><span>${formatInlineHtml(option.text)}</span></div>`;
           }),
-          `</div>`
+          `</div>`,
+          boxHtml
         ].join("");
       }
 
-      return `${formatRichTextHtml(questionSource)}${choiceHtml}`;
+      return `${formatRichTextHtml(questionSource)}${choiceHtml}${boxHtml}`;
+    }
+
+    function extractQuestionBoxes(text) {
+      const boxes = [];
+      const body = String(text || "").replace(/\[(?:박스|보기박스|box)\]([\s\S]*?)\[\/(?:박스|보기박스|box)\]/gi, (match, content) => {
+        const trimmed = content.trim();
+        if (trimmed) boxes.push(trimmed);
+        return "";
+      }).trim();
+      return { body, boxes };
+    }
+
+    function renderQuestionBoxes(boxes) {
+      return boxes.map(box => {
+        const lines = String(box || "").split("\n").map(line => line.trim()).filter(Boolean);
+        const content = lines.length
+          ? lines.map(line => `<p class="question-paper-line">${formatInlineHtml(line)}</p>`).join("")
+          : formatRichTextHtml(box);
+        return `<div class="question-paper-box">${content}</div>`;
+      }).join("");
     }
 
     function extractChoiceBank(text) {
