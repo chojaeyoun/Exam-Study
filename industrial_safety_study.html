@@ -6800,10 +6800,21 @@
       function addMessage(role, text) {
         const message = document.createElement("div");
         message.className = `local-ai-message ${role}`;
-        message.textContent = text;
+        message.innerHTML = renderLocalAiMarkdown(text);
         localAi.messages.appendChild(message);
         localAi.messages.scrollTop = localAi.messages.scrollHeight;
         return message;
+      }
+
+      function renderLocalAiMarkdown(text) {
+        const escaped = String(text || "").replace(/[&<>"']/g, char => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+        }[char]));
+        return escaped.replace(/\*\*([^*\n][\s\S]*?[^*\n])\*\*/g, "<strong>$1</strong>");
       }
 
       function currentStudyText(includeAnswer = false) {
@@ -6888,7 +6899,7 @@
               const text = chunk.message?.content || "";
               if (!text) continue;
               answer += text;
-              assistant.textContent = answer;
+              assistant.innerHTML = renderLocalAiMarkdown(answer);
               localAi.messages.scrollTop = localAi.messages.scrollHeight;
             }
           }
