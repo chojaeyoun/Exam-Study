@@ -4094,13 +4094,20 @@
       const { error: examError } = await client.from("exam_tabs").upsert(examRows);
       if (examError) return setCloudStatus(`시험 탭 업로드 실패: ${examError.message}`);
 
+      const backupResult = await uploadCloudBackup(client, user);
+      if (!backupResult.ok) return setCloudStatus(backupResult.message);
+
+      const { error: staleDeleteError } = await client
+        .from("exam_questions")
+        .delete()
+        .eq("user_id", user.id)
+        .neq("category", CLOUD_BACKUP_CATEGORY);
+      if (staleDeleteError) return setCloudStatus(`기존 클라우드 문제 정리 실패: ${staleDeleteError.message}`);
+
       if (questionRows.length) {
         const { error: questionError } = await client.from("exam_questions").upsert(questionRows);
         if (questionError) return setCloudStatus(`문제 업로드 실패: ${questionError.message}`);
       }
-
-      const backupResult = await uploadCloudBackup(client, user);
-      if (!backupResult.ok) return setCloudStatus(backupResult.message);
 
       const { count: cloudQuestionCount } = await client
         .from("exam_questions")
@@ -4133,16 +4140,18 @@
         return;
       }
 
-      const { data: exams, error: examError } = await client
-        .from("exam_tabs")
-        .select("*")
-        .order("created_at", { ascending: true });
+      const { data: exams, error: examError } = await fetchAllCloudRows(
+        client,
+        "exam_tabs",
+        query => query.order("created_at", { ascending: true })
+      );
       if (examError) return setCloudStatus(`시험 탭 가져오기 실패: ${examError.message}`);
 
-      const { data: questions, error: questionError } = await client
-        .from("exam_questions")
-        .select("*")
-        .order("created_at", { ascending: true });
+      const { data: questions, error: questionError } = await fetchAllCloudRows(
+        client,
+        "exam_questions",
+        query => query.order("created_at", { ascending: true })
+      );
       if (questionError) return setCloudStatus(`문제 가져오기 실패: ${questionError.message}`);
 
       state.exams = (exams || []).map(row => ({
@@ -4184,6 +4193,10 @@
     }
 
     async function uploadCloudBackup(client, user) {
+      const backupExamId =
+        state.exams.find(exam => exam.id === state.activeExamId)?.id ||
+        state.exams[0]?.id ||
+        DEFAULT_EXAM_ID;
       const payload = encodeURIComponent(JSON.stringify({
         exams: state.exams,
         activeExamId: state.activeExamId,
@@ -4206,7 +4219,7 @@
         const row = {
           id: crypto.randomUUID(),
           user_id: user.id,
-          exam_id: DEFAULT_EXAM_ID,
+          exam_id: backupExamId,
           category: CLOUD_BACKUP_CATEGORY,
           level: String(index).padStart(4, "0"),
           question: `backup ${index + 1}/${chunks.length}`,
@@ -4225,12 +4238,14 @@
     }
 
     async function downloadCloudBackup(client, user) {
-      const { data, error } = await client
-        .from("exam_questions")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("category", CLOUD_BACKUP_CATEGORY)
-        .order("level", { ascending: true });
+      const { data, error } = await fetchAllCloudRows(
+        client,
+        "exam_questions",
+        query => query
+          .eq("user_id", user.id)
+          .eq("category", CLOUD_BACKUP_CATEGORY)
+          .order("level", { ascending: true })
+      );
 
       if (error || !data?.length) return { ok: false, data: null };
 
@@ -4245,6 +4260,26 @@
         console.warn("Cloud backup restore failed.", error);
         return { ok: false, data: null };
       }
+    }
+
+    async function fetchAllCloudRows(client, tableName, configureQuery) {
+      const pageSize = 1000;
+      const rows = [];
+      let start = 0;
+
+      while (true) {
+        let query = client.from(tableName).select("*");
+        if (configureQuery) query = configureQuery(query);
+        const { data, error } = await query.range(start, start + pageSize - 1);
+        if (error) return { data: null, error };
+
+        const page = data || [];
+        rows.push(...page);
+        if (page.length < pageSize) break;
+        start += pageSize;
+      }
+
+      return { data: rows, error: null };
     }
 
     function chunkText(text, size) {
