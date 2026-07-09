@@ -922,6 +922,38 @@
       letter-spacing: 0;
     }
 
+    .mnemonic-map {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .mnemonic-map li {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+      line-height: 1.5;
+    }
+
+    .mnemonic-map b {
+      display: inline-grid;
+      place-items: center;
+      min-height: 28px;
+      color: #fff;
+      border-radius: 999px;
+      background: #7b5214;
+      font-size: 14px;
+    }
+
+    .mnemonic-sentence {
+      margin: 0;
+      color: #5d4720;
+      line-height: 1.6;
+    }
+
     .blank-quiz {
       margin: 0;
       padding: 14px;
@@ -5468,8 +5500,19 @@
 
     function ensureMemoryCard(question) {
       const existing = normalizeMemoryCard(question.memoryCard);
-      question.memoryCard = existing || buildMemoryCard(question);
+      question.memoryCard = enrichMemoryCard(existing || buildMemoryCard(question));
       return question.memoryCard;
+    }
+
+    function enrichMemoryCard(card) {
+      const keywords = card.keywords || [];
+      const mnemonicData = buildMnemonic(keywords);
+      return {
+        ...card,
+        mnemonic: card.mnemonic || mnemonicData.mnemonic,
+        mnemonicItems: card.mnemonicItems?.length ? card.mnemonicItems : mnemonicData.mnemonicItems,
+        mnemonicSentence: card.mnemonicSentence || mnemonicData.mnemonicSentence
+      };
     }
 
     function normalizeMemoryCard(card) {
@@ -5478,6 +5521,8 @@
       return {
         keywords,
         mnemonic: String(card.mnemonic || "").trim(),
+        mnemonicItems: normalizeMnemonicItems(card.mnemonicItems, keywords, card.mnemonic),
+        mnemonicSentence: String(card.mnemonicSentence || "").trim(),
         easyExplanation: String(card.easyExplanation || "").trim(),
         blankQuiz: String(card.blankQuiz || "").trim()
       };
@@ -5488,7 +5533,7 @@
       const keywords = memoryKeywords(answer);
       return {
         keywords,
-        mnemonic: buildMnemonic(keywords),
+        ...buildMnemonic(keywords),
         easyExplanation: buildEasyExplanation(question, keywords),
         blankQuiz: buildBlankQuiz(answer, keywords)
       };
@@ -5504,11 +5549,44 @@
     }
 
     function buildMnemonic(keywords) {
-      const letters = keywords
-        .map(keyword => compactText(keyword).charAt(0))
-        .filter(Boolean)
-        .join("");
-      return letters || "핵심어 첫 글자";
+      const items = keywords
+        .map(keyword => ({
+          letter: mnemonicLetter(keyword),
+          keyword
+        }))
+        .filter(item => item.letter && item.keyword);
+      const mnemonic = items.map(item => item.letter).join("");
+      return {
+        mnemonic: mnemonic || "핵심어 첫 글자",
+        mnemonicItems: items,
+        mnemonicSentence: mnemonic
+          ? `${mnemonic} 순서로 ${items.map(item => item.keyword).join(" → ")}를 떠올리세요.`
+          : "키워드 첫 글자를 순서대로 떠올리세요."
+      };
+    }
+
+    function normalizeMnemonicItems(items, keywords, mnemonic) {
+      if (Array.isArray(items) && items.length) {
+        return items
+          .map(item => ({
+            letter: String(item?.letter || "").trim().charAt(0),
+            keyword: String(item?.keyword || "").trim()
+          }))
+          .filter(item => item.letter && item.keyword);
+      }
+      const letters = Array.from(String(mnemonic || ""));
+      return keywords.map((keyword, index) => ({
+        letter: letters[index] || mnemonicLetter(keyword),
+        keyword
+      })).filter(item => item.letter && item.keyword);
+    }
+
+    function mnemonicLetter(keyword) {
+      const cleaned = String(keyword || "")
+        .replace(/^[\s"'“”‘’()[\]{}<>]+/, "")
+        .replace(/^(및|또는|그리고|하고|하며|를|을|이|가|은|는|의|에|에서)\s+/, "")
+        .trim();
+      return Array.from(cleaned)[0] || "";
     }
 
     function buildEasyExplanation(question, keywords) {
@@ -5563,6 +5641,10 @@
           <section class="memory-card-block">
             <h4>두문자 암기법</h4>
             <p class="mnemonic-text">${escapeHtml(card.mnemonic || "두문자 없음")}</p>
+            ${card.mnemonicItems?.length
+              ? `<ul class="mnemonic-map">${card.mnemonicItems.map(item => `<li><b>${escapeHtml(item.letter)}</b><span>${escapeHtml(item.keyword)}</span></li>`).join("")}</ul>`
+              : ""}
+            <p class="mnemonic-sentence">${escapeHtml(card.mnemonicSentence || "핵심어 첫 글자를 순서대로 떠올리세요.")}</p>
           </section>
           <section class="memory-card-block wide">
             <h4>쉬운 설명</h4>
