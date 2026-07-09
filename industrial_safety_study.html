@@ -5500,19 +5500,40 @@
 
     function ensureMemoryCard(question) {
       const existing = normalizeMemoryCard(question.memoryCard);
-      question.memoryCard = enrichMemoryCard(existing || buildMemoryCard(question));
+      const built = buildMemoryCard(question);
+      question.memoryCard = enrichMemoryCard(existing, built);
       return question.memoryCard;
     }
 
-    function enrichMemoryCard(card) {
-      const keywords = card.keywords || [];
+    function enrichMemoryCard(card, built) {
+      if (!card) return built;
+      const refreshGeneratedParts = shouldRefreshMemoryCard(card, built);
+      const keywords = refreshGeneratedParts ? built.keywords : card.keywords || [];
       const mnemonicData = buildMnemonic(keywords);
       return {
         ...card,
-        mnemonic: card.mnemonic || mnemonicData.mnemonic,
-        mnemonicItems: card.mnemonicItems?.length ? card.mnemonicItems : mnemonicData.mnemonicItems,
-        mnemonicSentence: card.mnemonicSentence || mnemonicData.mnemonicSentence
+        keywords,
+        mnemonicType: refreshGeneratedParts ? mnemonicData.mnemonicType : (card.mnemonicType || mnemonicData.mnemonicType),
+        mnemonic: refreshGeneratedParts ? mnemonicData.mnemonic : (card.mnemonic || mnemonicData.mnemonic),
+        mnemonicItems: refreshGeneratedParts || !card.mnemonicItems?.length ? mnemonicData.mnemonicItems : card.mnemonicItems,
+        mnemonicSentence: refreshGeneratedParts ? mnemonicData.mnemonicSentence : (card.mnemonicSentence || mnemonicData.mnemonicSentence),
+        easyExplanation: card.easyExplanation || built.easyExplanation,
+        blankQuiz: card.blankQuiz || built.blankQuiz
       };
+    }
+
+    function shouldRefreshMemoryCard(card, built) {
+      const keywords = card.keywords || [];
+      const builtKeywords = built.keywords || [];
+      const mnemonic = String(card.mnemonic || "").trim();
+      const items = card.mnemonicItems || [];
+      if (!keywords.length) return true;
+      if (builtKeywords.length && keywords.length > Math.max(5, builtKeywords.length + 1)) return true;
+      if (built.mnemonicType === "number" && (card.mnemonicType !== "number" || /^\d+$/.test(mnemonic))) return true;
+      if (items.length > 5 && built.mnemonicItems.length <= 5) return true;
+      if (mnemonic.length > 6 && built.mnemonic.length <= 6) return true;
+      if (keywords.some(keyword => /^\d{1,3}$/.test(keyword)) && builtKeywords.some(keyword => /,/.test(keyword))) return true;
+      return false;
     }
 
     function normalizeMemoryCard(card) {
@@ -5520,6 +5541,7 @@
       const keywords = Array.isArray(card.keywords) ? card.keywords.map(item => String(item || "").trim()).filter(Boolean) : [];
       return {
         keywords,
+        mnemonicType: String(card.mnemonicType || "").trim(),
         mnemonic: String(card.mnemonic || "").trim(),
         mnemonicItems: normalizeMnemonicItems(card.mnemonicItems, keywords, card.mnemonic),
         mnemonicSentence: String(card.mnemonicSentence || "").trim(),
@@ -5540,16 +5562,36 @@
     }
 
     function memoryKeywords(answer) {
-      const phrases = answerPhrases(answer)
-        .flatMap(phrase => phrase.split(/\s*(?:및|또는|하고|하며|,|，|·|\/)\s*/))
+      const phrases = answerPhrases(answer).filter(item => item.length >= 2);
+      if (phrases.length && phrases.every(isNumericKeyword)) {
+        return phrases.slice(0, 6);
+      }
+      if (phrases.length >= 2 && phrases.length <= 6) {
+        return phrases.slice(0, 6);
+      }
+      const splitPhrases = phrases
+        .flatMap(phrase => phrase.split(/\s*(?:및|또는|하고|하며|，|·|\/)\s*/))
         .map(normalizeAnswerPhrase)
         .filter(item => item.length >= 2);
-      const fallback = answerKeywords(answer);
-      return uniqueMeaningfulPhrases([...phrases, ...fallback]).slice(0, 8);
+      const primary = uniqueMeaningfulPhrases(splitPhrases).slice(0, 6);
+      if (primary.length) return primary;
+      return answerKeywords(answer).slice(0, 6);
     }
 
     function buildMnemonic(keywords) {
-      const items = keywords
+      const sourceKeywords = keywords.slice(0, 5);
+      if (sourceKeywords.length && sourceKeywords.every(isNumericKeyword)) {
+        return {
+          mnemonicType: "number",
+          mnemonic: sourceKeywords.join(" → "),
+          mnemonicItems: sourceKeywords.map((keyword, index) => ({
+            letter: String(index + 1),
+            keyword
+          })),
+          mnemonicSentence: `숫자는 ${sourceKeywords.join(" → ")} 순서와 단위를 함께 외우세요.`
+        };
+      }
+      const items = sourceKeywords
         .map(keyword => ({
           letter: mnemonicLetter(keyword),
           keyword
@@ -5557,10 +5599,11 @@
         .filter(item => item.letter && item.keyword);
       const mnemonic = items.map(item => item.letter).join("");
       return {
+        mnemonicType: "initial",
         mnemonic: mnemonic || "핵심어 첫 글자",
         mnemonicItems: items,
         mnemonicSentence: mnemonic
-          ? `${mnemonic} 순서로 ${items.map(item => item.keyword).join(" → ")}를 떠올리세요.`
+          ? `${mnemonic} 순서로 핵심 항목을 떠올리세요: ${items.map(item => item.keyword).join(" → ")}`
           : "키워드 첫 글자를 순서대로 떠올리세요."
       };
     }
@@ -5569,7 +5612,7 @@
       if (Array.isArray(items) && items.length) {
         return items
           .map(item => ({
-            letter: String(item?.letter || "").trim().charAt(0),
+            letter: String(item?.letter || "").trim().slice(0, 4),
             keyword: String(item?.keyword || "").trim()
           }))
           .filter(item => item.letter && item.keyword);
@@ -5585,8 +5628,14 @@
       const cleaned = String(keyword || "")
         .replace(/^[\s"'“”‘’()[\]{}<>]+/, "")
         .replace(/^(및|또는|그리고|하고|하며|를|을|이|가|은|는|의|에|에서)\s+/, "")
+        .replace(/^[0-9.,%㎡m²m\s]+/, "")
         .trim();
-      return Array.from(cleaned)[0] || "";
+      const first = Array.from(cleaned).find(char => /[가-힣A-Za-z]/.test(char));
+      return first || "";
+    }
+
+    function isNumericKeyword(value) {
+      return /^[0-9][0-9,.\s]*(?:%|㎡|m²|m|개|명|년|월|일|kg|톤)?$/i.test(String(value || "").trim());
     }
 
     function buildEasyExplanation(question, keywords) {
@@ -5639,7 +5688,7 @@
               : `<p class="rich-paragraph">키워드를 만들 답안이 없습니다.</p>`}
           </section>
           <section class="memory-card-block">
-            <h4>두문자 암기법</h4>
+            <h4>${card.mnemonicType === "number" ? "숫자 암기" : "두문자 암기법"}</h4>
             <p class="mnemonic-text">${escapeHtml(card.mnemonic || "두문자 없음")}</p>
             ${card.mnemonicItems?.length
               ? `<ul class="mnemonic-map">${card.mnemonicItems.map(item => `<li><b>${escapeHtml(item.letter)}</b><span>${escapeHtml(item.keyword)}</span></li>`).join("")}</ul>`
@@ -6938,24 +6987,31 @@
     }
 
     function answerPhrases(answer) {
+      const numberComma = "__NUM_COMMA__";
       const source = String(answer || "")
+        .replace(/(\d),(?=\d{3}\b)/g, `$1${numberComma}`)
         .replace(/\|/g, "\n")
         .replace(/([①-⑳])/g, "\n$1 ")
         .replace(/(\d+)\s*[.)]\s*/g, "\n$1. ");
       const chunks = source
         .split(/[\n,，;；]+/)
-        .map(normalizeAnswerPhrase)
+        .map(chunk => normalizeAnswerPhrase(chunk.replaceAll(numberComma, ",")))
         .filter(Boolean);
       return uniqueMeaningfulPhrases(chunks).slice(0, 20);
     }
 
     function normalizeAnswerPhrase(value) {
       return String(value || "")
+        .replace(/\{\{([^{}]+)\}\}/g, "$1")
+        .replace(/\[\/?박스\]/g, " ")
+        .replace(/\[%\]/g, "%")
+        .replace(/\[[^\]]{1,8}\]/g, " ")
         .replace(/^[\s\-•*]+/, "")
         .replace(/^[①-⑳]\s*/, "")
         .replace(/^\d+\s*[.)]\s*/, "")
         .replace(/^(정답|답|메모|공식|대입|계산|풀이|결과|출처)\s*[:：]\s*/i, "")
         .replace(/\s+/g, " ")
+        .replace(/\s+([을를이가은는의])(?=\s|$)/g, "$1")
         .replace(/[.。]+$/g, "")
         .trim();
     }
