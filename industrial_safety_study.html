@@ -3109,7 +3109,7 @@
     <header class="mobile-header" aria-label="모바일 상단 메뉴">
       <button id="openDrawerBtn" class="mobile-icon-btn" type="button" aria-label="시험 목록 열기">☰</button>
       <h1 class="mobile-title">Sushi Vinegar</h1>
-      <button id="toggleSearchBtn" class="mobile-icon-btn" type="button" aria-label="검색 열기" aria-keyshortcuts="/">⌕</button>
+      <button id="toggleSearchBtn" class="mobile-icon-btn" type="button" aria-label="검색 열기" aria-keyshortcuts="S">⌕</button>
     </header>
 
     <div id="mobileBackdrop" class="mobile-backdrop" aria-hidden="true"></div>
@@ -3196,10 +3196,10 @@
                 <span class="pill" id="cardLevel">중요도</span>
               </div>
               <div class="step-controls" aria-label="문제 이동">
-                <button id="prevBtn">← 이전 문제</button>
-                <button id="nextBtn">다음 문제 →</button>
+                <button id="prevBtn" aria-keyshortcuts="Q">← 이전 문제</button>
+                <button id="nextBtn" aria-keyshortcuts="P">다음 문제 →</button>
               </div>
-              <button id="studyFavoriteBtn" type="button" class="favorite-button study-favorite" aria-keyshortcuts="F">☆ 중요</button>
+              <button id="studyFavoriteBtn" type="button" class="favorite-button study-favorite" aria-keyshortcuts="I">☆ 중요</button>
             </div>
             <div class="question">
               <div id="questionText" class="question-box">문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.</div>
@@ -6282,12 +6282,14 @@
       return {
         ArrowLeft: () => moveCard(-1),
         ArrowRight: () => moveCard(1),
+        q: () => moveCard(-1),
+        p: () => moveCard(1),
         Enter: () => handlePrimaryStudyAction(),
         Space: () => handlePrimaryStudyAction(),
         "1": () => studyMode === "question" && markWrong(),
         "2": () => studyMode === "question" && markMastered(),
-        f: () => toggleCurrentStudyFavorite(),
-        "/": () => openMobileSearch(),
+        i: () => toggleCurrentStudyFavorite(),
+        s: () => openMobileSearch(),
         m: () => openMobileDrawer()
       };
     }
@@ -6298,7 +6300,10 @@
       const aliases = {
         " ": "Space",
         Spacebar: "Space",
-        ㄹ: "f",
+        ㅂ: "q",
+        ㅔ: "p",
+        ㄴ: "s",
+        ㅑ: "i",
         ㅡ: "m"
       };
       return aliases[key] || key;
