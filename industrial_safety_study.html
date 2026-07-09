@@ -799,14 +799,37 @@
 
     .study-edit-row {
       display: flex;
+      gap: 8px;
       justify-content: flex-start;
     }
 
-    .study-edit-button {
+    .study-edit-button,
+    .keyboard-mode-button {
       border-color: #c8ddd6;
       background: #f5faf8;
       color: #174238;
       font-weight: 900;
+    }
+
+    .keyboard-mode-button {
+      display: none;
+      min-width: 44px;
+    }
+
+    .keyboard-mode-button.active {
+      color: #fff;
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .shortcut-capture {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
     }
 
     .compose-preview-panel {
@@ -2887,6 +2910,15 @@
         font-size: 13px;
       }
 
+      .keyboard-mode-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 12px;
+        font-size: 18px;
+      }
+
       .range-box {
         padding: 12px;
       }
@@ -3161,6 +3193,8 @@
               </div>
               <div class="study-edit-row">
                 <button id="studyEditBtn" class="study-edit-button" type="button">이 문제 수정</button>
+                <button id="phoneKeyboardBtn" class="keyboard-mode-button" type="button" aria-label="키보드 조작" aria-pressed="false">⌨</button>
+                <input id="shortcutCapture" class="shortcut-capture" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="키보드 조작 입력">
               </div>
             </div>
           </article>
@@ -3592,6 +3626,8 @@
       queueStatus: document.querySelector("#queueStatus"),
       showAnswerBtn: document.querySelector("#showAnswerBtn"),
       studyEditBtn: document.querySelector("#studyEditBtn"),
+      phoneKeyboardBtn: document.querySelector("#phoneKeyboardBtn"),
+      shortcutCapture: document.querySelector("#shortcutCapture"),
       studyFavoriteBtn: document.querySelector("#studyFavoriteBtn"),
       wrongBtn: document.querySelector("#wrongBtn"),
       masterBtn: document.querySelector("#masterBtn"),
@@ -3768,6 +3804,17 @@
     els.composeManageModeBtn.addEventListener("click", () => setComposeMode("manage"));
     els.showAnswerBtn.addEventListener("click", handlePrimaryStudyAction);
     els.studyEditBtn.addEventListener("click", editCurrentStudyQuestion);
+    els.phoneKeyboardBtn.addEventListener("click", focusShortcutCapture);
+    els.shortcutCapture.addEventListener("keydown", event => {
+      if (handlePhoneStudyShortcut(event)) {
+        event.stopPropagation();
+        clearShortcutCapture();
+        if (document.activeElement !== els.searchInput) keepShortcutCaptureFocused();
+      }
+    });
+    els.shortcutCapture.addEventListener("input", handleShortcutCaptureInput);
+    els.shortcutCapture.addEventListener("focus", updateShortcutCaptureState);
+    els.shortcutCapture.addEventListener("blur", updateShortcutCaptureState);
     [els.answerHintBtn, els.answerKeywordBtn, els.answerFullBtn].forEach(button => {
       button.addEventListener("click", () => setAnswerStage(button.dataset.answerStage));
     });
@@ -6188,33 +6235,91 @@
     function handlePhoneStudyShortcut(event) {
       if (!isPhoneStudyShortcutReady(event)) return false;
 
-      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
-      const actions = {
+      if (!runPhoneStudyShortcut(event.key)) return false;
+      event.preventDefault();
+      return true;
+    }
+
+    function isPhoneStudyShortcutReady(event) {
+      if (activeView !== "study" || tableEditorState || slashState || event.ctrlKey || event.altKey || event.metaKey) return false;
+      if (!isPhoneStudySurface()) return false;
+      const target = event.target;
+      if (!target) return true;
+      if (typeof target.closest !== "function") return true;
+      if (target === els.shortcutCapture) return true;
+      return !target.closest("input, textarea, select, [contenteditable='true']");
+    }
+
+    function isPhoneStudySurface() {
+      return window.matchMedia("(max-width: 820px)").matches && (navigator.maxTouchPoints || 0) > 0;
+    }
+
+    function phoneStudyShortcutActions() {
+      return {
         ArrowLeft: () => moveCard(-1),
         ArrowRight: () => moveCard(1),
         Enter: () => handlePrimaryStudyAction(),
-        " ": () => handlePrimaryStudyAction(),
+        Space: () => handlePrimaryStudyAction(),
         "1": () => studyMode === "question" && markWrong(),
         "2": () => studyMode === "question" && markMastered(),
         f: () => toggleCurrentStudyFavorite(),
         "/": () => openMobileSearch(),
         m: () => openMobileDrawer()
       };
+    }
 
-      const action = actions[key];
+    function normalizePhoneShortcutKey(value) {
+      const raw = String(value || "");
+      const key = raw.length === 1 ? raw.toLowerCase() : raw;
+      const aliases = {
+        " ": "Space",
+        Spacebar: "Space",
+        ㄹ: "f",
+        ㅡ: "m"
+      };
+      return aliases[key] || key;
+    }
+
+    function runPhoneStudyShortcut(value) {
+      const key = normalizePhoneShortcutKey(value);
+      const action = phoneStudyShortcutActions()[key];
       if (!action) return false;
-      event.preventDefault();
       action();
       return true;
     }
 
-    function isPhoneStudyShortcutReady(event) {
-      if (activeView !== "study" || tableEditorState || slashState || event.ctrlKey || event.altKey || event.metaKey) return false;
-      if (!window.matchMedia("(max-width: 820px)").matches || navigator.maxTouchPoints < 1) return false;
-      const target = event.target;
-      if (!target) return true;
-      if (typeof target.closest !== "function") return true;
-      return !target.closest("input, textarea, select, [contenteditable='true']");
+    function handleShortcutCaptureInput() {
+      const values = Array.from(els.shortcutCapture.value || "");
+      clearShortcutCapture();
+      let handled = false;
+      values.forEach(value => {
+        if (runPhoneStudyShortcut(value)) handled = true;
+      });
+      if (handled && document.activeElement !== els.searchInput) keepShortcutCaptureFocused();
+    }
+
+    function focusShortcutCapture() {
+      if (!isPhoneStudySurface()) return;
+      els.shortcutCapture.focus({ preventScroll: true });
+      clearShortcutCapture();
+      updateShortcutCaptureState();
+    }
+
+    function keepShortcutCaptureFocused() {
+      if (document.activeElement !== els.shortcutCapture && isPhoneStudySurface()) {
+        requestAnimationFrame(() => els.shortcutCapture.focus({ preventScroll: true }));
+      }
+      updateShortcutCaptureState();
+    }
+
+    function clearShortcutCapture() {
+      els.shortcutCapture.value = "";
+    }
+
+    function updateShortcutCaptureState() {
+      const active = document.activeElement === els.shortcutCapture;
+      els.phoneKeyboardBtn.classList.toggle("active", active);
+      els.phoneKeyboardBtn.setAttribute("aria-pressed", String(active));
     }
 
     function openMobileSearch() {
