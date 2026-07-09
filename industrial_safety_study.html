@@ -832,6 +832,140 @@
       pointer-events: none;
     }
 
+    .memory-card-button {
+      border-color: #b9d7cf;
+      background: #eef8f5;
+      color: #12483f;
+      font-weight: 900;
+    }
+
+    .memory-card-panel {
+      display: grid;
+      gap: 14px;
+      border-top: 6px solid #7c6331;
+    }
+
+    .memory-card-head {
+      display: grid;
+      gap: 8px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .memory-card-head h3 {
+      margin: 0;
+      color: #123d36;
+      font-size: 20px;
+      line-height: 1.45;
+    }
+
+    .memory-card-status {
+      display: inline-flex;
+      width: fit-content;
+      padding: 5px 9px;
+      color: #6a4d12;
+      border: 1px solid #dfc78b;
+      border-radius: 999px;
+      background: #fff8df;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .memory-card-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .memory-card-block {
+      display: grid;
+      gap: 8px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfdfc;
+    }
+
+    .memory-card-block.wide {
+      grid-column: 1 / -1;
+    }
+
+    .memory-card-block h4 {
+      margin: 0;
+      color: #174238;
+      font-size: 14px;
+    }
+
+    .memory-keywords {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .memory-keywords li {
+      padding: 7px 9px;
+      border: 1px solid #cfe0dc;
+      border-radius: 999px;
+      background: #fff;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .mnemonic-text {
+      margin: 0;
+      color: #7b5214;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .blank-quiz {
+      margin: 0;
+      padding: 14px;
+      border: 1px dashed #c9b16d;
+      border-radius: 8px;
+      background: #fff9e8;
+      line-height: 1.7;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
+    .memory-card-actions {
+      position: sticky;
+      bottom: 0;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px 0 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0), #fff 28%);
+    }
+
+    .memory-card-actions button {
+      min-height: 48px;
+      font-weight: 900;
+    }
+
+    .memory-card-actions .known {
+      color: #134f45;
+      border-color: #a9cbc4;
+      background: #f1f8f6;
+    }
+
+    .memory-card-actions .confused {
+      color: #7b5214;
+      border-color: #dfc78b;
+      background: #fff8df;
+    }
+
+    .memory-card-actions .unknown {
+      color: var(--accent-2);
+      border-color: #e3b0a7;
+      background: #fff8f6;
+    }
+
     .compose-preview-panel {
       display: grid;
       gap: 12px;
@@ -2919,6 +3053,33 @@
         font-size: 18px;
       }
 
+      .memory-card-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .memory-card-panel {
+        gap: 10px;
+      }
+
+      .memory-card-block {
+        padding: 12px;
+      }
+
+      .memory-card-head h3 {
+        font-size: 17px;
+      }
+
+      .memory-card-actions {
+        bottom: 48px;
+        gap: 6px;
+      }
+
+      .memory-card-actions button {
+        min-height: 42px;
+        padding: 0 8px;
+        font-size: 13px;
+      }
+
       .range-box {
         padding: 12px;
       }
@@ -3216,12 +3377,14 @@
                 <button id="masterBtn" class="master-action" aria-keyshortcuts="2">맞혔음</button>
               </div>
               <div class="study-edit-row">
+                <button id="memoryCardBtn" class="memory-card-button" type="button">암기 카드로 보기</button>
                 <button id="studyEditBtn" class="study-edit-button" type="button">이 문제 수정</button>
                 <button id="phoneKeyboardBtn" class="keyboard-mode-button" type="button" aria-label="키보드 조작" aria-pressed="false">⌨</button>
                 <input id="shortcutCapture" class="shortcut-capture" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="키보드 조작 입력">
               </div>
             </div>
           </article>
+          <article id="memoryCardPanel" class="panel memory-card-panel hidden" aria-label="암기 카드"></article>
           <aside id="studyRangeBox" class="panel side-panel range-box collapsed">
             <div class="range-head">
               <h2 class="mini-title">학습 범위</h2>
@@ -3649,6 +3812,8 @@
       clearQueueBtn: document.querySelector("#clearQueueBtn"),
       queueStatus: document.querySelector("#queueStatus"),
       showAnswerBtn: document.querySelector("#showAnswerBtn"),
+      memoryCardBtn: document.querySelector("#memoryCardBtn"),
+      memoryCardPanel: document.querySelector("#memoryCardPanel"),
       studyEditBtn: document.querySelector("#studyEditBtn"),
       phoneKeyboardBtn: document.querySelector("#phoneKeyboardBtn"),
       shortcutCapture: document.querySelector("#shortcutCapture"),
@@ -3786,6 +3951,7 @@
 
     let slashState = null;
     let tableEditorState = null;
+    let activeMemoryCardQuestionId = "";
 
     setupTextTools();
     setupComposeBlocks();
@@ -3827,6 +3993,7 @@
     els.composeTheoryModeBtn.addEventListener("click", () => setComposeMode("theory"));
     els.composeManageModeBtn.addEventListener("click", () => setComposeMode("manage"));
     els.showAnswerBtn.addEventListener("click", handlePrimaryStudyAction);
+    els.memoryCardBtn.addEventListener("click", openCurrentMemoryCard);
     els.studyEditBtn.addEventListener("click", editCurrentStudyQuestion);
     els.phoneKeyboardBtn.addEventListener("click", focusShortcutCapture);
     els.shortcutCapture.addEventListener("keydown", event => {
@@ -3981,6 +4148,8 @@
           masteredAt: q.masteredAt || "",
           tags: normalizeTags(q.tags),
           favorite: Boolean(q.favorite),
+          memoryCard: normalizeMemoryCard(q.memoryCard),
+          memoryCardStatus: ["known", "confused", "unknown"].includes(q.memoryCardStatus) ? q.memoryCardStatus : "",
           updatedAt: q.updatedAt || q.masteredAt || ""
         })),
         theories: Array.isArray(saved.theories) ? saved.theories.map(theory => ({
@@ -4424,6 +4593,8 @@
           answerImageName: cloudMemo.payload.answerImageName || "",
           tags: normalizeTags(cloudMemo.payload.tags),
           favorite: Boolean(cloudMemo.payload.favorite),
+          memoryCard: normalizeMemoryCard(cloudMemo.payload.memoryCard),
+          memoryCardStatus: ["known", "confused", "unknown"].includes(cloudMemo.payload.memoryCardStatus) ? cloudMemo.payload.memoryCardStatus : "",
           status: row.status || "new",
           wrongCount: row.wrong_count || 0,
           masteredAt: row.mastered_at || "",
@@ -4563,6 +4734,8 @@
         answerImageName: question.answerImageName || "",
         tags: normalizeTags(question.tags),
         favorite: Boolean(question.favorite),
+        memoryCard: normalizeMemoryCard(question.memoryCard),
+        memoryCardStatus: question.memoryCardStatus || "",
         updatedAt: question.updatedAt || ""
       };
       const hasPayload = Object.values(payload).some(Boolean);
@@ -5171,7 +5344,9 @@
         els.nextBtn.textContent = "다음 문제 →";
         els.wrongBtn.classList.remove("hidden");
         els.masterBtn.classList.remove("hidden");
+        els.memoryCardBtn.classList.add("hidden");
         els.studyEditBtn.classList.add("hidden");
+        renderMemoryCardPanel(null);
         return;
       }
 
@@ -5189,7 +5364,10 @@
       els.nextBtn.textContent = "다음 문제 →";
       els.wrongBtn.classList.remove("hidden");
       els.masterBtn.classList.remove("hidden");
+      els.memoryCardBtn.classList.remove("hidden");
+      els.memoryCardBtn.textContent = current.memoryCard ? "암기 카드로 보기" : "암기 카드 만들기";
       els.studyEditBtn.classList.remove("hidden");
+      renderMemoryCardPanel(activeMemoryCardQuestionId === current.id ? current : null);
     }
 
     function renderTheoryStudy() {
@@ -5207,7 +5385,9 @@
       els.myAnswer.classList.add("hidden");
       els.wrongBtn.classList.add("hidden");
       els.masterBtn.classList.add("hidden");
+      els.memoryCardBtn.classList.add("hidden");
       els.studyEditBtn.classList.add("hidden");
+      renderMemoryCardPanel(null);
       els.showAnswerBtn.textContent = "문제로 만들기";
       updateStudyFavoriteButton(current || null);
       els.prevBtn.textContent = "← 이전";
@@ -5248,6 +5428,187 @@
     function toggleMemoryMode() {
       memoryMode = !memoryMode;
       renderStudyDisplayOptions();
+    }
+
+    function openCurrentMemoryCard() {
+      const q = getCurrentQuestion();
+      if (!q) return;
+      ensureMemoryCard(q);
+      activeMemoryCardQuestionId = q.id;
+      q.updatedAt = new Date().toISOString();
+      persist();
+      renderMemoryCardPanel(q);
+      renderBank();
+      requestAnimationFrame(() => els.memoryCardPanel.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+    }
+
+    function openMemoryCardById(id) {
+      const q = state.questions.find(item => item.id === id);
+      if (!q) return;
+      ensureMemoryCard(q);
+      q.updatedAt = new Date().toISOString();
+      state.activeExamId = q.examId || DEFAULT_EXAM_ID;
+      els.searchInput.value = "";
+      els.categoryFilter.value = "all";
+      els.tagFilter.value = "all";
+      els.statusFilter.value = "all";
+      els.favoriteFilter.checked = false;
+      reviewQueueIds = [];
+      studyMode = "question";
+      activeMemoryCardQuestionId = q.id;
+      persist();
+      setView("study");
+      render();
+      const questions = filteredQuestions();
+      const index = questions.findIndex(item => item.id === q.id);
+      currentIndex = index >= 0 ? index : 0;
+      renderStudy();
+      requestAnimationFrame(() => els.memoryCardPanel.scrollIntoView({ behavior: "smooth", block: "nearest" }));
+    }
+
+    function ensureMemoryCard(question) {
+      const existing = normalizeMemoryCard(question.memoryCard);
+      question.memoryCard = existing || buildMemoryCard(question);
+      return question.memoryCard;
+    }
+
+    function normalizeMemoryCard(card) {
+      if (!card || typeof card !== "object") return null;
+      const keywords = Array.isArray(card.keywords) ? card.keywords.map(item => String(item || "").trim()).filter(Boolean) : [];
+      return {
+        keywords,
+        mnemonic: String(card.mnemonic || "").trim(),
+        easyExplanation: String(card.easyExplanation || "").trim(),
+        blankQuiz: String(card.blankQuiz || "").trim()
+      };
+    }
+
+    function buildMemoryCard(question) {
+      const answer = String(question.answer || "").trim();
+      const keywords = memoryKeywords(answer);
+      return {
+        keywords,
+        mnemonic: buildMnemonic(keywords),
+        easyExplanation: buildEasyExplanation(question, keywords),
+        blankQuiz: buildBlankQuiz(answer, keywords)
+      };
+    }
+
+    function memoryKeywords(answer) {
+      const phrases = answerPhrases(answer)
+        .flatMap(phrase => phrase.split(/\s*(?:및|또는|하고|하며|,|，|·|\/)\s*/))
+        .map(normalizeAnswerPhrase)
+        .filter(item => item.length >= 2);
+      const fallback = answerKeywords(answer);
+      return uniqueMeaningfulPhrases([...phrases, ...fallback]).slice(0, 8);
+    }
+
+    function buildMnemonic(keywords) {
+      const letters = keywords
+        .map(keyword => compactText(keyword).charAt(0))
+        .filter(Boolean)
+        .join("");
+      return letters || "핵심어 첫 글자";
+    }
+
+    function buildEasyExplanation(question, keywords) {
+      if (keywords.length) {
+        return `${keywords.join(", ")} 순서로 떠올리면 됩니다. 문제의 상황에서 무엇을 확인하고, 어떤 조치를 하고, 누가 지켜보며, 어떤 장비를 쓰는지 연결해서 외우세요.`;
+      }
+      return `문제의 요구사항을 작은 조치 단위로 나누어 순서대로 떠올리면 됩니다. 원문 답안을 그대로 외우기보다 핵심 행동을 먼저 잡고 문장으로 붙여보세요.`;
+    }
+
+    function buildBlankQuiz(answer, keywords) {
+      let quiz = String(answer || "");
+      keywords.slice(0, 6).forEach(keyword => {
+        const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        quiz = quiz.replace(new RegExp(escaped, "g"), "____");
+      });
+      if (quiz === answer && keywords.length) {
+        keywords.slice(0, 5).forEach(keyword => {
+          const first = keyword.split(/\s+/)[0];
+          if (first?.length >= 2) quiz = quiz.replace(first, "____");
+        });
+      }
+      return quiz || "____";
+    }
+
+    function renderMemoryCardPanel(question) {
+      if (!question) {
+        activeMemoryCardQuestionId = "";
+        els.memoryCardPanel.classList.add("hidden");
+        els.memoryCardPanel.innerHTML = "";
+        return;
+      }
+
+      const card = ensureMemoryCard(question);
+      const status = memoryCardStatusLabel(question.memoryCardStatus);
+      els.memoryCardPanel.classList.remove("hidden");
+      els.memoryCardPanel.innerHTML = `
+        <div class="memory-card-head">
+          <span class="memory-card-status">${status}</span>
+          <h3>${escapeHtml(question.question || "문제")}</h3>
+        </div>
+        <div class="memory-card-grid">
+          <section class="memory-card-block wide">
+            <h4>원문 답안</h4>
+            ${formatAnswerCardHtml(question)}
+          </section>
+          <section class="memory-card-block">
+            <h4>핵심 키워드</h4>
+            ${card.keywords.length
+              ? `<ul class="memory-keywords">${card.keywords.map(keyword => `<li>${escapeHtml(keyword)}</li>`).join("")}</ul>`
+              : `<p class="rich-paragraph">키워드를 만들 답안이 없습니다.</p>`}
+          </section>
+          <section class="memory-card-block">
+            <h4>두문자 암기법</h4>
+            <p class="mnemonic-text">${escapeHtml(card.mnemonic || "두문자 없음")}</p>
+          </section>
+          <section class="memory-card-block wide">
+            <h4>쉬운 설명</h4>
+            <p class="rich-paragraph">${escapeHtml(card.easyExplanation || "답안을 작은 조치 단위로 나누어 외우세요.")}</p>
+          </section>
+          <section class="memory-card-block wide">
+            <h4>빈칸 퀴즈</h4>
+            <p class="blank-quiz">${escapeHtml(card.blankQuiz || "____")}</p>
+          </section>
+        </div>
+        <div class="memory-card-actions" aria-label="암기 카드 평가">
+          <button class="known" type="button" data-memory-result="known">외움</button>
+          <button class="confused" type="button" data-memory-result="confused">헷갈림</button>
+          <button class="unknown" type="button" data-memory-result="unknown">모름</button>
+        </div>
+      `;
+      els.memoryCardPanel.querySelectorAll("[data-memory-result]").forEach(button => {
+        button.addEventListener("click", () => markMemoryCard(question.id, button.dataset.memoryResult));
+      });
+    }
+
+    function memoryCardStatusLabel(status) {
+      if (status === "known") return "암기 카드 · 외움";
+      if (status === "confused") return "암기 카드 · 헷갈림";
+      if (status === "unknown") return "암기 카드 · 모름";
+      return "암기 카드 · 미평가";
+    }
+
+    function markMemoryCard(id, result) {
+      const q = state.questions.find(item => item.id === id);
+      if (!q) return;
+      ensureMemoryCard(q);
+      q.memoryCardStatus = result;
+      q.updatedAt = new Date().toISOString();
+      if (result === "known") {
+        q.status = "mastered";
+        q.masteredAt = new Date().toISOString();
+      } else {
+        q.status = "wrong";
+        q.wrongCount = (q.wrongCount || 0) + 1;
+        q.masteredAt = "";
+      }
+      persist();
+      render();
+      activeMemoryCardQuestionId = q.id;
+      renderMemoryCardPanel(q);
     }
 
     function formatStagedAnswerHtml(question) {
@@ -5956,6 +6317,7 @@
           <div class="wrong-card-meta">
             <span class="pill">오답 ${q.wrongCount || 1}회</span>
             <span class="pill">중요도 ${escapeHtml(q.level || "중")}</span>
+            ${q.memoryCardStatus ? `<span class="pill">${escapeHtml(memoryCardStatusLabel(q.memoryCardStatus).replace("암기 카드 · ", ""))}</span>` : ""}
             ${q.favorite ? `<span class="favorite-mark">★ 중요</span>` : ""}
           </div>
           <h3>${escapeHtml(q.question)}</h3>
@@ -5963,6 +6325,7 @@
           ${renderTags(q.tags)}
           <p>${escapeHtml(q.answer || q.answerImageName || "정답 없음")}</p>
           <footer class="wrong-card-actions">
+            <button data-memory-card="${q.id}">암기카드</button>
             <button data-edit="${q.id}">수정</button>
             <button data-master="${q.id}">암기 완료</button>
           </footer>
@@ -6019,9 +6382,11 @@
                   <span class="pill">${escapeHtml(q.category || "미분류")}</span>
                   <span class="pill">중요도 ${escapeHtml(q.level || "중")}</span>
                   <span class="pill">${status}</span>
+                  ${q.memoryCard ? `<span class="pill">${escapeHtml(memoryCardStatusLabel(q.memoryCardStatus).replace("암기 카드 · ", "카드 "))}</span>` : ""}
                   ${q.favorite ? `<span class="favorite-mark">★ 중요</span>` : ""}
                 </div>
                 <div class="bank-card-actions">
+                  <button data-memory-card="${q.id}">${q.memoryCard ? "암기카드" : "카드 만들기"}</button>
                   <button data-quick-edit="${q.id}">빠른 수정</button>
                   <button data-edit="${q.id}">전체 수정</button>
                   <button data-delete="${q.id}" class="danger">삭제</button>
@@ -6131,6 +6496,9 @@
       root.querySelectorAll("[data-edit]").forEach(button => {
         button.addEventListener("click", () => editQuestion(button.dataset.edit));
       });
+      root.querySelectorAll("[data-memory-card]").forEach(button => {
+        button.addEventListener("click", () => openMemoryCardById(button.dataset.memoryCard));
+      });
       root.querySelectorAll("[data-delete]").forEach(button => {
         button.addEventListener("click", () => deleteQuestion(button.dataset.delete));
       });
@@ -6152,6 +6520,8 @@
       const form = button.closest("[data-quick-form]");
       const q = state.questions.find(item => item.id === button.dataset.quickSave);
       if (!form || !q) return;
+      const previousQuestion = q.question || "";
+      const previousAnswer = q.answer || "";
       q.category = form.querySelector("[data-quick-field='category']").value.trim() || "미분류";
       q.level = form.querySelector("[data-quick-field='level']").value || "중";
       q.question = form.querySelector("[data-quick-field='question']").value.trim();
@@ -6162,6 +6532,10 @@
       if (!q.question || !q.answer) {
         alert("문제와 정답은 비워둘 수 없습니다.");
         return;
+      }
+      if (previousQuestion !== q.question || previousAnswer !== q.answer) {
+        q.memoryCard = null;
+        q.memoryCardStatus = "";
       }
       const imageFile = form.querySelector("[data-quick-image-file]")?.files?.[0];
       const removeImage = form.querySelector("[data-quick-image-remove]")?.checked;
@@ -6830,13 +7204,16 @@
       const existing = state.questions.find(q => q.id === id);
       const questionPhoto = pendingPhotoQuestions[0] || null;
       const answerPhoto = els.photoPairMode.checked ? (pendingPhotoQuestions[1] || null) : null;
+      const nextQuestion = els.questionInput.value.trim();
+      const nextAnswer = els.answerInput.value.trim();
+      const keepMemoryCard = existing && existing.question === nextQuestion && existing.answer === nextAnswer;
       const data = {
         id,
         examId: existing?.examId || state.activeExamId,
         category: els.categoryInput.value.trim() || "미분류",
         level: els.levelInput.value,
-        question: els.questionInput.value.trim(),
-        answer: els.answerInput.value.trim(),
+        question: nextQuestion,
+        answer: nextAnswer,
         memo: els.memoInput.value.trim(),
         tags: normalizeTags(els.tagsInput.value),
         favorite: Boolean(existing?.favorite),
@@ -6847,6 +7224,8 @@
         status: existing?.status || "new",
         wrongCount: existing?.wrongCount || 0,
         masteredAt: existing?.masteredAt || "",
+        memoryCard: keepMemoryCard ? existing.memoryCard : null,
+        memoryCardStatus: keepMemoryCard ? existing.memoryCardStatus || "" : "",
         updatedAt: new Date().toISOString()
       };
 
