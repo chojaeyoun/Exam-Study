@@ -2729,6 +2729,181 @@
       }
     }
 
+    @media (max-width: 820px) and (max-height: 820px) {
+      body {
+        padding-bottom: 64px;
+      }
+
+      .mobile-header {
+        min-height: 42px;
+        padding: 6px 10px;
+      }
+
+      .mobile-title {
+        font-size: 15px;
+      }
+
+      .mobile-icon-btn {
+        width: 38px;
+        min-height: 38px;
+      }
+
+      .main {
+        padding: 8px 10px 10px;
+      }
+
+      .topbar {
+        display: none;
+      }
+
+      body.search-open .topbar {
+        display: grid;
+      }
+
+      .topbar .toolbar {
+        display: none;
+      }
+
+      .study-summary {
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .study-summary h2 {
+        font-size: 19px;
+      }
+
+      .study-summary p,
+      .progress-box {
+        display: none;
+      }
+
+      .summary-metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+        margin-top: 8px;
+      }
+
+      .summary-chip {
+        min-height: 44px;
+        padding: 6px 4px;
+      }
+
+      .mode-tabs {
+        margin-top: 8px;
+      }
+
+      .mode-tabs button,
+      .answer-stage-tabs button,
+      .memory-toggle {
+        min-height: 36px;
+        padding: 0 8px;
+        font-size: 12px;
+      }
+
+      .study-grid {
+        gap: 8px;
+      }
+
+      .card {
+        padding: 12px;
+      }
+
+      .study-options {
+        gap: 6px;
+      }
+
+      .pillrow {
+        gap: 6px;
+      }
+
+      .pillgroup {
+        gap: 4px;
+      }
+
+      .pill {
+        padding: 6px 8px;
+        font-size: 12px;
+      }
+
+      .pillrow .step-controls {
+        gap: 6px;
+      }
+
+      .pillrow .step-controls button,
+      .study-favorite {
+        min-height: 36px;
+        padding: 0 8px;
+        font-size: 12px;
+      }
+
+      .question {
+        gap: 8px;
+      }
+
+      .question-box {
+        max-height: 34vh;
+        overflow: auto;
+        padding: 12px;
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .question-main {
+        font-size: 16px;
+      }
+
+      .question-option {
+        grid-template-columns: 26px minmax(0, 1fr);
+        padding: 8px;
+        font-size: 14px;
+      }
+
+      .my-answer-wrap textarea {
+        min-height: 58px;
+      }
+
+      .answer.visible {
+        max-height: 28vh;
+        overflow: auto;
+        padding: 12px;
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .study-controls {
+        gap: 8px;
+      }
+
+      .review-actions {
+        grid-template-columns: 1.2fr 1fr 1fr;
+        gap: 6px;
+      }
+
+      .review-actions button,
+      .study-edit-button {
+        min-height: 40px;
+        padding: 0 8px;
+        font-size: 13px;
+      }
+
+      .range-box {
+        padding: 12px;
+      }
+
+      .nav {
+        left: 6px;
+        right: 6px;
+        bottom: 6px;
+        padding: 4px;
+      }
+
+      .nav button {
+        min-height: 38px;
+        font-size: 11px;
+      }
+    }
+
     .local-ai-toggle {
       position: fixed;
       right: 18px;
@@ -2878,7 +3053,7 @@
     <header class="mobile-header" aria-label="모바일 상단 메뉴">
       <button id="openDrawerBtn" class="mobile-icon-btn" type="button" aria-label="시험 목록 열기">☰</button>
       <h1 class="mobile-title">Sushi Vinegar</h1>
-      <button id="toggleSearchBtn" class="mobile-icon-btn" type="button" aria-label="검색 열기">⌕</button>
+      <button id="toggleSearchBtn" class="mobile-icon-btn" type="button" aria-label="검색 열기" aria-keyshortcuts="/">⌕</button>
     </header>
 
     <div id="mobileBackdrop" class="mobile-backdrop" aria-hidden="true"></div>
@@ -2968,7 +3143,7 @@
                 <button id="prevBtn">← 이전 문제</button>
                 <button id="nextBtn">다음 문제 →</button>
               </div>
-              <button id="studyFavoriteBtn" type="button" class="favorite-button study-favorite">☆ 중요</button>
+              <button id="studyFavoriteBtn" type="button" class="favorite-button study-favorite" aria-keyshortcuts="F">☆ 중요</button>
             </div>
             <div class="question">
               <div id="questionText" class="question-box">문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.</div>
@@ -2980,9 +3155,9 @@
             </div>
             <div class="study-controls">
               <div class="review-actions" aria-label="정답 확인과 학습 결과">
-                <button id="showAnswerBtn" class="primary">정답 보기</button>
-                <button id="wrongBtn" class="wrong-action">틀렸음</button>
-                <button id="masterBtn" class="master-action">맞혔음</button>
+                <button id="showAnswerBtn" class="primary" aria-keyshortcuts="Enter Space">정답 보기</button>
+                <button id="wrongBtn" class="wrong-action" aria-keyshortcuts="1">틀렸음</button>
+                <button id="masterBtn" class="master-action" aria-keyshortcuts="2">맞혔음</button>
               </div>
               <div class="study-edit-row">
                 <button id="studyEditBtn" class="study-edit-button" type="button">이 문제 수정</button>
@@ -3654,6 +3829,7 @@
     window.addEventListener("resize", placeStudyRangeBox);
     document.addEventListener("keydown", event => {
       if (handleCircledNumberShortcut(event)) return;
+      if (handlePhoneStudyShortcut(event)) return;
       if (event.key === "Escape") {
         if (tableEditorState) {
           closeTableEditor();
@@ -6006,6 +6182,46 @@
       els.toggleSearchBtn.textContent = willOpen ? "×" : "⌕";
       if (willOpen) {
         requestAnimationFrame(() => els.searchInput.focus());
+      }
+    }
+
+    function handlePhoneStudyShortcut(event) {
+      if (!isPhoneStudyShortcutReady(event)) return false;
+
+      const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+      const actions = {
+        ArrowLeft: () => moveCard(-1),
+        ArrowRight: () => moveCard(1),
+        Enter: () => handlePrimaryStudyAction(),
+        " ": () => handlePrimaryStudyAction(),
+        "1": () => studyMode === "question" && markWrong(),
+        "2": () => studyMode === "question" && markMastered(),
+        f: () => toggleCurrentStudyFavorite(),
+        "/": () => openMobileSearch(),
+        m: () => openMobileDrawer()
+      };
+
+      const action = actions[key];
+      if (!action) return false;
+      event.preventDefault();
+      action();
+      return true;
+    }
+
+    function isPhoneStudyShortcutReady(event) {
+      if (activeView !== "study" || tableEditorState || slashState || event.ctrlKey || event.altKey || event.metaKey) return false;
+      if (!window.matchMedia("(max-width: 820px)").matches || navigator.maxTouchPoints < 1) return false;
+      const target = event.target;
+      if (!target) return true;
+      if (typeof target.closest !== "function") return true;
+      return !target.closest("input, textarea, select, [contenteditable='true']");
+    }
+
+    function openMobileSearch() {
+      if (!document.body.classList.contains("search-open")) {
+        toggleMobileSearch();
+      } else {
+        els.searchInput.focus();
       }
     }
 
