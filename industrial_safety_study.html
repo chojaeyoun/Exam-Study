@@ -5468,6 +5468,7 @@
       ensureMemoryCard(q);
       activeMemoryCardQuestionId = q.id;
       q.updatedAt = new Date().toISOString();
+      hideStudyAnswer();
       persist();
       renderMemoryCardPanel(q);
       renderBank();
@@ -5645,6 +5646,11 @@
       return `문제의 요구사항을 작은 조치 단위로 나누어 순서대로 떠올리면 됩니다. 원문 답안을 그대로 외우기보다 핵심 행동을 먼저 잡고 문장으로 붙여보세요.`;
     }
 
+    function hideStudyAnswer() {
+      els.answerText.classList.remove("visible");
+      hideAnswerAssist();
+    }
+
     function buildBlankQuiz(answer, keywords) {
       let quiz = String(answer || "");
       keywords.slice(0, 6).forEach(keyword => {
@@ -5677,10 +5683,6 @@
           <h3>${escapeHtml(question.question || "문제")}</h3>
         </div>
         <div class="memory-card-grid">
-          <section class="memory-card-block wide">
-            <h4>원문 답안</h4>
-            ${formatAnswerCardHtml(question)}
-          </section>
           <section class="memory-card-block">
             <h4>핵심 키워드</h4>
             ${card.keywords.length
@@ -5694,10 +5696,6 @@
               ? `<ul class="mnemonic-map">${card.mnemonicItems.map(item => `<li><b>${escapeHtml(item.letter)}</b><span>${escapeHtml(item.keyword)}</span></li>`).join("")}</ul>`
               : ""}
             <p class="mnemonic-sentence">${escapeHtml(card.mnemonicSentence || "핵심어 첫 글자를 순서대로 떠올리세요.")}</p>
-          </section>
-          <section class="memory-card-block wide">
-            <h4>쉬운 설명</h4>
-            <p class="rich-paragraph">${escapeHtml(card.easyExplanation || "답안을 작은 조치 단위로 나누어 외우세요.")}</p>
           </section>
           <section class="memory-card-block wide">
             <h4>빈칸 퀴즈</h4>
@@ -6934,8 +6932,12 @@
       const current = getCurrentQuestion();
       if (current) els.answerText.innerHTML = formatStagedAnswerHtml(current);
       els.answerText.classList.toggle("visible");
-      if (els.answerText.classList.contains("visible")) updateAnswerAssist();
-      else hideAnswerAssist();
+      if (els.answerText.classList.contains("visible")) {
+        renderMemoryCardPanel(null);
+        updateAnswerAssist();
+      } else {
+        hideAnswerAssist();
+      }
     }
 
     function updateAnswerAssist() {
