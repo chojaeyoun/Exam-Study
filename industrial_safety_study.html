@@ -498,6 +498,25 @@
       font-weight: 700;
     }
 
+    .pill.status-new {
+      color: var(--muted);
+      background: #fff;
+    }
+
+    .pill.status-wrong {
+      color: var(--accent-2);
+      border-color: #e7b6ae;
+      background: #fff6f4;
+      font-weight: 900;
+    }
+
+    .pill.status-mastered {
+      color: var(--accent-dark);
+      border-color: #9fcfc7;
+      background: #edf8f5;
+      font-weight: 900;
+    }
+
     .study-favorite {
       min-height: 32px;
       padding: 6px 12px;
@@ -3455,6 +3474,7 @@
                 <span class="pill" id="cardIndex">0 / 0</span>
                 <span class="pill" id="cardType">분야</span>
                 <span class="pill" id="cardLevel">중요도</span>
+                <span class="pill status-new" id="cardStatus">미학습</span>
               </div>
               <div class="step-controls" aria-label="문제 이동">
                 <button id="prevBtn" aria-keyshortcuts="Q">← 이전 문제</button>
@@ -3905,6 +3925,7 @@
       cardIndex: document.querySelector("#cardIndex"),
       cardType: document.querySelector("#cardType"),
       cardLevel: document.querySelector("#cardLevel"),
+      cardStatus: document.querySelector("#cardStatus"),
       questionText: document.querySelector("#questionText"),
       answerText: document.querySelector("#answerText"),
       myAnswer: document.querySelector("#myAnswer"),
@@ -5446,6 +5467,7 @@
       if (!current) {
         els.cardType.textContent = "분야";
         els.cardLevel.textContent = "중요도";
+        setStudyStatusBadge(null);
         els.questionText.innerHTML = formatQuestionHtml("문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.");
         els.answerText.innerHTML = "";
         els.answerText.classList.remove("visible");
@@ -5466,6 +5488,7 @@
 
       els.cardType.textContent = current.category || "미분류";
       els.cardLevel.textContent = `${detectQuestionTypes(current)[0]} · 중요도 ${current.level || "중"}`;
+      setStudyStatusBadge(current);
       els.questionText.innerHTML = formatQuestionCardHtml(current);
       els.answerText.innerHTML = formatStagedAnswerHtml(current);
       els.answerText.classList.remove("visible");
@@ -5494,6 +5517,7 @@
 
       els.cardType.textContent = current?.category || "분야";
       els.cardLevel.textContent = "이론";
+      setStudyStatusBadge(null);
       els.myAnswer.value = "";
       hideAnswerAssist();
       els.myAnswer.classList.add("hidden");
@@ -5519,6 +5543,28 @@
         ? `<p class="theory-study-hint">문제화 힌트: ${escapeHtml(current.prompt)}</p>`
         : `<p class="theory-study-hint">이 이론을 문제로 만들면 제목을 기준으로 자동 질문을 생성합니다.</p>`;
       els.answerText.classList.add("visible");
+    }
+
+    function setStudyStatusBadge(question) {
+      els.cardStatus.classList.remove("status-new", "status-wrong", "status-mastered");
+      if (!question) {
+        els.cardStatus.textContent = "미학습";
+        els.cardStatus.classList.add("status-new");
+        return;
+      }
+      if (question.status === "wrong") {
+        const count = question.wrongCount || 1;
+        els.cardStatus.textContent = `오답 ${count}회`;
+        els.cardStatus.classList.add("status-wrong");
+        return;
+      }
+      if (question.status === "mastered") {
+        els.cardStatus.textContent = "암기 완료";
+        els.cardStatus.classList.add("status-mastered");
+        return;
+      }
+      els.cardStatus.textContent = "미학습";
+      els.cardStatus.classList.add("status-new");
     }
 
     function renderStudyDisplayOptions() {
