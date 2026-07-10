@@ -841,22 +841,30 @@
 
     .memory-card-panel {
       display: grid;
-      gap: 14px;
-      border-top: 6px solid #7c6331;
+      gap: 16px;
+      border-top: 4px solid #7c6331;
     }
 
     .memory-card-head {
       display: grid;
-      gap: 8px;
-      padding-bottom: 12px;
+      gap: 10px;
+      padding-bottom: 14px;
       border-bottom: 1px solid var(--line);
     }
 
     .memory-card-head h3 {
       margin: 0;
       color: #123d36;
-      font-size: 20px;
+      font-size: 19px;
       line-height: 1.45;
+    }
+
+    .memory-card-eyebrow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .memory-card-status {
@@ -873,17 +881,18 @@
 
     .memory-card-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 10px;
     }
 
     .memory-card-block {
       display: grid;
-      gap: 8px;
-      padding: 14px;
+      align-content: start;
+      gap: 10px;
+      padding: 13px;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fbfdfc;
+      background: #fff;
     }
 
     .memory-card-block.wide {
@@ -893,31 +902,33 @@
     .memory-card-block h4 {
       margin: 0;
       color: #174238;
-      font-size: 14px;
+      font-size: 13px;
+      letter-spacing: 0;
     }
 
     .memory-keywords {
       display: flex;
       flex-wrap: wrap;
-      gap: 7px;
+      gap: 6px;
       margin: 0;
       padding: 0;
       list-style: none;
     }
 
     .memory-keywords li {
-      padding: 7px 9px;
+      padding: 7px 10px;
       border: 1px solid #cfe0dc;
       border-radius: 999px;
-      background: #fff;
+      background: #f7fbfa;
       font-size: 13px;
       font-weight: 800;
+      line-height: 1.35;
     }
 
     .mnemonic-text {
       margin: 0;
       color: #7b5214;
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 900;
       letter-spacing: 0;
     }
@@ -932,7 +943,7 @@
 
     .mnemonic-map li {
       display: grid;
-      grid-template-columns: 30px minmax(0, 1fr);
+      grid-template-columns: 28px minmax(0, 1fr);
       gap: 8px;
       align-items: start;
       line-height: 1.5;
@@ -945,7 +956,7 @@
       color: #fff;
       border-radius: 999px;
       background: #7b5214;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .mnemonic-sentence {
@@ -956,11 +967,11 @@
 
     .blank-quiz {
       margin: 0;
-      padding: 14px;
+      padding: 16px;
       border: 1px dashed #c9b16d;
       border-radius: 8px;
       background: #fff9e8;
-      line-height: 1.7;
+      line-height: 1.75;
       word-break: keep-all;
       overflow-wrap: anywhere;
     }
@@ -3090,7 +3101,8 @@
       }
 
       .memory-card-panel {
-        gap: 10px;
+        gap: 12px;
+        border-top-width: 3px;
       }
 
       .memory-card-block {
@@ -3099,6 +3111,20 @@
 
       .memory-card-head h3 {
         font-size: 17px;
+        line-height: 1.42;
+      }
+
+      .memory-card-eyebrow {
+        gap: 6px;
+      }
+
+      .mnemonic-text {
+        font-size: 23px;
+      }
+
+      .blank-quiz {
+        padding: 13px;
+        line-height: 1.65;
       }
 
       .memory-card-actions {
@@ -5679,7 +5705,9 @@
       els.memoryCardPanel.classList.remove("hidden");
       els.memoryCardPanel.innerHTML = `
         <div class="memory-card-head">
-          <span class="memory-card-status">${status}</span>
+          <div class="memory-card-eyebrow">
+            <span class="memory-card-status">${status}</span>
+          </div>
           <h3>${escapeHtml(question.question || "문제")}</h3>
         </div>
         <div class="memory-card-grid">
