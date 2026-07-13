@@ -4498,6 +4498,12 @@
       return Date.parse(item.updatedAt || item.masteredAt || "") || 0;
     }
 
+    function studyQuestionRank(question) {
+      if (question.status === "wrong") return 0;
+      if (question.status === "mastered") return 2;
+      return 1;
+    }
+
     function sortItems(items) {
       const sort = els.sortFilter.value;
       const copy = [...items];
@@ -4507,6 +4513,17 @@
         copy.sort((a, b) => (b.wrongCount || 0) - (a.wrongCount || 0));
       }
       return copy;
+    }
+
+    function sortStudyQuestions(items) {
+      const sort = els.sortFilter.value;
+      return [...items].sort((a, b) => {
+        const rank = studyQuestionRank(a) - studyQuestionRank(b);
+        if (rank) return rank;
+        if (sort === "recent") return itemTime(b) - itemTime(a);
+        if (sort === "wrong") return (b.wrongCount || 0) - (a.wrongCount || 0) || itemTime(b) - itemTime(a);
+        return 0;
+      });
     }
 
     function filteredQuestions() {
@@ -4524,7 +4541,7 @@
         const searchOk = !search || text.includes(search);
         return examOk && categoryOk && tagOk && favoriteOk && statusOk && searchOk;
       });
-      if (!reviewQueueIds.length) return sortItems(matches);
+      if (!reviewQueueIds.length) return sortStudyQuestions(matches);
       return reviewQueueIds
         .map(id => matches.find(q => q.id === id))
         .filter(Boolean);
@@ -7346,12 +7363,7 @@
     function advanceAfterReview(reviewedId) {
       const questions = filteredQuestions();
       if (questions.length) {
-        const reviewedIndex = questions.findIndex(q => q.id === reviewedId);
-        if (reviewedIndex >= 0) {
-          currentIndex = (reviewedIndex + 1) % questions.length;
-        } else if (currentIndex >= questions.length) {
-          currentIndex = Math.max(0, questions.length - 1);
-        }
+        currentIndex = Math.min(currentIndex, questions.length - 1);
       }
       render();
     }
