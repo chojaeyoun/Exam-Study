@@ -4547,6 +4547,12 @@
         .filter(Boolean);
     }
 
+    function filteredStudyQuestions() {
+      const questions = filteredQuestions();
+      if (els.statusFilter.value === "mastered") return questions;
+      return questions.filter(q => q.status !== "mastered");
+    }
+
     function filteredTheories() {
       const search = els.searchInput.value.trim().toLowerCase();
       const category = els.categoryFilter.value;
@@ -5522,7 +5528,7 @@
       }
 
       renderStudyDisplayOptions();
-      const questions = filteredQuestions();
+      const questions = filteredStudyQuestions();
       if (currentIndex >= questions.length) currentIndex = Math.max(0, questions.length - 1);
       const current = questions[currentIndex];
 
@@ -5676,7 +5682,7 @@
       els.searchInput.value = "";
       els.categoryFilter.value = "all";
       els.tagFilter.value = "all";
-      els.statusFilter.value = "all";
+      els.statusFilter.value = q.status === "mastered" ? "mastered" : "all";
       els.favoriteFilter.checked = false;
       reviewQueueIds = [];
       studyMode = "question";
@@ -5684,7 +5690,7 @@
       persist();
       setView("study");
       render();
-      const questions = filteredQuestions();
+      const questions = filteredStudyQuestions();
       const index = questions.findIndex(item => item.id === q.id);
       currentIndex = index >= 0 ? index : 0;
       renderStudy();
@@ -6889,7 +6895,7 @@
       activeMemoryCardQuestionId = "";
       setView("study");
       render();
-      const questions = filteredQuestions();
+      const questions = filteredStudyQuestions();
       const index = questions.findIndex(item => item.id === q.id);
       currentIndex = index >= 0 ? index : 0;
       renderStudy();
@@ -7193,7 +7199,7 @@
         renderStudy();
         return;
       }
-      const count = filteredQuestions().length;
+      const count = filteredStudyQuestions().length;
       if (!count) return;
       currentIndex = (currentIndex + delta + count) % count;
       renderStudy();
@@ -7321,7 +7327,7 @@
     function toggleCurrentStudyFavorite() {
       const item = studyMode === "theory"
         ? filteredTheories()[currentTheoryIndex]
-        : filteredQuestions()[currentIndex];
+        : filteredStudyQuestions()[currentIndex];
       if (!item) return;
       item.favorite = !item.favorite;
       item.updatedAt = new Date().toISOString();
@@ -7331,7 +7337,7 @@
 
     function getCurrentQuestion() {
       if (studyMode !== "question") return null;
-      return filteredQuestions()[currentIndex];
+      return filteredStudyQuestions()[currentIndex];
     }
 
     function editCurrentStudyQuestion() {
@@ -7361,7 +7367,7 @@
     }
 
     function advanceAfterReview(reviewedId) {
-      const questions = filteredQuestions();
+      const questions = filteredStudyQuestions();
       if (questions.length) {
         currentIndex = Math.min(currentIndex, questions.length - 1);
       }
@@ -7586,7 +7592,7 @@
       els.categoryFilter.value = "all";
       els.statusFilter.value = "all";
       render();
-      const questions = filteredQuestions();
+      const questions = filteredStudyQuestions();
       const savedIndex = questions.findIndex(q => q.id === firstCreatedId);
       currentIndex = savedIndex >= 0 ? savedIndex : 0;
       setView("study");
