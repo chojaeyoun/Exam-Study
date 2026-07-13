@@ -357,7 +357,7 @@
       padding: 22px;
       min-height: 520px;
       display: grid;
-      grid-template-rows: auto 1fr auto;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
       gap: 18px;
       border-color: var(--line);
       border-top: 3px solid var(--accent);
@@ -2859,7 +2859,7 @@
       }
 
       .main {
-        padding: 14px 16px 16px;
+        padding: 8px 10px 10px;
       }
 
       .topbar, .study-grid, .form-grid, .theory-grid {
@@ -2924,7 +2924,7 @@
       }
 
       .topbar {
-        display: grid;
+        display: none;
         gap: 10px;
       }
 
@@ -2932,11 +2932,16 @@
         display: none;
       }
 
+      body.search-open .topbar {
+        display: grid;
+      }
+
       body.search-open .topbar .search {
         display: block;
       }
 
       .topbar .toolbar {
+        display: none;
         justify-content: flex-end;
       }
 
@@ -2957,15 +2962,53 @@
 
       .study-summary {
         grid-template-columns: 1fr;
+        gap: 8px;
+        margin-bottom: 0;
+        padding: 10px;
+      }
+
+      .study-summary h2 {
+        font-size: 19px;
+      }
+
+      .study-summary p,
+      .progress-box {
+        display: none;
+      }
+
+      .summary-metrics {
+        gap: 4px;
+        margin-top: 8px;
+      }
+
+      .summary-chip {
+        min-height: 44px;
+        padding: 6px 4px;
+      }
+
+      .mode-tabs {
+        margin-top: 8px;
+      }
+
+      .mode-tabs button,
+      .answer-stage-tabs button,
+      .memory-toggle {
+        min-height: 36px;
+        padding: 0 8px;
+        font-size: 12px;
       }
 
       .progress-label {
         text-align: left;
       }
 
+      .study-grid {
+        gap: 8px;
+      }
+
       .card {
         min-height: auto;
-        padding: 22px;
+        padding: 12px;
       }
 
       .question-box {
@@ -3027,6 +3070,7 @@
       .study-summary {
         gap: 8px;
         margin-bottom: 8px;
+        padding: 10px;
       }
 
       .study-summary h2 {
