@@ -1060,6 +1060,25 @@
       background: #fff8f6;
     }
 
+    .study-note-editor {
+      display: grid;
+      gap: 10px;
+    }
+
+    .study-note-editor textarea {
+      min-height: 180px;
+      line-height: 1.65;
+      resize: vertical;
+    }
+
+    .study-note-hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.5;
+    }
+
     .compose-preview-panel {
       display: grid;
       gap: 12px;
@@ -3544,14 +3563,14 @@
                 <button id="masterBtn" class="master-action" aria-keyshortcuts="2">맞혔음</button>
               </div>
               <div class="study-edit-row">
-                <button id="memoryCardBtn" class="memory-card-button" type="button">암기 카드로 보기</button>
+                <button id="memoryCardBtn" class="memory-card-button" type="button">요약 메모</button>
                 <button id="studyEditBtn" class="study-edit-button" type="button">이 문제 수정</button>
                 <button id="phoneKeyboardBtn" class="keyboard-mode-button" type="button" aria-label="키보드 조작" aria-pressed="false">⌨</button>
                 <input id="shortcutCapture" class="shortcut-capture" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="키보드 조작 입력">
               </div>
             </div>
           </article>
-          <article id="memoryCardPanel" class="panel memory-card-panel hidden" aria-label="암기 카드"></article>
+          <article id="memoryCardPanel" class="panel memory-card-panel hidden" aria-label="요약 메모"></article>
           <aside id="studyRangeBox" class="panel side-panel range-box collapsed">
             <div class="range-head">
               <h2 class="mini-title">학습 범위</h2>
@@ -4112,7 +4131,7 @@
     const CALC_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "calc");
     const QUESTION_EXTRA_BLOCKS = [
       { id: "choices", label: "보기", icon: "V", hint: "통짜 보기 묶음", template: "\n[보기]\n보기1, 보기2, 보기3\n\n" },
-      { id: "cloze", label: "빈칸", icon: "□", hint: "암기카드 빈칸 삽입", template: "{{정답}}" },
+      { id: "cloze", label: "빈칸", icon: "□", hint: "빈칸 표시 삽입", template: "{{정답}}" },
       { id: "photo", label: "사진", icon: "⌁", hint: "사진 선택 또는 붙여넣기", action: "photo" },
       { id: "memo", label: "메모", icon: "M", hint: "메모 입력칸 열기", action: "memo" },
       { id: "tag", label: "태그", icon: "#", hint: "태그 입력칸 열기", action: "tag" }
@@ -4329,6 +4348,7 @@
           masteredAt: q.masteredAt || "",
           tags: normalizeTags(q.tags),
           favorite: Boolean(q.favorite),
+          studyNote: String(q.studyNote || ""),
           memoryCard: normalizeMemoryCard(q.memoryCard),
           memoryCardStatus: ["known", "confused", "unknown"].includes(q.memoryCardStatus) ? q.memoryCardStatus : "",
           updatedAt: q.updatedAt || q.masteredAt || ""
@@ -4798,6 +4818,7 @@
           answerImageName: cloudMemo.payload.answerImageName || "",
           tags: normalizeTags(cloudMemo.payload.tags),
           favorite: Boolean(cloudMemo.payload.favorite),
+          studyNote: String(cloudMemo.payload.studyNote || ""),
           memoryCard: normalizeMemoryCard(cloudMemo.payload.memoryCard),
           memoryCardStatus: ["known", "confused", "unknown"].includes(cloudMemo.payload.memoryCardStatus) ? cloudMemo.payload.memoryCardStatus : "",
           status: row.status || "new",
@@ -4939,6 +4960,7 @@
         answerImageName: question.answerImageName || "",
         tags: normalizeTags(question.tags),
         favorite: Boolean(question.favorite),
+        studyNote: String(question.studyNote || ""),
         memoryCard: normalizeMemoryCard(question.memoryCard),
         memoryCardStatus: question.memoryCardStatus || "",
         updatedAt: question.updatedAt || ""
@@ -5572,7 +5594,7 @@
       els.wrongBtn.classList.remove("hidden");
       els.masterBtn.classList.remove("hidden");
       els.memoryCardBtn.classList.remove("hidden");
-      els.memoryCardBtn.textContent = current.memoryCard ? "암기 카드로 보기" : "암기 카드 만들기";
+      els.memoryCardBtn.textContent = current.studyNote ? "요약 메모 보기" : "요약 메모";
       els.studyEditBtn.classList.remove("hidden");
       renderMemoryCardPanel(activeMemoryCardQuestionId === current.id ? current : null);
     }
@@ -5663,7 +5685,6 @@
     function openCurrentMemoryCard() {
       const q = getCurrentQuestion();
       if (!q) return;
-      ensureMemoryCard(q);
       activeMemoryCardQuestionId = q.id;
       q.updatedAt = new Date().toISOString();
       hideStudyAnswer();
@@ -5676,7 +5697,6 @@
     function openMemoryCardById(id) {
       const q = state.questions.find(item => item.id === id);
       if (!q) return;
-      ensureMemoryCard(q);
       q.updatedAt = new Date().toISOString();
       state.activeExamId = q.examId || DEFAULT_EXAM_ID;
       els.searchInput.value = "";
@@ -5872,47 +5892,28 @@
         return;
       }
 
-      const card = ensureMemoryCard(question);
-      const status = memoryCardStatusLabel(question.memoryCardStatus);
       els.memoryCardPanel.classList.remove("hidden");
       els.memoryCardPanel.innerHTML = `
         <div class="memory-card-head">
           <div class="memory-card-eyebrow">
-            <span class="memory-card-status">${status}</span>
+            <span class="memory-card-status">요약 메모</span>
           </div>
           <h3>${escapeHtml(question.question || "문제")}</h3>
         </div>
-        <div class="memory-card-grid">
-          <section class="memory-card-block">
-            <h4>핵심 키워드</h4>
-            ${card.keywords.length
-              ? `<ul class="memory-keywords">${card.keywords.map(keyword => `<li>${escapeHtml(keyword)}</li>`).join("")}</ul>`
-              : `<p class="rich-paragraph">키워드를 만들 답안이 없습니다.</p>`}
-          </section>
-          <section class="memory-card-block">
-            <h4>${card.mnemonicType === "number" ? "숫자 암기" : "두문자 암기법"}</h4>
-            <p class="mnemonic-text">${escapeHtml(card.mnemonic || "두문자 없음")}</p>
-            ${card.mnemonicItems?.length
-              ? `<ul class="mnemonic-map">${card.mnemonicItems.map(item => `<li><b>${escapeHtml(item.letter)}</b><span>${escapeHtml(item.keyword)}</span></li>`).join("")}</ul>`
-              : ""}
-            <p class="mnemonic-sentence">${escapeHtml(card.mnemonicSentence || "핵심어 첫 글자를 순서대로 떠올리세요.")}</p>
-          </section>
-          <section class="memory-card-block wide">
-            <h4>빈칸 퀴즈</h4>
-            <p class="blank-quiz">${escapeHtml(card.blankQuiz || "____")}</p>
-          </section>
-        </div>
-        <div class="memory-card-actions" aria-label="암기 카드 평가">
-          <button class="known" type="button" data-memory-result="known">외움</button>
-          <button class="confused" type="button" data-memory-result="confused">헷갈림</button>
-          <button class="unknown" type="button" data-memory-result="unknown">모름</button>
+        <div class="study-note-editor">
+          <textarea id="studyNoteInput" placeholder="이 문제를 풀 때 기억할 핵심 단어, 공식, 주의점, 요약을 자유롭게 적어두세요.">${escapeHtml(question.studyNote || "")}</textarea>
+          <p class="study-note-hint">입력하면 자동 저장됩니다.</p>
         </div>
       `;
-      els.memoryCardPanel.querySelectorAll("[data-memory-result]").forEach(button => {
-        button.addEventListener("click", () => markMemoryCard(question.id, button.dataset.memoryResult));
+      const textarea = els.memoryCardPanel.querySelector("#studyNoteInput");
+      textarea?.addEventListener("input", () => {
+        question.studyNote = textarea.value;
+        question.updatedAt = new Date().toISOString();
+        persist();
+        els.memoryCardBtn.textContent = textarea.value.trim() ? "요약 메모 보기" : "요약 메모";
+        renderBank();
       });
     }
-
     function memoryCardStatusLabel(status) {
       if (status === "known") return "암기 카드 · 외움";
       if (status === "confused") return "암기 카드 · 헷갈림";
@@ -6646,7 +6647,7 @@
           <div class="wrong-card-meta">
             <span class="pill">오답 ${q.wrongCount || 1}회</span>
             <span class="pill">중요도 ${escapeHtml(q.level || "중")}</span>
-            ${q.memoryCardStatus ? `<span class="pill">${escapeHtml(memoryCardStatusLabel(q.memoryCardStatus).replace("암기 카드 · ", ""))}</span>` : ""}
+            ${q.studyNote ? `<span class="pill">요약 있음</span>` : ""}
             ${q.favorite ? `<span class="favorite-mark">★ 중요</span>` : ""}
           </div>
           <h3>${escapeHtml(q.question)}</h3>
@@ -6654,7 +6655,7 @@
           ${renderTags(q.tags)}
           <p>${escapeHtml(q.answer || q.answerImageName || "정답 없음")}</p>
           <footer class="wrong-card-actions">
-            <button data-memory-card="${q.id}">암기카드</button>
+            <button data-memory-card="${q.id}">요약 메모</button>
             <button data-edit="${q.id}">수정</button>
             <button data-master="${q.id}">암기 완료</button>
           </footer>
@@ -6673,6 +6674,7 @@
             <span class="pill">암기 완료</span>
             <span class="pill">중요도 ${escapeHtml(q.level || "중")}</span>
             ${q.masteredAt ? `<span class="pill">${escapeHtml(formatShortDate(q.masteredAt))}</span>` : ""}
+            ${q.studyNote ? `<span class="pill">요약 있음</span>` : ""}
             ${q.favorite ? `<span class="favorite-mark">★ 중요</span>` : ""}
           </div>
           <h3>${escapeHtml(q.question)}</h3>
@@ -6681,7 +6683,7 @@
           <p>${escapeHtml(q.answer || q.answerImageName || "정답 없음")}</p>
           <footer class="wrong-card-actions">
             <button data-study="${q.id}">다시 학습</button>
-            <button data-memory-card="${q.id}">암기카드</button>
+            <button data-memory-card="${q.id}">요약 메모</button>
             <button data-edit="${q.id}">수정</button>
           </footer>
         </article>`).join("")}
@@ -6744,11 +6746,11 @@
                   <span class="pill">${escapeHtml(q.category || "미분류")}</span>
                   <span class="pill">중요도 ${escapeHtml(q.level || "중")}</span>
                   <span class="pill">${status}</span>
-                  ${q.memoryCard ? `<span class="pill">${escapeHtml(memoryCardStatusLabel(q.memoryCardStatus).replace("암기 카드 · ", "카드 "))}</span>` : ""}
+                  ${q.studyNote ? `<span class="pill">요약 있음</span>` : ""}
                   ${q.favorite ? `<span class="favorite-mark">★ 중요</span>` : ""}
                 </div>
                 <div class="bank-card-actions">
-                  <button data-memory-card="${q.id}">${q.memoryCard ? "암기카드" : "카드 만들기"}</button>
+                  <button data-memory-card="${q.id}">요약 메모</button>
                   <button data-quick-edit="${q.id}">빠른 수정</button>
                   <button data-edit="${q.id}">전체 수정</button>
                   <button data-delete="${q.id}" class="danger">삭제</button>
@@ -7641,6 +7643,7 @@
         status: existing?.status || "new",
         wrongCount: existing?.wrongCount || 0,
         masteredAt: existing?.masteredAt || "",
+        studyNote: existing?.studyNote || "",
         memoryCard: keepMemoryCard ? existing.memoryCard : null,
         memoryCardStatus: keepMemoryCard ? existing.memoryCardStatus || "" : "",
         updatedAt: new Date().toISOString()
