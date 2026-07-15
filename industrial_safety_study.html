@@ -4009,6 +4009,7 @@
     let quickEditId = "";
     let bankListMode = "filtered";
     let reviewQueueIds = [];
+    let includeMasteredInStudyAll = false;
     let deferredInstallPrompt = null;
     let supabaseClient = null;
     let pendingPhotoQuestions = [];
@@ -4633,7 +4634,7 @@
 
     function filteredStudyQuestions() {
       const questions = filteredQuestions();
-      if (els.statusFilter.value === "mastered") return questions;
+      if (els.statusFilter.value === "mastered" || includeMasteredInStudyAll) return questions;
       return questions.filter(q => q.status !== "mastered");
     }
 
@@ -6977,16 +6978,7 @@
         setView("mastered");
         return;
       }
-      bankListMode = "all";
-      els.searchInput.value = "";
-      els.categoryFilter.value = "all";
-      els.tagFilter.value = "all";
-      els.statusFilter.value = "all";
-      els.sortFilter.value = "default";
-      els.favoriteFilter.checked = false;
-      setComposeMode("manage");
-      setView("bank");
-      renderBank();
+      startAllQuestionStudy();
     }
 
     async function saveQuickEdit(button) {
@@ -7064,6 +7056,7 @@
 
     function startDefaultStudyView() {
       reviewQueueIds = [];
+      includeMasteredInStudyAll = false;
       studyMode = "question";
       els.statusFilter.value = "all";
       currentIndex = 0;
@@ -7078,11 +7071,30 @@
       const candidates = currentExamQuestions().filter(q => q.status === "new");
       if (!candidates.length) return alert("미학습 문제가 없습니다.");
       reviewQueueIds = [];
+      includeMasteredInStudyAll = false;
       studyMode = "question";
       els.searchInput.value = "";
       els.categoryFilter.value = "all";
       els.tagFilter.value = "all";
       els.statusFilter.value = "new";
+      els.favoriteFilter.checked = false;
+      currentIndex = 0;
+      setView("study");
+      renderFilters();
+      renderDashboard();
+      renderStudyModeButtons();
+      renderStudy();
+    }
+
+    function startAllQuestionStudy() {
+      reviewQueueIds = [];
+      includeMasteredInStudyAll = true;
+      studyMode = "question";
+      els.searchInput.value = "";
+      els.categoryFilter.value = "all";
+      els.tagFilter.value = "all";
+      els.statusFilter.value = "all";
+      els.sortFilter.value = "default";
       els.favoriteFilter.checked = false;
       currentIndex = 0;
       setView("study");
@@ -7258,6 +7270,7 @@
     function startReviewQueue() {
       const candidates = currentExamQuestions();
       if (!candidates.length) return alert("복습 큐에 넣을 문제가 없습니다.");
+      includeMasteredInStudyAll = false;
       reviewQueueIds = candidates
         .map(q => ({ id: q.id, score: reviewScore(q), time: itemTime(q) }))
         .sort((a, b) => b.score - a.score || a.time - b.time)
@@ -7274,6 +7287,7 @@
     function startWrongReviewQueue() {
       const candidates = currentExamQuestions().filter(q => q.status === "wrong");
       if (!candidates.length) return alert("복습할 오답 문제가 없습니다.");
+      includeMasteredInStudyAll = false;
       reviewQueueIds = candidates
         .map(q => ({ id: q.id, score: reviewScore(q), time: itemTime(q) }))
         .sort((a, b) => b.score - a.score || b.time - a.time)
@@ -7294,6 +7308,7 @@
     function startMasteredCheckQueue() {
       const candidates = currentExamQuestions().filter(q => q.status === "mastered");
       if (!candidates.length) return alert("점검할 완료 문제가 없습니다.");
+      includeMasteredInStudyAll = false;
       reviewQueueIds = shuffleArray(candidates)
         .slice(0, 20)
         .map(q => q.id);
@@ -7311,11 +7326,7 @@
     }
 
     function clearReviewQueue() {
-      reviewQueueIds = [];
-      currentIndex = 0;
-      els.statusFilter.value = "all";
-      renderDashboard();
-      renderStudy();
+      startAllQuestionStudy();
     }
 
     function shuffleArray(items) {
