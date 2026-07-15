@@ -2391,6 +2391,40 @@
       white-space: pre-wrap;
     }
 
+    .review-tab-tools {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin: 0 0 14px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fbfa;
+    }
+
+    .review-tab-tools div {
+      display: grid;
+      gap: 4px;
+    }
+
+    .review-tab-tools strong {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .review-tab-tools span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .review-tab-tools button {
+      flex: 0 0 auto;
+    }
+
     .quick-edit-form {
       display: grid;
       grid-template-columns: 1fr 140px;
@@ -3268,6 +3302,15 @@
         padding: 12px;
       }
 
+      .review-tab-tools {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .review-tab-tools button {
+        width: 100%;
+      }
+
       .nav {
         left: 6px;
         right: 6px;
@@ -3622,6 +3665,13 @@
       <section class="view" data-view="wrong">
         <div class="panel side-panel">
           <h2 class="mini-title">오답노트</h2>
+          <div class="review-tab-tools">
+            <div>
+              <strong>오답은 한 문제씩 처리하세요</strong>
+              <span>많이 틀린 문제와 중요 문제를 먼저 복습합니다.</span>
+            </div>
+            <button id="wrongReviewBtn" class="primary" type="button">오답 복습 시작</button>
+          </div>
           <div id="wrongList" class="list"></div>
         </div>
       </section>
@@ -3629,6 +3679,13 @@
       <section class="view" data-view="mastered">
         <div class="panel side-panel">
           <h2 class="mini-title">암기 완료</h2>
+          <div class="review-tab-tools">
+            <div>
+              <strong>완료 문제는 랜덤 점검</strong>
+              <span>전부 스크롤하지 말고 일부만 뽑아 유지 여부를 확인합니다.</span>
+            </div>
+            <button id="masteredCheckBtn" class="primary" type="button">랜덤 점검 시작</button>
+          </div>
           <div id="masteredList" class="list"></div>
         </div>
       </section>
@@ -4024,6 +4081,8 @@
       favoriteFilter: document.querySelector("#favoriteFilter"),
       dashboardPanel: document.querySelector("#dashboardPanel"),
       insightPanel: document.querySelector("#insightPanel"),
+      wrongReviewBtn: document.querySelector("#wrongReviewBtn"),
+      masteredCheckBtn: document.querySelector("#masteredCheckBtn"),
       wrongList: document.querySelector("#wrongList"),
       masteredList: document.querySelector("#masteredList"),
       composeQuestionModeBtn: document.querySelector("#composeQuestionModeBtn"),
@@ -4186,6 +4245,8 @@
     els.toggleRangeBtn.addEventListener("click", toggleStudyRange);
     els.reviewQueueBtn.addEventListener("click", startReviewQueue);
     els.clearQueueBtn.addEventListener("click", clearReviewQueue);
+    els.wrongReviewBtn.addEventListener("click", startWrongReviewQueue);
+    els.masteredCheckBtn.addEventListener("click", startMasteredCheckQueue);
     els.studyQuestionModeBtn.addEventListener("click", () => setStudyMode("question"));
     els.studyTheoryModeBtn.addEventListener("click", () => setStudyMode("theory"));
     els.studyFavoriteBtn.addEventListener("click", toggleCurrentStudyFavorite);
@@ -7169,11 +7230,59 @@
       renderStudy();
     }
 
+    function startWrongReviewQueue() {
+      const candidates = currentExamQuestions().filter(q => q.status === "wrong");
+      if (!candidates.length) return alert("복습할 오답 문제가 없습니다.");
+      reviewQueueIds = candidates
+        .map(q => ({ id: q.id, score: reviewScore(q), time: itemTime(q) }))
+        .sort((a, b) => b.score - a.score || b.time - a.time)
+        .map(item => item.id);
+      currentIndex = 0;
+      studyMode = "question";
+      els.searchInput.value = "";
+      els.categoryFilter.value = "all";
+      els.tagFilter.value = "all";
+      els.statusFilter.value = "wrong";
+      els.favoriteFilter.checked = false;
+      setView("study");
+      renderFilters();
+      renderDashboard();
+      renderStudy();
+    }
+
+    function startMasteredCheckQueue() {
+      const candidates = currentExamQuestions().filter(q => q.status === "mastered");
+      if (!candidates.length) return alert("점검할 완료 문제가 없습니다.");
+      reviewQueueIds = shuffleArray(candidates)
+        .slice(0, 20)
+        .map(q => q.id);
+      currentIndex = 0;
+      studyMode = "question";
+      els.searchInput.value = "";
+      els.categoryFilter.value = "all";
+      els.tagFilter.value = "all";
+      els.statusFilter.value = "mastered";
+      els.favoriteFilter.checked = false;
+      setView("study");
+      renderFilters();
+      renderDashboard();
+      renderStudy();
+    }
+
     function clearReviewQueue() {
       reviewQueueIds = [];
       currentIndex = 0;
       renderDashboard();
       renderStudy();
+    }
+
+    function shuffleArray(items) {
+      const copy = [...items];
+      for (let i = copy.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
     }
 
     function reviewScore(q) {
@@ -7369,6 +7478,9 @@
     }
 
     function advanceAfterReview(reviewedId) {
+      if (reviewQueueIds.includes(reviewedId)) {
+        reviewQueueIds = reviewQueueIds.filter(id => id !== reviewedId);
+      }
       const questions = filteredStudyQuestions();
       if (questions.length) {
         currentIndex = Math.min(currentIndex, questions.length - 1);
