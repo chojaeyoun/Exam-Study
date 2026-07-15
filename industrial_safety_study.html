@@ -3622,6 +3622,7 @@
             <div id="studyRangeBody" class="range-body">
               <div class="smart-actions">
                 <button id="reviewQueueBtn" class="primary" type="button">오늘 복습 큐</button>
+                <button id="newStudyBtn" type="button">미학습</button>
                 <button id="clearQueueBtn" type="button">전체</button>
               </div>
               <p id="queueStatus" class="queue-status">오답, 중요, 오래 안 본 문제를 자동으로 모읍니다.</p>
@@ -4061,6 +4062,7 @@
       studyRangeBox: document.querySelector("#studyRangeBox"),
       toggleRangeBtn: document.querySelector("#toggleRangeBtn"),
       reviewQueueBtn: document.querySelector("#reviewQueueBtn"),
+      newStudyBtn: document.querySelector("#newStudyBtn"),
       clearQueueBtn: document.querySelector("#clearQueueBtn"),
       queueStatus: document.querySelector("#queueStatus"),
       showAnswerBtn: document.querySelector("#showAnswerBtn"),
@@ -4213,7 +4215,7 @@
     updateQuestionDiagnostics();
 
     document.querySelectorAll("[data-view-btn]").forEach(button => {
-      button.addEventListener("click", () => setView(button.dataset.viewBtn));
+      button.addEventListener("click", () => handleViewButtonClick(button.dataset.viewBtn));
     });
 
     document.querySelectorAll("[data-summary-link]").forEach(button => {
@@ -4244,6 +4246,7 @@
     els.resetBtn.addEventListener("click", resetProgress);
     els.toggleRangeBtn.addEventListener("click", toggleStudyRange);
     els.reviewQueueBtn.addEventListener("click", startReviewQueue);
+    els.newStudyBtn.addEventListener("click", startNewQuestionStudy);
     els.clearQueueBtn.addEventListener("click", clearReviewQueue);
     els.wrongReviewBtn.addEventListener("click", startWrongReviewQueue);
     els.masteredCheckBtn.addEventListener("click", startMasteredCheckQueue);
@@ -7051,6 +7054,44 @@
       renderStudyDisplayOptions();
     }
 
+    function handleViewButtonClick(name) {
+      if (name === "study") {
+        startDefaultStudyView();
+        return;
+      }
+      setView(name);
+    }
+
+    function startDefaultStudyView() {
+      reviewQueueIds = [];
+      studyMode = "question";
+      els.statusFilter.value = "all";
+      currentIndex = 0;
+      setView("study");
+      renderFilters();
+      renderDashboard();
+      renderStudyModeButtons();
+      renderStudy();
+    }
+
+    function startNewQuestionStudy() {
+      const candidates = currentExamQuestions().filter(q => q.status === "new");
+      if (!candidates.length) return alert("미학습 문제가 없습니다.");
+      reviewQueueIds = [];
+      studyMode = "question";
+      els.searchInput.value = "";
+      els.categoryFilter.value = "all";
+      els.tagFilter.value = "all";
+      els.statusFilter.value = "new";
+      els.favoriteFilter.checked = false;
+      currentIndex = 0;
+      setView("study");
+      renderFilters();
+      renderDashboard();
+      renderStudyModeButtons();
+      renderStudy();
+    }
+
     function setStudyMode(mode) {
       studyMode = mode;
       if (mode === "question") currentIndex = Math.max(0, currentIndex);
@@ -7272,6 +7313,7 @@
     function clearReviewQueue() {
       reviewQueueIds = [];
       currentIndex = 0;
+      els.statusFilter.value = "all";
       renderDashboard();
       renderStudy();
     }
