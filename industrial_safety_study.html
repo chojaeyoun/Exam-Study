@@ -2754,6 +2754,30 @@
       display: block;
     }
 
+    .install-guide {
+      display: grid;
+      gap: 10px;
+      padding: 14px 16px;
+      border: 1px solid #c8ddd7;
+      border-radius: 8px;
+      background: #f7fbfa;
+      color: var(--text);
+      line-height: 1.55;
+    }
+
+    .install-guide strong {
+      color: var(--accent-dark);
+    }
+
+    .install-guide ol {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .install-guide li + li {
+      margin-top: 6px;
+    }
+
     @media (max-width: 900px) {
       body {
         padding-bottom: 84px;
@@ -3916,6 +3940,7 @@
                   <button id="installSettingsBtn" class="primary" type="button">앱 설치</button>
                 </div>
                 <p id="installStatus" class="notice">설치 가능 여부를 확인하는 중입니다.</p>
+                <div id="installGuide" class="install-guide hidden" aria-live="polite"></div>
               </div>
             </section>
           </div>
@@ -4163,7 +4188,8 @@
       downloadCloudBtn: document.querySelector("#downloadCloudBtn"),
       cloudStatus: document.querySelector("#cloudStatus"),
       installSettingsBtn: document.querySelector("#installSettingsBtn"),
-      installStatus: document.querySelector("#installStatus")
+      installStatus: document.querySelector("#installStatus"),
+      installGuide: document.querySelector("#installGuide")
     };
 
     const WRITING_SYMBOLS = [
@@ -8275,6 +8301,10 @@
     function updateInstallUi(canInstall, message) {
       els.installSettingsBtn.textContent = canInstall ? "앱 설치" : "설치 방법 확인";
       els.installStatus.textContent = message;
+      if (canInstall) {
+        els.installGuide.classList.add("hidden");
+        els.installGuide.replaceChildren();
+      }
     }
 
     function getInstallHelpText() {
@@ -8286,9 +8316,80 @@
       return "브라우저가 설치 조건을 확인하면 버튼이 활성화됩니다. 주소창의 설치 아이콘을 사용할 수도 있습니다.";
     }
 
+    function getInstallGuideHtml() {
+      const standalone = window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true;
+      if (standalone) {
+        return `
+          <strong>이미 설치된 앱으로 실행 중입니다.</strong>
+          <p>홈 화면이나 앱 목록에서 바로 열면 같은 설치 앱으로 사용할 수 있습니다.</p>
+        `;
+      }
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isAppleMobile = /iphone|ipad|ipod/.test(userAgent);
+      const isAndroid = /android/.test(userAgent);
+      const isEdge = /edg\//.test(userAgent);
+      const isChrome = /chrome|crios/.test(userAgent) && !isEdge;
+      if (isAppleMobile) {
+        return `
+          <strong>iPhone/iPad 설치 방법</strong>
+          <ol>
+            <li>Safari에서 이 페이지를 엽니다.</li>
+            <li>하단 공유 버튼을 누릅니다.</li>
+            <li>'홈 화면에 추가'를 선택합니다.</li>
+            <li>추가를 누르면 홈 화면에서 앱처럼 실행됩니다.</li>
+          </ol>
+        `;
+      }
+      if (isAndroid) {
+        return `
+          <strong>Android 설치 방법</strong>
+          <ol>
+            <li>Chrome에서 이 페이지를 엽니다.</li>
+            <li>주소창 오른쪽의 설치 아이콘이 보이면 누릅니다.</li>
+            <li>아이콘이 없으면 Chrome 메뉴에서 '홈 화면에 추가' 또는 '앱 설치'를 선택합니다.</li>
+          </ol>
+        `;
+      }
+      if (isEdge) {
+        return `
+          <strong>Microsoft Edge 설치 방법</strong>
+          <ol>
+            <li>주소창 오른쪽의 앱 설치 아이콘을 확인합니다.</li>
+            <li>아이콘이 없으면 메뉴에서 '앱'을 열고 '이 사이트를 앱으로 설치'를 선택합니다.</li>
+            <li>설치가 보이지 않으면 페이지를 새로고침한 뒤 다시 확인합니다.</li>
+          </ol>
+        `;
+      }
+      if (isChrome) {
+        return `
+          <strong>Chrome 설치 방법</strong>
+          <ol>
+            <li>주소창 오른쪽의 설치 아이콘을 확인합니다.</li>
+            <li>아이콘이 없으면 Chrome 메뉴에서 '저장 및 공유'를 열고 '페이지를 앱으로 설치'를 선택합니다.</li>
+            <li>설치 메뉴가 안 보이면 잠시 뒤 새로고침하거나 캐시 초기화 페이지를 한 번 열어보세요.</li>
+          </ol>
+        `;
+      }
+      return `
+        <strong>설치 방법</strong>
+        <ol>
+          <li>브라우저 주소창 또는 메뉴에서 '앱 설치', '홈 화면에 추가', '이 사이트를 앱으로 설치' 항목을 찾습니다.</li>
+          <li>설치 메뉴가 보이지 않으면 Chrome, Edge, Safari 같은 PWA 지원 브라우저에서 다시 열어보세요.</li>
+          <li>이미 설치된 경우에는 버튼 대신 브라우저 메뉴나 앱 목록에서 실행할 수 있습니다.</li>
+        </ol>
+      `;
+    }
+
+    function showInstallGuide() {
+      els.installGuide.innerHTML = getInstallGuideHtml();
+      els.installGuide.classList.remove("hidden");
+      els.installStatus.textContent = "아래 안내에 따라 브라우저 메뉴에서 설치를 진행하세요.";
+      els.installSettingsBtn.textContent = "설치 안내 보기";
+    }
+
     async function installApp() {
       if (!deferredInstallPrompt) {
-        updateInstallUi(false, getInstallHelpText());
+        showInstallGuide();
         return;
       }
       deferredInstallPrompt.prompt();
