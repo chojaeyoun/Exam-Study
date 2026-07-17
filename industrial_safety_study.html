@@ -3911,7 +3911,11 @@
             <section class="more-panel" data-more-panel="settings">
               <div class="panel side-panel">
                 <h2 class="mini-title">설정</h2>
-                <p class="notice">자주 쓰지 않는 관리 기능을 이곳에 모았습니다. 앞으로 테마, 백업, 자동 동기화 같은 옵션을 여기에 추가할 수 있습니다.</p>
+                <p class="notice">자주 쓰지 않는 관리 기능을 이곳에 모았습니다.</p>
+                <div class="actions">
+                  <button id="installSettingsBtn" class="primary" type="button">앱 설치</button>
+                </div>
+                <p id="installStatus" class="notice">설치 가능 여부를 확인하는 중입니다.</p>
               </div>
             </section>
           </div>
@@ -4157,7 +4161,9 @@
       signOutBtn: document.querySelector("#signOutBtn"),
       uploadCloudBtn: document.querySelector("#uploadCloudBtn"),
       downloadCloudBtn: document.querySelector("#downloadCloudBtn"),
-      cloudStatus: document.querySelector("#cloudStatus")
+      cloudStatus: document.querySelector("#cloudStatus"),
+      installSettingsBtn: document.querySelector("#installSettingsBtn"),
+      installStatus: document.querySelector("#installStatus")
     };
 
     const WRITING_SYMBOLS = [
@@ -4238,6 +4244,7 @@
     els.mobileBackdrop.addEventListener("click", closeMobileDrawer);
     els.toggleSearchBtn.addEventListener("click", toggleMobileSearch);
     els.installBtn.addEventListener("click", installApp);
+    els.installSettingsBtn.addEventListener("click", installApp);
     els.categoryFilter.addEventListener("change", () => { bankListMode = "filtered"; currentIndex = 0; currentTheoryIndex = 0; render(); });
     els.tagFilter.addEventListener("change", () => { bankListMode = "filtered"; currentIndex = 0; currentTheoryIndex = 0; render(); });
     els.statusFilter.addEventListener("change", () => { bankListMode = "filtered"; currentIndex = 0; render(); });
@@ -8249,23 +8256,45 @@
         navigator.serviceWorker.register("./sw.js").catch(error => console.warn("Service worker registration failed", error));
       }
 
+      updateInstallUi(false, getInstallHelpText());
+
       window.addEventListener("beforeinstallprompt", event => {
         event.preventDefault();
         deferredInstallPrompt = event;
+        updateInstallUi(true, "이 기기에 앱처럼 설치할 수 있습니다.");
         els.installBtn.classList.remove("hidden");
       });
 
       window.addEventListener("appinstalled", () => {
         deferredInstallPrompt = null;
+        updateInstallUi(false, "앱 설치가 완료되었습니다.");
         els.installBtn.classList.add("hidden");
       });
     }
 
+    function updateInstallUi(canInstall, message) {
+      els.installSettingsBtn.textContent = canInstall ? "앱 설치" : "설치 방법 확인";
+      els.installStatus.textContent = message;
+    }
+
+    function getInstallHelpText() {
+      const standalone = window.matchMedia?.("(display-mode: standalone)").matches || navigator.standalone === true;
+      if (standalone) return "이미 앱처럼 실행 중입니다.";
+      const isAppleMobile = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (isAppleMobile) return "iPhone/iPad는 Safari 공유 버튼에서 '홈 화면에 추가'를 선택해 설치하세요.";
+      if (location.protocol === "file:") return "설치 기능은 로컬 파일 열기보다 http:// 또는 https:// 주소에서 사용할 수 있습니다.";
+      return "브라우저가 설치 조건을 확인하면 버튼이 활성화됩니다. 주소창의 설치 아이콘을 사용할 수도 있습니다.";
+    }
+
     async function installApp() {
-      if (!deferredInstallPrompt) return;
+      if (!deferredInstallPrompt) {
+        updateInstallUi(false, getInstallHelpText());
+        return;
+      }
       deferredInstallPrompt.prompt();
-      await deferredInstallPrompt.userChoice;
+      const choice = await deferredInstallPrompt.userChoice;
       deferredInstallPrompt = null;
+      updateInstallUi(false, choice.outcome === "accepted" ? "앱 설치가 시작되었습니다." : getInstallHelpText());
       els.installBtn.classList.add("hidden");
     }
   </script>
