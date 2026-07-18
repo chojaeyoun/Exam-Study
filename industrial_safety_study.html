@@ -3656,7 +3656,6 @@
         <button class="active" data-view-btn="study">▣ 학습</button>
         <button data-view-btn="wrong">※ 오답노트</button>
         <button data-view-btn="mastered">✓ 완료</button>
-        <button data-view-btn="music">♪ 음악</button>
         <button data-view-btn="bank">☰ 작성</button>
         <button data-view-btn="more">⋯ 더보기</button>
       </nav>
@@ -4020,6 +4019,7 @@
           <div class="panel more-menu" aria-label="더보기 메뉴">
             <button class="active" data-more-btn="import">CSV 가져오기</button>
             <button data-more-btn="cloud">클라우드 동기화</button>
+            <button data-more-view-btn="music">공부 음악</button>
             <button data-more-btn="settings">설정</button>
           </div>
 
@@ -4410,6 +4410,10 @@
 
     document.querySelectorAll("[data-more-btn]").forEach(button => {
       button.addEventListener("click", () => setMorePanel(button.dataset.moreBtn));
+    });
+
+    document.querySelectorAll("[data-more-view-btn]").forEach(button => {
+      button.addEventListener("click", () => setView(button.dataset.moreViewBtn));
     });
 
     els.searchInput.addEventListener("input", () => { bankListMode = "filtered"; render(); });
