@@ -2796,7 +2796,7 @@
 
     .music-link-form {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 96px;
+      grid-template-columns: minmax(160px, 0.6fr) minmax(220px, 1fr) 96px;
       gap: 10px;
     }
 
@@ -2850,27 +2850,6 @@
     .music-track-actions button {
       min-height: 34px;
       padding: 0 10px;
-    }
-
-    .music-searches {
-      display: grid;
-      gap: 8px;
-    }
-
-    .music-searches a {
-      display: block;
-      padding: 10px 12px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: #fff;
-      color: var(--accent-dark);
-      font-weight: 900;
-      text-decoration: none;
-    }
-
-    .music-searches a:hover {
-      border-color: var(--accent);
-      background: var(--soft);
     }
 
     .install-guide {
@@ -3149,6 +3128,10 @@
       }
 
       .music-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .music-link-form {
         grid-template-columns: 1fr;
       }
 
@@ -3848,6 +3831,7 @@
             </div>
             <iframe id="studyMusicFrame" class="music-frame" title="공부 음악 YouTube 플레이어" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
             <form id="musicLinkForm" class="music-link-form">
+              <input id="musicTitleInput" type="text" placeholder="저장 이름">
               <input id="musicUrlInput" type="url" placeholder="YouTube 링크 붙여넣기">
               <button class="primary" type="submit">추가</button>
             </form>
@@ -3859,13 +3843,8 @@
             <div id="musicList" class="music-list" aria-label="음악 목록"></div>
           </section>
           <aside class="panel side-panel">
-            <h2 class="mini-title">지브리 링크 찾기</h2>
-            <p class="notice">공개 YouTube 영상을 앱 안에 연결해서 재생합니다. 영상이 임베드를 막아둔 경우에는 YouTube 버튼으로 열어 들을 수 있습니다.</p>
-            <div class="music-searches">
-              <a href="https://www.youtube.com/results?search_query=studio+ghibli+piano+study+music" target="_blank" rel="noopener noreferrer">지브리 피아노 공부 음악 검색</a>
-              <a href="https://www.youtube.com/results?search_query=studio+ghibli+lofi+study+music" target="_blank" rel="noopener noreferrer">지브리 로파이 공부 음악 검색</a>
-              <a href="https://www.youtube.com/results?search_query=joe+hisaishi+piano+study+playlist" target="_blank" rel="noopener noreferrer">히사이시 조 피아노 검색</a>
-            </div>
+            <h2 class="mini-title">저장한 링크</h2>
+            <p class="notice">원하는 YouTube 지브리 음악 링크를 붙여넣고 저장 이름을 정하세요. 영상이 임베드를 막아둔 경우에는 YouTube 버튼으로 원본을 열 수 있습니다.</p>
             <div class="actions">
               <button id="clearMusicBtn" class="danger" type="button">링크 목록 비우기</button>
             </div>
@@ -4356,6 +4335,7 @@
       musicNowTitle: document.querySelector("#musicNowTitle"),
       musicNowMeta: document.querySelector("#musicNowMeta"),
       musicLinkForm: document.querySelector("#musicLinkForm"),
+      musicTitleInput: document.querySelector("#musicTitleInput"),
       musicUrlInput: document.querySelector("#musicUrlInput"),
       musicPrevBtn: document.querySelector("#musicPrevBtn"),
       musicOpenBtn: document.querySelector("#musicOpenBtn"),
@@ -8530,29 +8510,33 @@
     function addMusicLink(event) {
       event.preventDefault();
       const parsed = parseYoutubeLink(els.musicUrlInput.value);
+      const title = els.musicTitleInput.value.trim();
       if (!parsed) {
         els.musicStatus.textContent = "YouTube 영상 또는 재생목록 링크를 붙여넣어 주세요.";
         return;
       }
       const duplicateIndex = musicTracks.findIndex(track => track.watchUrl === parsed.watchUrl);
       if (duplicateIndex >= 0) {
+        if (title) musicTracks[duplicateIndex].title = title;
         currentMusicIndex = duplicateIndex;
         loadMusicTrack(currentMusicIndex, true);
         renderMusicList();
+        els.musicTitleInput.value = "";
         els.musicUrlInput.value = "";
-        els.musicStatus.textContent = "이미 추가된 링크를 재생합니다.";
+        els.musicStatus.textContent = title ? "이미 추가된 링크의 이름을 바꾸고 재생합니다." : "이미 추가된 링크를 재생합니다.";
         saveMusicLinks();
         return;
       }
       const track = {
         id: `yt-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        title: `지브리 음악 ${musicTracks.length + 1}`,
+        title: title || `지브리 음악 ${musicTracks.length + 1}`,
         type: parsed.type,
         embedUrl: parsed.embedUrl,
         watchUrl: parsed.watchUrl
       };
       musicTracks.push(track);
       currentMusicIndex = musicTracks.length - 1;
+      els.musicTitleInput.value = "";
       els.musicUrlInput.value = "";
       saveMusicLinks();
       renderMusicList();
@@ -8590,12 +8574,16 @@
           </div>
           <div class="music-track-actions">
             <button type="button" data-music-play="${index}">열기</button>
+            <button type="button" data-music-rename="${index}">이름</button>
             <button type="button" data-music-remove="${index}">삭제</button>
           </div>
         </article>
       `).join("");
       els.musicList.querySelectorAll("[data-music-play]").forEach(button => {
         button.addEventListener("click", () => loadMusicTrack(Number(button.dataset.musicPlay), true));
+      });
+      els.musicList.querySelectorAll("[data-music-rename]").forEach(button => {
+        button.addEventListener("click", () => renameMusicTrack(Number(button.dataset.musicRename)));
       });
       els.musicList.querySelectorAll("[data-music-remove]").forEach(button => {
         button.addEventListener("click", () => removeMusicTrack(Number(button.dataset.musicRemove)));
@@ -8628,6 +8616,25 @@
         return;
       }
       window.open(track.watchUrl, "_blank", "noopener,noreferrer");
+    }
+
+    function renameMusicTrack(index) {
+      const track = musicTracks[index];
+      if (!track) return;
+      const nextTitle = prompt("저장 이름을 입력하세요.", track.title);
+      if (nextTitle === null) return;
+      const cleanTitle = nextTitle.trim();
+      if (!cleanTitle) {
+        els.musicStatus.textContent = "이름은 비워둘 수 없습니다.";
+        return;
+      }
+      track.title = cleanTitle;
+      saveMusicLinks();
+      renderMusicList();
+      if (index === currentMusicIndex) {
+        els.musicNowTitle.textContent = cleanTitle;
+      }
+      els.musicStatus.textContent = "저장 이름을 바꿨습니다.";
     }
 
     function removeMusicTrack(index) {
