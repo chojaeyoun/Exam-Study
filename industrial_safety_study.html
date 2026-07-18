@@ -2754,6 +2754,125 @@
       display: block;
     }
 
+    .music-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 16px;
+    }
+
+    .music-player {
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .music-now {
+      display: grid;
+      gap: 6px;
+      padding: 18px;
+      border: 1px solid #c8ddd7;
+      border-radius: 8px;
+      background: #f7fbfa;
+    }
+
+    .music-now h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .music-now p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .music-frame {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 0;
+      border-radius: 8px;
+      background: #101820;
+    }
+
+    .music-link-form {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 96px;
+      gap: 10px;
+    }
+
+    .music-controls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .music-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .music-track {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .music-track.active {
+      border-color: var(--accent);
+      background: var(--soft);
+    }
+
+    .music-track-title {
+      overflow: hidden;
+      color: var(--text);
+      font-weight: 900;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .music-track-meta {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .music-track-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .music-track-actions button {
+      min-height: 34px;
+      padding: 0 10px;
+    }
+
+    .music-searches {
+      display: grid;
+      gap: 8px;
+    }
+
+    .music-searches a {
+      display: block;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--accent-dark);
+      font-weight: 900;
+      text-decoration: none;
+    }
+
+    .music-searches a:hover {
+      border-color: var(--accent);
+      background: var(--soft);
+    }
+
     .install-guide {
       display: grid;
       gap: 10px;
@@ -3026,6 +3145,10 @@
       }
 
       .more-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .music-grid {
         grid-template-columns: 1fr;
       }
 
@@ -3550,6 +3673,7 @@
         <button class="active" data-view-btn="study">▣ 학습</button>
         <button data-view-btn="wrong">※ 오답노트</button>
         <button data-view-btn="mastered">✓ 완료</button>
+        <button data-view-btn="music">♪ 음악</button>
         <button data-view-btn="bank">☰ 작성</button>
         <button data-view-btn="more">⋯ 더보기</button>
       </nav>
@@ -3712,6 +3836,41 @@
             <button id="masteredCheckBtn" class="primary" type="button">랜덤 점검 시작</button>
           </div>
           <div id="masteredList" class="list"></div>
+        </div>
+      </section>
+
+      <section class="view" data-view="music">
+        <div class="music-grid">
+          <section class="panel music-player" aria-label="공부 음악 플레이어">
+            <div class="music-now">
+              <h2 id="musicNowTitle">공부 음악</h2>
+              <p id="musicNowMeta">YouTube 링크를 추가하면 앱 안에서 재생됩니다.</p>
+            </div>
+            <iframe id="studyMusicFrame" class="music-frame" title="공부 음악 YouTube 플레이어" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+            <form id="musicLinkForm" class="music-link-form">
+              <input id="musicUrlInput" type="url" placeholder="YouTube 링크 붙여넣기">
+              <button class="primary" type="submit">추가</button>
+            </form>
+            <div class="music-controls" aria-label="음악 재생 조작">
+              <button id="musicPrevBtn" type="button">이전</button>
+              <button id="musicOpenBtn" class="primary" type="button">YouTube</button>
+              <button id="musicNextBtn" type="button">다음</button>
+            </div>
+            <div id="musicList" class="music-list" aria-label="음악 목록"></div>
+          </section>
+          <aside class="panel side-panel">
+            <h2 class="mini-title">지브리 링크 찾기</h2>
+            <p class="notice">공개 YouTube 영상을 앱 안에 연결해서 재생합니다. 영상이 임베드를 막아둔 경우에는 YouTube 버튼으로 열어 들을 수 있습니다.</p>
+            <div class="music-searches">
+              <a href="https://www.youtube.com/results?search_query=studio+ghibli+piano+study+music" target="_blank" rel="noopener noreferrer">지브리 피아노 공부 음악 검색</a>
+              <a href="https://www.youtube.com/results?search_query=studio+ghibli+lofi+study+music" target="_blank" rel="noopener noreferrer">지브리 로파이 공부 음악 검색</a>
+              <a href="https://www.youtube.com/results?search_query=joe+hisaishi+piano+study+playlist" target="_blank" rel="noopener noreferrer">히사이시 조 피아노 검색</a>
+            </div>
+            <div class="actions">
+              <button id="clearMusicBtn" class="danger" type="button">링크 목록 비우기</button>
+            </div>
+            <p id="musicStatus" class="notice">링크를 추가한 뒤 음악 탭에서 재생을 시작하면 공부 탭으로 이동해도 계속 들을 수 있습니다.</p>
+          </aside>
         </div>
       </section>
 
@@ -4016,6 +4175,7 @@
     const DEFAULT_EXAM_ID = "industrial-practical";
     const STORAGE_KEY = "examStudyApp.v2";
     const CLOUD_CONFIG_KEY = "examStudyApp.supabase.v1";
+    const MUSIC_LINKS_KEY = "examStudyApp.youtubeMusic.v1";
     const OLD_STORAGE_KEYS = ["industrialSafetyPracticalStudy.v1"];
     const CLOUD_SYNC_START = "\n\n<!--EXAM_STUDY_SYNC:";
     const CLOUD_SYNC_END = "-->";
@@ -4046,6 +4206,8 @@
     let removeAnswerImageOnSave = false;
     let answerStage = "full";
     let memoryMode = false;
+    let musicTracks = [];
+    let currentMusicIndex = -1;
     const PHOTO_MAX_EDGE = 1600;
     const PHOTO_QUALITY = 0.82;
 
@@ -4189,7 +4351,18 @@
       cloudStatus: document.querySelector("#cloudStatus"),
       installSettingsBtn: document.querySelector("#installSettingsBtn"),
       installStatus: document.querySelector("#installStatus"),
-      installGuide: document.querySelector("#installGuide")
+      installGuide: document.querySelector("#installGuide"),
+      studyMusicFrame: document.querySelector("#studyMusicFrame"),
+      musicNowTitle: document.querySelector("#musicNowTitle"),
+      musicNowMeta: document.querySelector("#musicNowMeta"),
+      musicLinkForm: document.querySelector("#musicLinkForm"),
+      musicUrlInput: document.querySelector("#musicUrlInput"),
+      musicPrevBtn: document.querySelector("#musicPrevBtn"),
+      musicOpenBtn: document.querySelector("#musicOpenBtn"),
+      musicNextBtn: document.querySelector("#musicNextBtn"),
+      musicList: document.querySelector("#musicList"),
+      clearMusicBtn: document.querySelector("#clearMusicBtn"),
+      musicStatus: document.querySelector("#musicStatus")
     };
 
     const WRITING_SYMBOLS = [
@@ -4271,6 +4444,11 @@
     els.toggleSearchBtn.addEventListener("click", toggleMobileSearch);
     els.installBtn.addEventListener("click", installApp);
     els.installSettingsBtn.addEventListener("click", installApp);
+    els.musicLinkForm.addEventListener("submit", addMusicLink);
+    els.musicPrevBtn.addEventListener("click", playPreviousMusic);
+    els.musicOpenBtn.addEventListener("click", openCurrentMusicOnYoutube);
+    els.musicNextBtn.addEventListener("click", playNextMusic);
+    els.clearMusicBtn.addEventListener("click", clearMusicLibrary);
     els.categoryFilter.addEventListener("change", () => { bankListMode = "filtered"; currentIndex = 0; currentTheoryIndex = 0; render(); });
     els.tagFilter.addEventListener("change", () => { bankListMode = "filtered"; currentIndex = 0; currentTheoryIndex = 0; render(); });
     els.statusFilter.addEventListener("change", () => { bankListMode = "filtered"; currentIndex = 0; render(); });
@@ -4394,6 +4572,7 @@
     updateTheoryPreview();
     updateQuestionDiagnostics();
     setupPwa();
+    initMusicLibrary();
 
     function loadState() {
       try {
@@ -8275,6 +8454,201 @@
         '"': "&quot;",
         "'": "&#39;"
       }[char]));
+    }
+
+    function initMusicLibrary() {
+      musicTracks = loadMusicLinks();
+      const savedIndex = Number.parseInt(localStorage.getItem(`${MUSIC_LINKS_KEY}.index`) || "0", 10);
+      currentMusicIndex = musicTracks.length ? Math.min(Math.max(savedIndex, 0), musicTracks.length - 1) : -1;
+      renderMusicList();
+      if (currentMusicIndex >= 0) loadMusicTrack(currentMusicIndex, false);
+      else updateEmptyMusicState();
+    }
+
+    function loadMusicLinks() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(MUSIC_LINKS_KEY));
+        if (!Array.isArray(saved)) return [];
+        return saved.filter(track => track && track.embedUrl && track.watchUrl && track.title);
+      } catch (error) {
+        console.warn(error);
+        return [];
+      }
+    }
+
+    function saveMusicLinks() {
+      localStorage.setItem(MUSIC_LINKS_KEY, JSON.stringify(musicTracks));
+      localStorage.setItem(`${MUSIC_LINKS_KEY}.index`, String(Math.max(currentMusicIndex, 0)));
+    }
+
+    function parseYoutubeLink(rawUrl) {
+      let url;
+      try {
+        url = new URL(rawUrl.trim());
+      } catch (error) {
+        return null;
+      }
+      const host = url.hostname.replace(/^www\./, "");
+      const isYoutube = host === "youtube.com" || host === "m.youtube.com" || host === "music.youtube.com" || host === "youtu.be";
+      if (!isYoutube) return null;
+
+      const list = url.searchParams.get("list");
+      let videoId = "";
+      if (host === "youtu.be") {
+        videoId = url.pathname.split("/").filter(Boolean)[0] || "";
+      } else if (url.pathname === "/watch") {
+        videoId = url.searchParams.get("v") || "";
+      } else {
+        const parts = url.pathname.split("/").filter(Boolean);
+        if (["embed", "shorts", "live"].includes(parts[0])) videoId = parts[1] || "";
+      }
+
+      const cleanVideoId = /^[\w-]{6,}$/.test(videoId) ? videoId : "";
+      const cleanList = list && /^[\w-]+$/.test(list) ? list : "";
+      if (!cleanVideoId && !cleanList) return null;
+
+      const embedParams = new URLSearchParams();
+      embedParams.set("rel", "0");
+      embedParams.set("modestbranding", "1");
+      if (cleanList && !cleanVideoId) {
+        embedParams.set("listType", "playlist");
+        embedParams.set("list", cleanList);
+        return {
+          embedUrl: `https://www.youtube.com/embed/videoseries?${embedParams.toString()}`,
+          watchUrl: `https://www.youtube.com/playlist?list=${encodeURIComponent(cleanList)}`,
+          type: "재생목록"
+        };
+      }
+      if (cleanList) embedParams.set("list", cleanList);
+      return {
+        embedUrl: `https://www.youtube.com/embed/${cleanVideoId}?${embedParams.toString()}`,
+        watchUrl: `https://www.youtube.com/watch?v=${encodeURIComponent(cleanVideoId)}${cleanList ? `&list=${encodeURIComponent(cleanList)}` : ""}`,
+        type: cleanList ? "영상 + 재생목록" : "영상"
+      };
+    }
+
+    function addMusicLink(event) {
+      event.preventDefault();
+      const parsed = parseYoutubeLink(els.musicUrlInput.value);
+      if (!parsed) {
+        els.musicStatus.textContent = "YouTube 영상 또는 재생목록 링크를 붙여넣어 주세요.";
+        return;
+      }
+      const duplicateIndex = musicTracks.findIndex(track => track.watchUrl === parsed.watchUrl);
+      if (duplicateIndex >= 0) {
+        currentMusicIndex = duplicateIndex;
+        loadMusicTrack(currentMusicIndex, true);
+        renderMusicList();
+        els.musicUrlInput.value = "";
+        els.musicStatus.textContent = "이미 추가된 링크를 재생합니다.";
+        saveMusicLinks();
+        return;
+      }
+      const track = {
+        id: `yt-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        title: `지브리 음악 ${musicTracks.length + 1}`,
+        type: parsed.type,
+        embedUrl: parsed.embedUrl,
+        watchUrl: parsed.watchUrl
+      };
+      musicTracks.push(track);
+      currentMusicIndex = musicTracks.length - 1;
+      els.musicUrlInput.value = "";
+      saveMusicLinks();
+      renderMusicList();
+      loadMusicTrack(currentMusicIndex, true);
+      els.musicStatus.textContent = "링크를 추가했습니다. 영상에서 재생 버튼을 눌러 음악을 시작하세요.";
+    }
+
+    function loadMusicTrack(index, autoplay) {
+      if (!musicTracks.length) {
+        updateEmptyMusicState();
+        return;
+      }
+      currentMusicIndex = (index + musicTracks.length) % musicTracks.length;
+      const track = musicTracks[currentMusicIndex];
+      const url = new URL(track.embedUrl);
+      if (autoplay) url.searchParams.set("autoplay", "1");
+      els.studyMusicFrame.src = url.toString();
+      els.musicNowTitle.textContent = track.title;
+      els.musicNowMeta.textContent = `YouTube ${track.type}`;
+      els.musicStatus.textContent = "공부 화면으로 이동해도 현재 플레이어는 계속 유지됩니다.";
+      saveMusicLinks();
+      renderMusicList();
+    }
+
+    function renderMusicList() {
+      if (!musicTracks.length) {
+        els.musicList.innerHTML = `<div class="empty">YouTube 링크를 추가하면 여기에 목록이 표시됩니다.</div>`;
+        return;
+      }
+      els.musicList.innerHTML = musicTracks.map((track, index) => `
+        <article class="music-track${index === currentMusicIndex ? " active" : ""}">
+          <div>
+            <div class="music-track-title">${escapeHtml(track.title)}</div>
+            <div class="music-track-meta">${escapeHtml(track.type)} · ${escapeHtml(track.watchUrl)}</div>
+          </div>
+          <div class="music-track-actions">
+            <button type="button" data-music-play="${index}">열기</button>
+            <button type="button" data-music-remove="${index}">삭제</button>
+          </div>
+        </article>
+      `).join("");
+      els.musicList.querySelectorAll("[data-music-play]").forEach(button => {
+        button.addEventListener("click", () => loadMusicTrack(Number(button.dataset.musicPlay), true));
+      });
+      els.musicList.querySelectorAll("[data-music-remove]").forEach(button => {
+        button.addEventListener("click", () => removeMusicTrack(Number(button.dataset.musicRemove)));
+      });
+    }
+
+    function updateEmptyMusicState() {
+      currentMusicIndex = -1;
+      els.studyMusicFrame.removeAttribute("src");
+      els.musicNowTitle.textContent = "공부 음악";
+      els.musicNowMeta.textContent = "YouTube 링크를 추가하면 앱 안에서 재생됩니다.";
+      els.musicStatus.textContent = "지브리 음악 YouTube 링크를 붙여넣어 목록을 만들어보세요.";
+      renderMusicList();
+    }
+
+    function playPreviousMusic() {
+      if (!musicTracks.length) return;
+      loadMusicTrack(currentMusicIndex - 1, true);
+    }
+
+    function playNextMusic() {
+      if (!musicTracks.length) return;
+      loadMusicTrack(currentMusicIndex + 1, true);
+    }
+
+    function openCurrentMusicOnYoutube() {
+      const track = musicTracks[currentMusicIndex];
+      if (!track) {
+        els.musicStatus.textContent = "먼저 YouTube 링크를 추가해 주세요.";
+        return;
+      }
+      window.open(track.watchUrl, "_blank", "noopener,noreferrer");
+    }
+
+    function removeMusicTrack(index) {
+      if (index < 0 || index >= musicTracks.length) return;
+      musicTracks.splice(index, 1);
+      if (!musicTracks.length) {
+        saveMusicLinks();
+        updateEmptyMusicState();
+        return;
+      }
+      currentMusicIndex = Math.min(currentMusicIndex, musicTracks.length - 1);
+      saveMusicLinks();
+      loadMusicTrack(currentMusicIndex, false);
+    }
+
+    function clearMusicLibrary() {
+      if (!musicTracks.length) return;
+      if (!confirm("저장된 YouTube 음악 링크를 모두 지울까요?")) return;
+      musicTracks = [];
+      saveMusicLinks();
+      updateEmptyMusicState();
     }
 
     function setupPwa() {
