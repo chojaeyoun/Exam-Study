@@ -4136,6 +4136,17 @@
                 <p id="installStatus" class="notice">설치 가능 여부를 확인하는 중입니다.</p>
                 <div id="installGuide" class="install-guide hidden" aria-live="polite"></div>
               </div>
+              <div class="panel side-panel">
+                <h2 class="mini-title">Supabase URL 설정 방법</h2>
+                <ol class="notice">
+                  <li>Supabase에서 새 프로젝트를 만듭니다.</li>
+                  <li>SQL Editor를 열고 이 앱의 <a href="./supabase_schema.sql" target="_blank" rel="noopener">supabase_schema.sql</a> 내용을 붙여넣은 뒤 Run을 누릅니다.</li>
+                  <li>Project Settings &gt; API에서 Project URL과 anon public key를 복사합니다.</li>
+                  <li>더보기 &gt; 클라우드 동기화에 URL과 anon key를 입력하고 연결 정보를 저장합니다.</li>
+                  <li>회원가입 또는 로그인 후 이 기기 데이터를 클라우드로 올리거나, 클라우드 데이터를 가져옵니다.</li>
+                </ol>
+                <p class="notice">각 사용자가 자기 Supabase 프로젝트를 연결하면 각자의 데이터베이스에 저장됩니다. 로그인한 사용자는 RLS 정책에 따라 자기 데이터만 읽고 쓸 수 있습니다.</p>
+              </div>
             </section>
           </div>
         </div>
