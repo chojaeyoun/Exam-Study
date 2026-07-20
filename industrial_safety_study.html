@@ -3806,6 +3806,14 @@
               </div>
               <p id="queueStatus" class="queue-status">오답, 중요, 오래 안 본 문제를 자동으로 모읍니다.</p>
               <div class="filters">
+                <label>시험 유형
+                  <select id="examTypeFilter">
+                    <option value="all">전체</option>
+                    <option value="multiple">필기 4지선다</option>
+                    <option value="written">실기 필답형</option>
+                    <option value="practical">실기 작업형</option>
+                  </select>
+                </label>
                 <label>분야
                   <select id="categoryFilter"></select>
                 </label>
@@ -4315,6 +4323,7 @@
       masterBtn: document.querySelector("#masterBtn"),
       prevBtn: document.querySelector("#prevBtn"),
       nextBtn: document.querySelector("#nextBtn"),
+      examTypeFilter: document.querySelector("#examTypeFilter"),
       categoryFilter: document.querySelector("#categoryFilter"),
       tagFilter: document.querySelector("#tagFilter"),
       statusFilter: document.querySelector("#statusFilter"),
@@ -4502,6 +4511,7 @@
     els.musicOpenBtn.addEventListener("click", openCurrentMusicOnYoutube);
     els.musicNextBtn.addEventListener("click", playNextMusic);
     els.clearMusicBtn.addEventListener("click", clearMusicLibrary);
+    els.examTypeFilter.addEventListener("change", () => { bankListMode = "filtered"; currentIndex = 0; currentTheoryIndex = 0; render(); });
     els.categoryFilter.addEventListener("change", () => { bankListMode = "filtered"; currentIndex = 0; currentTheoryIndex = 0; render(); });
     els.tagFilter.addEventListener("change", () => { bankListMode = "filtered"; currentIndex = 0; currentTheoryIndex = 0; render(); });
     els.statusFilter.addEventListener("change", () => { bankListMode = "filtered"; currentIndex = 0; render(); });
@@ -4894,18 +4904,20 @@
 
     function filteredQuestions() {
       const search = els.searchInput.value.trim().toLowerCase();
+      const examType = els.examTypeFilter.value;
       const category = els.categoryFilter.value;
       const tag = els.tagFilter.value;
       const status = els.statusFilter.value;
       const matches = state.questions.filter(q => {
         const text = [q.category, q.level, q.question, q.answer, q.memo, q.imageName, normalizeTags(q.tags).join(" ")].join(" ").toLowerCase();
         const examOk = (q.examId || DEFAULT_EXAM_ID) === state.activeExamId;
+        const examTypeOk = !examType || examType === "all" || normalizeExamType(q.examType) === examType;
         const categoryOk = !category || category === "all" || q.category === category;
         const tagOk = tagMatches(q, tag);
         const favoriteOk = favoriteMatches(q);
         const statusOk = status === "all" || q.status === status;
         const searchOk = !search || text.includes(search);
-        return examOk && categoryOk && tagOk && favoriteOk && statusOk && searchOk;
+        return examOk && examTypeOk && categoryOk && tagOk && favoriteOk && statusOk && searchOk;
       });
       if (!reviewQueueIds.length) return sortStudyQuestions(matches);
       return reviewQueueIds
@@ -6052,6 +6064,7 @@
       q.updatedAt = new Date().toISOString();
       state.activeExamId = q.examId || DEFAULT_EXAM_ID;
       els.searchInput.value = "";
+      els.examTypeFilter.value = "all";
       els.categoryFilter.value = "all";
       els.tagFilter.value = "all";
       els.statusFilter.value = q.status === "mastered" ? "mastered" : "all";
@@ -7121,6 +7134,7 @@
       const total = currentExamQuestions().length;
       const isFiltered =
         Boolean(els.searchInput.value.trim()) ||
+        (els.examTypeFilter.value && els.examTypeFilter.value !== "all") ||
         (els.categoryFilter.value && els.categoryFilter.value !== "all") ||
         (els.tagFilter.value && els.tagFilter.value !== "all") ||
         (els.statusFilter.value && els.statusFilter.value !== "all") ||
@@ -7302,6 +7316,7 @@
       if (!q) return;
       state.activeExamId = q.examId || DEFAULT_EXAM_ID;
       els.searchInput.value = "";
+      els.examTypeFilter.value = "all";
       els.categoryFilter.value = "all";
       els.tagFilter.value = "all";
       els.statusFilter.value = "all";
@@ -7378,6 +7393,7 @@
     function clearBankSearch() {
       bankListMode = "filtered";
       els.searchInput.value = "";
+      els.examTypeFilter.value = "all";
       els.categoryFilter.value = "all";
       els.tagFilter.value = "all";
       els.statusFilter.value = "all";
@@ -7408,6 +7424,7 @@
       reviewQueueIds = [];
       includeMasteredInStudyAll = false;
       studyMode = "question";
+      els.examTypeFilter.value = "all";
       els.statusFilter.value = "all";
       currentIndex = 0;
       setView("study");
@@ -7424,6 +7441,7 @@
       includeMasteredInStudyAll = false;
       studyMode = "question";
       els.searchInput.value = "";
+      els.examTypeFilter.value = "all";
       els.categoryFilter.value = "all";
       els.tagFilter.value = "all";
       els.statusFilter.value = "new";
@@ -7441,6 +7459,7 @@
       includeMasteredInStudyAll = true;
       studyMode = "question";
       els.searchInput.value = "";
+      els.examTypeFilter.value = "all";
       els.categoryFilter.value = "all";
       els.tagFilter.value = "all";
       els.statusFilter.value = "all";
@@ -7467,6 +7486,7 @@
     function renderStudyModeButtons() {
       els.studyQuestionModeBtn.classList.toggle("active", studyMode === "question");
       els.studyTheoryModeBtn.classList.toggle("active", studyMode === "theory");
+      els.examTypeFilter.disabled = studyMode === "theory";
       els.statusFilter.disabled = studyMode === "theory";
     }
 
@@ -7645,6 +7665,7 @@
       currentIndex = 0;
       studyMode = "question";
       els.searchInput.value = "";
+      els.examTypeFilter.value = "all";
       els.categoryFilter.value = "all";
       els.tagFilter.value = "all";
       els.statusFilter.value = "wrong";
@@ -7665,6 +7686,7 @@
       currentIndex = 0;
       studyMode = "question";
       els.searchInput.value = "";
+      els.examTypeFilter.value = "all";
       els.categoryFilter.value = "all";
       els.tagFilter.value = "all";
       els.statusFilter.value = "mastered";
@@ -8108,6 +8130,7 @@
       els.applyOcrBtn.disabled = true;
       clearForm();
       els.searchInput.value = "";
+      els.examTypeFilter.value = "all";
       els.categoryFilter.value = "all";
       els.statusFilter.value = "all";
       render();
