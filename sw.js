@@ -1,8 +1,10 @@
-const CACHE_NAME = "exam-study-app-v93";
+const CACHE_NAME = "exam-study-app-v94";
 const APP_SHELL = [
   "./index.html",
   "./industrial_safety_study.html",
+  "./industrial_safety_study_public.html",
   "./manifest.webmanifest",
+  "./manifest_public.webmanifest",
   "./icons/sushi-vinegar-icon.svg",
   "./industrial_safety_questions_template.csv"
 ];
@@ -30,6 +32,7 @@ self.addEventListener("fetch", event => {
   const isPageRequest =
     event.request.mode === "navigate" ||
     requestUrl.pathname.endsWith("/industrial_safety_study.html") ||
+    requestUrl.pathname.endsWith("/industrial_safety_study_public.html") ||
     requestUrl.pathname.endsWith("/index.html");
 
   if (isPageRequest) {
