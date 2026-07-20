@@ -3917,6 +3917,13 @@
             </div>
             <button type="button" id="toggleOcrBtn" class="ocr-toggle" aria-expanded="false" aria-controls="ocrBody">상세 옵션</button>
           </div>
+          <label class="wide">시험 유형
+            <select id="examTypeInput">
+              <option value="written" selected>실기 필답형</option>
+              <option value="multiple">필기 4지선다</option>
+              <option value="practical">실기 작업형</option>
+            </select>
+          </label>
           <label class="wide">문제
             <div class="text-tools" data-tools-for="questionInput"></div>
             <textarea id="questionInput" class="notion-textarea question-draft" required placeholder="문제를 입력하세요. /표 /계산 /빈칸 /사진"></textarea>
@@ -3952,13 +3959,6 @@
             <div id="ocrBody" class="ocr-body">
               <input id="photoFile" class="hidden-file" type="file" accept="image/*" multiple>
               <div class="compose-option-grid">
-                <label>시험 유형
-                  <select id="examTypeInput">
-                    <option value="written" selected>실기 필답형</option>
-                    <option value="multiple">필기 4지선다</option>
-                    <option value="practical">실기 작업형</option>
-                  </select>
-                </label>
                 <label>분야
                   <input id="categoryInput" placeholder="예: 안전관리, 전기, 화학, 건설">
                 </label>
