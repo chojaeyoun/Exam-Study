@@ -1538,6 +1538,54 @@
       background: #fff8f6;
     }
 
+    .my-answer-wrap.multiple-choice-mode textarea {
+      display: none;
+    }
+
+    .choice-answer-panel {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #cfe0dc;
+      border-radius: 8px;
+      background: #f8fcfb;
+    }
+
+    .choice-answer-title {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .choice-answer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+    }
+
+    .choice-answer-grid button {
+      min-height: 44px;
+      padding: 0 10px;
+      font-size: 15px;
+      font-weight: 900;
+      white-space: normal;
+    }
+
+    .choice-answer-grid button.selected {
+      color: #fff;
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    .choice-answer-result {
+      margin: 0;
+      min-height: 20px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
     .study-options {
       display: flex;
       flex-wrap: wrap;
@@ -3724,6 +3772,7 @@
             <div class="question">
               <div id="questionText" class="question-box">문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.</div>
               <div class="my-answer-wrap">
+                <div id="choiceAnswerPanel" class="choice-answer-panel hidden"></div>
                 <textarea id="myAnswer" placeholder="내 답안을 적어본 뒤 정답을 확인하세요. 입력 내용은 채점되지 않고 암기용으로만 사용됩니다."></textarea>
               </div>
               <div id="answerAssist" class="answer-assist hidden"></div>
@@ -3903,6 +3952,13 @@
             <div id="ocrBody" class="ocr-body">
               <input id="photoFile" class="hidden-file" type="file" accept="image/*" multiple>
               <div class="compose-option-grid">
+                <label>시험 유형
+                  <select id="examTypeInput">
+                    <option value="written" selected>실기 필답형</option>
+                    <option value="multiple">필기 4지선다</option>
+                    <option value="practical">실기 작업형</option>
+                  </select>
+                </label>
                 <label>분야
                   <input id="categoryInput" placeholder="예: 안전관리, 전기, 화학, 건설">
                 </label>
@@ -4224,6 +4280,7 @@
       questionText: document.querySelector("#questionText"),
       answerText: document.querySelector("#answerText"),
       myAnswer: document.querySelector("#myAnswer"),
+      choiceAnswerPanel: document.querySelector("#choiceAnswerPanel"),
       answerAssist: document.querySelector("#answerAssist"),
       answerHintBtn: document.querySelector("#answerHintBtn"),
       answerKeywordBtn: document.querySelector("#answerKeywordBtn"),
@@ -4286,6 +4343,7 @@
       theoryList: document.querySelector("#theoryList"),
       questionForm: document.querySelector("#questionForm"),
       editId: document.querySelector("#editId"),
+      examTypeInput: document.querySelector("#examTypeInput"),
       categoryInput: document.querySelector("#categoryInput"),
       levelInput: document.querySelector("#levelInput"),
       tagsInput: document.querySelector("#tagsInput"),
@@ -4377,7 +4435,7 @@
     const TABLE_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "table");
     const CALC_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "calc");
     const QUESTION_EXTRA_BLOCKS = [
-      { id: "choices", label: "보기", icon: "V", hint: "통짜 보기 묶음", template: "\n[보기]\n보기1, 보기2, 보기3\n\n" },
+      { id: "choices", label: "보기", icon: "V", hint: "통짜 보기 묶음", template: "\n1. 보기1\n2. 보기2\n3. 보기3\n4. 보기4\n\n" },
       { id: "cloze", label: "빈칸", icon: "□", hint: "빈칸 표시 삽입", template: "{{정답}}" },
       { id: "photo", label: "사진", icon: "⌁", hint: "사진 선택 또는 붙여넣기", action: "photo" },
       { id: "memo", label: "메모", icon: "M", hint: "메모 입력칸 열기", action: "memo" },
@@ -4486,7 +4544,7 @@
     els.insertTheoryQuestionHintBtn.addEventListener("click", buildTheoryQuestionHint);
     els.clearTheoryBtn.addEventListener("click", clearTheoryForm);
     els.questionForm.addEventListener("submit", saveQuestion);
-    [els.questionInput, els.answerInput, els.categoryInput, els.levelInput, els.tagsInput, els.memoInput].forEach(input => {
+    [els.questionInput, els.answerInput, els.examTypeInput, els.categoryInput, els.levelInput, els.tagsInput, els.memoInput].forEach(input => {
       input.addEventListener("input", updateQuestionDiagnostics);
       input.addEventListener("change", updateQuestionDiagnostics);
     });
@@ -4604,6 +4662,7 @@
           ...q,
           id: q.id || crypto.randomUUID(),
           examId: q.examId || DEFAULT_EXAM_ID,
+          examType: normalizeExamType(q.examType),
           status: q.status || "new",
           wrongCount: q.wrongCount || 0,
           masteredAt: q.masteredAt || "",
@@ -4741,6 +4800,19 @@
       return normalizeTags(tags).join(", ");
     }
 
+    function normalizeExamType(value) {
+      return ["written", "multiple", "practical"].includes(value) ? value : "written";
+    }
+
+    function examTypeLabel(value) {
+      const labels = {
+        written: "실기 필답형",
+        multiple: "필기 4지선다",
+        practical: "실기 작업형"
+      };
+      return labels[normalizeExamType(value)];
+    }
+
     function renderTags(tags) {
       const normalized = normalizeTags(tags);
       if (!normalized.length) return "";
@@ -4757,13 +4829,15 @@
       const q = String(question?.question || "");
       const a = String(question?.answer || "");
       const combined = `${q}\n${a}`;
-      const types = [];
+      const examType = normalizeExamType(question?.examType);
+      const types = [examTypeLabel(examType)];
       if (question?.questionImage || question?.answerImage || /\[사진\]|사진 문제|도면|그림|이미지|TF도|SIGN/i.test(combined)) types.push("사진형");
       if (extractChoiceBank(q).items.length || splitQuestionOptions(q).options.length >= 2 || /\[보기\]|보기\s*[:：]/.test(q)) types.push("보기형");
       if (/\{\{[^{}]+\}\}|빈칸|괄호|____|___/.test(combined)) types.push("빈칸형");
       if (isMarkdownTable(q) || isMarkdownTable(a) || /\|.+\|/.test(combined)) types.push("표형");
       if (/계산|공식|풀이|=\s*|×|÷|\b\d+\s*[%xX*/+\-]\s*\d+/.test(combined)) types.push("계산형");
-      if (!types.length) types.push("서술형");
+      if (examType === "written") types.push("서술형");
+      if (examType === "practical") types.push("지문/이미지 답안형");
       return [...new Set(types)].slice(0, 4);
     }
 
@@ -5068,6 +5142,7 @@
         return {
           id: row.id,
           examId: row.exam_id,
+          examType: normalizeExamType(cloudMemo.payload.examType),
           category: row.category,
           level: row.level,
           question: row.question,
@@ -5215,6 +5290,7 @@
     function buildCloudMemo(question) {
       const cleanMemo = stripCloudPayload(question.memo || "");
       const payload = {
+        examType: normalizeExamType(question.examType),
         questionImage: question.questionImage || "",
         imageName: question.imageName || "",
         answerImage: question.answerImage || "",
@@ -5770,7 +5846,8 @@
     }
 
     function splitQuestionOptions(text) {
-      const optionPattern = /(^|[\s/])(\d{1,2})[).]\s*/g;
+      const circleMap = new Map([["①", "1"], ["②", "2"], ["③", "3"], ["④", "4"], ["⑤", "5"]]);
+      const optionPattern = /(^|[\s/])(?:(\d{1,2})[).]|([①②③④⑤]))\s*/g;
       const matches = [...text.replace(/\n/g, " ").matchAll(optionPattern)];
       if (matches.length < 2) return { body: text, options: [] };
 
@@ -5779,7 +5856,7 @@
         const start = match.index + match[0].length;
         const end = matches[index + 1]?.index ?? text.length;
         return {
-          number: match[2],
+          number: match[2] || circleMap.get(match[3]) || "",
           text: cleanupOptionText(text.slice(start, end))
         };
       }).filter(option => option.text);
@@ -5825,6 +5902,7 @@
         els.answerText.innerHTML = "";
         els.answerText.classList.remove("visible");
         els.myAnswer.value = "";
+        renderChoiceAnswerPanel(null);
         hideAnswerAssist();
         els.myAnswer.classList.remove("hidden");
         els.showAnswerBtn.textContent = answerActionLabel();
@@ -5840,12 +5918,13 @@
       }
 
       els.cardType.textContent = current.category || "미분류";
-      els.cardLevel.textContent = `${detectQuestionTypes(current)[0]} · 중요도 ${current.level || "중"}`;
+      els.cardLevel.textContent = `${examTypeLabel(current.examType)} · 중요도 ${current.level || "중"}`;
       setStudyStatusBadge(current);
       els.questionText.innerHTML = formatQuestionCardHtml(current);
       els.answerText.innerHTML = formatStagedAnswerHtml(current);
       els.answerText.classList.remove("visible");
       els.myAnswer.value = "";
+      renderChoiceAnswerPanel(current);
       hideAnswerAssist();
       els.myAnswer.classList.remove("hidden");
       els.showAnswerBtn.textContent = answerActionLabel();
@@ -5872,6 +5951,7 @@
       els.cardLevel.textContent = "이론";
       setStudyStatusBadge(null);
       els.myAnswer.value = "";
+      renderChoiceAnswerPanel(null);
       hideAnswerAssist();
       els.myAnswer.classList.add("hidden");
       els.wrongBtn.classList.add("hidden");
@@ -6128,6 +6208,50 @@
     function hideStudyAnswer() {
       els.answerText.classList.remove("visible");
       hideAnswerAssist();
+    }
+
+    function renderChoiceAnswerPanel(question) {
+      if (!els.choiceAnswerPanel) return;
+      const wrap = els.choiceAnswerPanel.closest(".my-answer-wrap");
+      const isMultiple = normalizeExamType(question?.examType) === "multiple";
+      wrap?.classList.toggle("multiple-choice-mode", isMultiple);
+      els.choiceAnswerPanel.classList.toggle("hidden", !isMultiple);
+      if (!isMultiple) {
+        els.choiceAnswerPanel.innerHTML = "";
+        return;
+      }
+
+      const options = splitQuestionOptions(String(question?.question || "")).options.slice(0, 4);
+      const optionButtons = [1, 2, 3, 4].map((number, index) => {
+        const option = options[index];
+        const label = option ? `${option.number}. ${option.text}` : `${number}번`;
+        return `<button type="button" data-choice-answer="${number}">${escapeHtml(label)}</button>`;
+      }).join("");
+      els.choiceAnswerPanel.innerHTML = `
+        <p class="choice-answer-title">필기형 답 선택</p>
+        <div class="choice-answer-grid">${optionButtons}</div>
+        <p class="choice-answer-result">정답을 보기 전에 하나를 골라보세요.</p>
+      `;
+      const result = els.choiceAnswerPanel.querySelector(".choice-answer-result");
+      const answerText = String(question?.answer || "");
+      const answerNumber = answerText.match(/(?:정답|답)?\s*[:：]?\s*([1-4①②③④])/);
+      const normalizedAnswer = answerNumber ? "①②③④".indexOf(answerNumber[1]) >= 0
+        ? String("①②③④".indexOf(answerNumber[1]) + 1)
+        : answerNumber[1]
+        : "";
+      els.choiceAnswerPanel.querySelectorAll("[data-choice-answer]").forEach(button => {
+        button.addEventListener("click", () => {
+          els.choiceAnswerPanel.querySelectorAll("[data-choice-answer]").forEach(item => item.classList.remove("selected"));
+          button.classList.add("selected");
+          if (!normalizedAnswer) {
+            result.textContent = `${button.dataset.choiceAnswer}번을 선택했습니다.`;
+            return;
+          }
+          result.textContent = button.dataset.choiceAnswer === normalizedAnswer
+            ? "선택한 답이 정답과 같습니다."
+            : `선택한 답: ${button.dataset.choiceAnswer}번`;
+        });
+      });
     }
 
     function buildBlankQuiz(answer, keywords) {
@@ -6405,6 +6529,7 @@
       return {
         id: els.editId.value || "preview",
         examId: editing?.examId || state.activeExamId,
+        examType: normalizeExamType(els.examTypeInput.value),
         category: els.categoryInput.value.trim() || "미분류",
         level: els.levelInput.value || "중",
         question: els.questionInput.value.trim(),
@@ -6458,6 +6583,13 @@
       if (!draft.question.trim()) warnings.push("문제 내용 필요");
       if (!draft.answer.trim() && !draft.answerImage) warnings.push("정답 필요");
       if (!draft.category.trim()) warnings.push("분야 미입력");
+      if (normalizeExamType(draft.examType) === "multiple") {
+        const options = splitQuestionOptions(extractChoiceBank(draft.question).body || draft.question).options;
+        if (options.length !== 4) warnings.push("필기형은 보기 4개 권장");
+      }
+      if (normalizeExamType(draft.examType) === "practical" && !draft.questionImage && !/\[박스\]|\[보기박스\]|\[사진\]|도면|그림|이미지|지문/.test(draft.question)) {
+        warnings.push("작업형 지문/이미지 확인");
+      }
       if (types.includes("보기형") && splitQuestionOptions(extractChoiceBank(draft.question).body || "").options.length < 2) {
         warnings.push("보기형 번호 항목 확인");
       }
@@ -7004,6 +7136,7 @@
             <article class="bank-card">
               <div class="bank-card-top">
                 <div class="bank-card-meta">
+                  <span class="pill">${escapeHtml(examTypeLabel(q.examType))}</span>
                   <span class="pill">${escapeHtml(q.category || "미분류")}</span>
                   <span class="pill">중요도 ${escapeHtml(q.level || "중")}</span>
                   <span class="pill">${status}</span>
@@ -7033,6 +7166,15 @@
       return `<tr class="quick-edit-row">
         <td colspan="6">
           <div class="quick-edit-form" data-quick-form="${q.id}">
+            <label>시험 유형
+              <select data-quick-field="examType">
+                ${[
+                  ["written", "실기 필답형"],
+                  ["multiple", "필기 4지선다"],
+                  ["practical", "실기 작업형"]
+                ].map(([value, label]) => `<option value="${value}"${normalizeExamType(q.examType) === value ? " selected" : ""}>${label}</option>`).join("")}
+              </select>
+            </label>
             <label>분야
               <input data-quick-field="category" value="${escapeHtml(q.category || "미분류")}">
             </label>
@@ -7183,6 +7325,7 @@
       if (!form || !q) return;
       const previousQuestion = q.question || "";
       const previousAnswer = q.answer || "";
+      q.examType = normalizeExamType(form.querySelector("[data-quick-field='examType']").value);
       q.category = form.querySelector("[data-quick-field='category']").value.trim() || "미분류";
       q.level = form.querySelector("[data-quick-field='level']").value || "중";
       q.question = form.querySelector("[data-quick-field='question']").value.trim();
@@ -7902,6 +8045,7 @@
       if (!pendingPhotoQuestions.length) return;
 
       const category = els.categoryInput.value.trim() || "사진 문제";
+      const examType = normalizeExamType(els.examTypeInput.value || "practical");
       const level = els.levelInput.value || "중";
       const tags = normalizeTags(els.tagsInput.value);
       const baseQuestion = els.questionInput.value.trim();
@@ -7917,6 +8061,7 @@
         return {
           id: crypto.randomUUID(),
           examId: state.activeExamId,
+          examType,
           category,
           level,
           question,
@@ -7990,6 +8135,7 @@
       const data = {
         id,
         examId: existing?.examId || state.activeExamId,
+        examType: normalizeExamType(els.examTypeInput.value),
         category: els.categoryInput.value.trim() || "미분류",
         level: els.levelInput.value,
         question: nextQuestion,
@@ -8022,6 +8168,7 @@
     function clearForm(options = {}) {
       const keepContext = Boolean(options.keepContext);
       const context = keepContext ? {
+        examType: els.examTypeInput.value,
         category: els.categoryInput.value,
         level: els.levelInput.value,
         tags: els.tagsInput.value
@@ -8029,6 +8176,7 @@
       els.editId.value = "";
       els.questionForm.querySelector(".compose-head h2").textContent = "새 문제";
       els.questionForm.reset();
+      els.examTypeInput.value = normalizeExamType(context?.examType);
       els.categoryInput.value = context?.category || "";
       els.levelInput.value = context?.level || "중";
       els.tagsInput.value = context?.tags || "";
@@ -8050,6 +8198,7 @@
       removeAnswerImageOnSave = false;
       els.editId.value = q.id;
       els.questionForm.querySelector(".compose-head h2").textContent = "문제 수정";
+      els.examTypeInput.value = normalizeExamType(q.examType);
       els.categoryInput.value = q.category;
       els.levelInput.value = q.level || "중";
       els.tagsInput.value = tagsToInput(q.tags);
@@ -8126,6 +8275,7 @@
         return {
           id: crypto.randomUUID(),
           examId: state.activeExamId,
+          examType: normalizeExamType(hasHeader ? get("examtype") || get("exam_type") : ""),
           category: (hasHeader ? get("category") : row[0])?.trim() || "미분류",
           level: (hasHeader ? get("level") : row[1])?.trim() || "중",
           question: (hasHeader ? get("question") : row[2])?.trim() || "",
@@ -8158,15 +8308,15 @@
     }
 
     function exportCsv() {
-      const header = ["category", "level", "question", "answer", "memo", "tags", "favorite", "status", "wrongCount"];
-      const rows = currentExamQuestions().map(q => [q.category, q.level, q.question, q.answer, q.memo, tagsToInput(q.tags), q.favorite ? "true" : "", q.status, q.wrongCount]);
+      const header = ["examType", "category", "level", "question", "answer", "memo", "tags", "favorite", "status", "wrongCount"];
+      const rows = currentExamQuestions().map(q => [normalizeExamType(q.examType), q.category, q.level, q.question, q.answer, q.memo, tagsToInput(q.tags), q.favorite ? "true" : "", q.status, q.wrongCount]);
       download(`${state.activeExamId}_questions.csv`, toCsv([header, ...rows]));
     }
 
     function downloadTemplate() {
       const rows = [
-        ["category", "level", "question", "answer", "memo", "tags", "favorite"],
-        ["안전관리", "상", "문제 내용을 입력", "정답 내용을 입력", "암기 메모", "법령, 암기", "true"]
+        ["examType", "category", "level", "question", "answer", "memo", "tags", "favorite"],
+        ["multiple", "안전관리", "상", "문제 내용을 입력\n① 보기1\n② 보기2\n③ 보기3\n④ 보기4", "정답: 1", "암기 메모", "필기, 4지선다", "true"]
       ];
       download("exam_questions_template.csv", toCsv(rows));
     }
