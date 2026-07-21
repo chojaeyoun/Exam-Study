@@ -1650,33 +1650,55 @@
       const boxed = extractQuestionBoxes(choiceBank.body || source);
       const questionSource = boxed.body;
       const choiceHtml = choiceBank.items.length ? renderChoiceBank(choiceBank.items) : "";
-      const boxHtml = renderQuestionBoxes(boxed.boxes);
       const parts = splitQuestionOptions(questionSource);
       if (parts.options.length >= 2) {
         const main = parts.body || "다음 조건을 보고 답하세요.";
+        const mainHtml = hasQuestionBoxToken(main)
+          ? renderQuestionBodyWithBoxes(main, boxed.boxes)
+          : `<p class="question-main">${formatInlineHtml(main)}</p>`;
         return [
-          `<p class="question-main">${formatInlineHtml(main)}</p>`,
+          mainHtml,
           choiceHtml,
           `<div class="question-list">`,
           ...parts.options.map(option => {
-            return `<div class="question-option"><b>${escapeHtml(option.number)}</b><span>${formatInlineHtml(option.text)}</span></div>`;
+            const optionHtml = hasQuestionBoxToken(option.text)
+              ? renderQuestionBodyWithBoxes(option.text, boxed.boxes)
+              : formatInlineHtml(option.text);
+            return `<div class="question-option"><b>${escapeHtml(option.number)}</b><span>${optionHtml}</span></div>`;
           }),
-          `</div>`,
-          boxHtml
+          `</div>`
         ].join("");
       }
 
-      return `${formatRichTextHtml(questionSource)}${choiceHtml}${boxHtml}`;
+      return `${renderQuestionBodyWithBoxes(questionSource, boxed.boxes)}${choiceHtml}`;
     }
 
     function extractQuestionBoxes(text) {
       const boxes = [];
       const body = String(text || "").replace(/\[(?:박스|보기박스|box)\]([\s\S]*?)\[\/(?:박스|보기박스|box)\]/gi, (match, content) => {
         const trimmed = content.trim();
-        if (trimmed) boxes.push(trimmed);
-        return "";
+        if (!trimmed) return "";
+        const index = boxes.push(trimmed) - 1;
+        return `\n\n[[QUESTION_BOX_${index}]]\n\n`;
       }).trim();
       return { body, boxes };
+    }
+
+    function hasQuestionBoxToken(text) {
+      return /\[\[QUESTION_BOX_\d+\]\]/.test(String(text || ""));
+    }
+
+    function renderQuestionBodyWithBoxes(text, boxes) {
+      const source = String(text || "");
+      if (!hasQuestionBoxToken(source)) return formatRichTextHtml(source);
+      return source
+        .split(/(\[\[QUESTION_BOX_\d+\]\])/g)
+        .map(part => {
+          const match = part.match(/^\[\[QUESTION_BOX_(\d+)\]\]$/);
+          if (match) return renderQuestionBoxes([boxes[Number(match[1])] || ""]);
+          return formatRichTextHtml(part);
+        })
+        .join("");
     }
 
     function renderQuestionBoxes(boxes) {
