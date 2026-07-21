@@ -80,8 +80,10 @@
               <button class="summary-chip" type="button" data-summary-link="mastered"><b id="summaryMastered">0</b><span>완료</span></button>
             </div>
             <div class="mode-tabs" aria-label="학습 방식 선택">
-              <button id="studyQuestionModeBtn" class="active" type="button">문제 학습</button>
-              <button id="studyTheoryModeBtn" type="button">이론 학습</button>
+              <button id="studyReviewModeBtn" type="button">복습 문제</button>
+              <button id="studyMultipleModeBtn" class="active" type="button">필기</button>
+              <button id="studyWrittenModeBtn" type="button">실기 필답형</button>
+              <button id="studyPracticalModeBtn" type="button">실기 작업형</button>
             </div>
           </div>
           <div class="progress-box" aria-label="암기 진행률">
@@ -272,7 +274,6 @@
       <section class="view" data-view="bank">
         <div class="panel compose-tabs" aria-label="작성 방식 선택">
           <button id="composeQuestionModeBtn" class="active" type="button">문제 작성</button>
-          <button id="composeTheoryModeBtn" type="button">이론 정리</button>
           <button id="composeManageModeBtn" type="button">목록 관리</button>
         </div>
 
@@ -431,7 +432,7 @@
               <tbody id="bankTable"></tbody>
             </table>
           </div>
-          <div class="panel side-panel">
+          <div class="panel side-panel hidden">
             <h2 class="mini-title">정리한 이론</h2>
             <div id="theoryList" class="theory-list"></div>
           </div>

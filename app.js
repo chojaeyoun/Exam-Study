@@ -51,8 +51,10 @@
       summaryMastered: document.querySelector("#summaryMastered"),
       progressLabel: document.querySelector("#progressLabel"),
       progressFill: document.querySelector("#progressFill"),
-      studyQuestionModeBtn: document.querySelector("#studyQuestionModeBtn"),
-      studyTheoryModeBtn: document.querySelector("#studyTheoryModeBtn"),
+      studyReviewModeBtn: document.querySelector("#studyReviewModeBtn"),
+      studyMultipleModeBtn: document.querySelector("#studyMultipleModeBtn"),
+      studyWrittenModeBtn: document.querySelector("#studyWrittenModeBtn"),
+      studyPracticalModeBtn: document.querySelector("#studyPracticalModeBtn"),
       examTabs: document.querySelector("#examTabs"),
       addExamBtn: document.querySelector("#addExamBtn"),
       openDrawerBtn: document.querySelector("#openDrawerBtn"),
@@ -309,11 +311,13 @@
     els.clearQueueBtn.addEventListener("click", clearReviewQueue);
     els.wrongReviewBtn.addEventListener("click", startWrongReviewQueue);
     els.masteredCheckBtn.addEventListener("click", startMasteredCheckQueue);
-    els.studyQuestionModeBtn.addEventListener("click", () => setStudyMode("question"));
-    els.studyTheoryModeBtn.addEventListener("click", () => setStudyMode("theory"));
+    els.studyReviewModeBtn.addEventListener("click", startWrongReviewQueue);
+    els.studyMultipleModeBtn.addEventListener("click", () => setStudyExamType("multiple"));
+    els.studyWrittenModeBtn.addEventListener("click", () => setStudyExamType("written"));
+    els.studyPracticalModeBtn.addEventListener("click", () => setStudyExamType("practical"));
     els.studyFavoriteBtn.addEventListener("click", toggleCurrentStudyFavorite);
     els.composeQuestionModeBtn.addEventListener("click", () => setComposeMode("question"));
-    els.composeTheoryModeBtn.addEventListener("click", () => setComposeMode("theory"));
+    if (els.composeTheoryModeBtn) els.composeTheoryModeBtn.addEventListener("click", () => setComposeMode("theory"));
     els.composeManageModeBtn.addEventListener("click", () => setComposeMode("manage"));
     els.showAnswerBtn.addEventListener("click", handlePrimaryStudyAction);
     els.memoryCardBtn.addEventListener("click", openCurrentMemoryCard);
@@ -3419,21 +3423,45 @@
       renderStudy();
     }
 
+    function setStudyExamType(type) {
+      reviewQueueIds = [];
+      reviewQueueLabel = "";
+      includeMasteredInStudyAll = false;
+      studyMode = "question";
+      els.searchInput.value = "";
+      els.examTypeFilter.value = type;
+      els.categoryFilter.value = "all";
+      els.tagFilter.value = "all";
+      els.statusFilter.value = "all";
+      els.favoriteFilter.checked = false;
+      currentIndex = 0;
+      setView("study");
+      renderFilters();
+      renderDashboard();
+      renderStudyModeButtons();
+      renderStudy();
+    }
+
     function renderStudyModeButtons() {
-      els.studyQuestionModeBtn.classList.toggle("active", studyMode === "question");
-      els.studyTheoryModeBtn.classList.toggle("active", studyMode === "theory");
-      els.examTypeFilter.disabled = studyMode === "theory";
-      els.statusFilter.disabled = studyMode === "theory";
+      const reviewActive = studyMode === "question" && (reviewQueueIds.length > 0 || els.statusFilter.value === "wrong");
+      const examType = normalizeExamType(els.examTypeFilter.value);
+      els.studyReviewModeBtn.classList.toggle("active", reviewActive);
+      els.studyMultipleModeBtn.classList.toggle("active", !reviewActive && els.examTypeFilter.value === "multiple" && examType === "multiple");
+      els.studyWrittenModeBtn.classList.toggle("active", !reviewActive && els.examTypeFilter.value === "written" && examType === "written");
+      els.studyPracticalModeBtn.classList.toggle("active", !reviewActive && els.examTypeFilter.value === "practical" && examType === "practical");
+      els.examTypeFilter.disabled = false;
+      els.statusFilter.disabled = false;
     }
 
     function setComposeMode(mode) {
+      if (mode === "theory" && !els.composeTheoryModeBtn) mode = "question";
       composeMode = mode;
       if (mode !== "manage") {
         quickEditId = "";
         bankListMode = "filtered";
       }
       els.composeQuestionModeBtn.classList.toggle("active", mode === "question");
-      els.composeTheoryModeBtn.classList.toggle("active", mode === "theory");
+      if (els.composeTheoryModeBtn) els.composeTheoryModeBtn.classList.toggle("active", mode === "theory");
       els.composeManageModeBtn.classList.toggle("active", mode === "manage");
       document.querySelectorAll("[data-bank-panel]").forEach(panel => {
         panel.classList.toggle("active", panel.dataset.bankPanel === mode);
