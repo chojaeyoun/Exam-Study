@@ -83,7 +83,6 @@
       studyGrid: document.querySelector("#studyGrid"),
       studyRangeBox: document.querySelector("#studyRangeBox"),
       toggleRangeBtn: document.querySelector("#toggleRangeBtn"),
-      reviewQueueBtn: document.querySelector("#reviewQueueBtn"),
       writtenReviewQueueBtn: document.querySelector("#writtenReviewQueueBtn"),
       answerReviewQueueBtn: document.querySelector("#answerReviewQueueBtn"),
       practicalReviewQueueBtn: document.querySelector("#practicalReviewQueueBtn"),
@@ -298,7 +297,6 @@
     els.shuffleBtn.addEventListener("click", shuffleQuestions);
     els.resetBtn.addEventListener("click", resetProgress);
     els.toggleRangeBtn.addEventListener("click", toggleStudyRange);
-    els.reviewQueueBtn.addEventListener("click", startReviewQueue);
     els.writtenReviewQueueBtn.addEventListener("click", () => startReviewQueue("written"));
     els.answerReviewQueueBtn.addEventListener("click", () => startReviewQueue("answer"));
     els.practicalReviewQueueBtn.addEventListener("click", () => startReviewQueue("practical"));
@@ -1194,8 +1192,8 @@
       const queueActive = studyMode === "question" && reviewQueueIds.length > 0;
       els.clearQueueBtn.classList.toggle("hidden", !queueActive);
       els.queueStatus.textContent = queueActive
-        ? `${reviewQueueLabel || "오늘 복습 큐"} ${reviewQueueIds.length}개를 학습 중입니다.`
-        : "오답, 중요, 오래 안 본 문제를 자동으로 모읍니다.";
+        ? `${reviewQueueLabel || "복습 큐"} ${reviewQueueIds.length}개를 학습 중입니다.`
+        : "유형별로 오답, 중요, 오래 안 본 문제를 자동으로 모읍니다.";
     }
 
     function renderInsights(source) {
