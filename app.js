@@ -1206,11 +1206,23 @@
         els.insightPanel.innerHTML = "";
         return;
       }
+      const formatItems = wrongFormatStats(source).slice(0, 5);
+      const typeItems = wrongTypeStats(source).slice(0, 4);
+      const comboItems = wrongCategoryTypeStats(source).slice(0, 5);
       const weakItems = weakKeywordStats(source).slice(0, 5);
       const roundItems = roundProgressStats(source).slice(0, 8);
+      const formatHtml = formatItems.length
+        ? formatItems.map(item => renderInsightStatItem(item.label, `${item.count}문제 · 누적 오답 ${item.wrongTotal}회`, item.hint)).join("")
+        : `<div class="empty">오답이 쌓이면 자주 틀리는 문제 형식이 표시됩니다.</div>`;
+      const typeHtml = typeItems.length
+        ? typeItems.map(item => renderInsightStatItem(item.label, `${item.count}문제 · 누적 오답 ${item.wrongTotal}회`, item.hint)).join("")
+        : `<div class="empty">오답이 쌓이면 취약한 시험 유형이 표시됩니다.</div>`;
+      const comboHtml = comboItems.length
+        ? comboItems.map(item => renderInsightStatItem(item.label, `${item.count}문제 · 누적 오답 ${item.wrongTotal}회`, item.hint)).join("")
+        : `<div class="empty">분야와 시험 유형을 함께 보면 취약 구간이 표시됩니다.</div>`;
       const weakHtml = weakItems.length
-        ? weakItems.map(item => `<div class="weak-item"><strong>${escapeHtml(item.word)}</strong><span>오답 문제 ${item.count}개에서 반복</span></div>`).join("")
-        : `<div class="empty">오답이 쌓이면 자주 틀리는 키워드가 표시됩니다.</div>`;
+        ? weakItems.map(item => renderInsightStatItem(item.word, `오답 문제 ${item.count}개에서 반복`, item.examples.join(" · "))).join("")
+        : `<div class="empty">의미 있는 반복 키워드가 쌓이면 보조 정보로 표시됩니다.</div>`;
       const roundHtml = roundItems.length
         ? roundItems.map(item => {
             return `<div class="round-progress-item">
@@ -1222,7 +1234,19 @@
         : `<div class="empty">문제를 추가하면 회차별 진행률이 표시됩니다.</div>`;
       els.insightPanel.innerHTML = `
         <section class="insight-section">
-          <h3>자주 틀리는 키워드</h3>
+          <h3>자주 틀리는 문제 형식</h3>
+          <div class="weak-list">${formatHtml}</div>
+        </section>
+        <section class="insight-section">
+          <h3>취약한 시험 유형</h3>
+          <div class="weak-list">${typeHtml}</div>
+        </section>
+        <section class="insight-section">
+          <h3>취약 분야 + 유형</h3>
+          <div class="weak-list">${comboHtml}</div>
+        </section>
+        <section class="insight-section">
+          <h3>반복 키워드</h3>
           <div class="weak-list">${weakHtml}</div>
         </section>
         <section class="insight-section">
@@ -1232,19 +1256,140 @@
       `;
     }
 
+    function renderInsightStatItem(title, meta, hint = "") {
+      const hintHtml = hint ? `<em>${escapeHtml(hint)}</em>` : "";
+      return `<div class="weak-item"><strong>${escapeHtml(title)}</strong><span>${escapeHtml(meta)}</span>${hintHtml}</div>`;
+    }
+
+    function wrongQuestions(questions) {
+      return questions.filter(q => q.status === "wrong" || (q.wrongCount || 0) > 0);
+    }
+
+    function addInsightGroup(groups, key, label, question, hint = "") {
+      if (!groups.has(key)) groups.set(key, { label, count: 0, wrongTotal: 0, hints: new Map() });
+      const item = groups.get(key);
+      item.count += 1;
+      item.wrongTotal += Math.max(1, qWrongCount(question));
+      if (hint) item.hints.set(hint, (item.hints.get(hint) || 0) + 1);
+    }
+
+    function groupedInsightStats(groups) {
+      return [...groups.values()]
+        .map(item => {
+          const hint = [...item.hints.entries()]
+            .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+            .slice(0, 2)
+            .map(([name]) => name)
+            .join(" · ");
+          return { ...item, hint };
+        })
+        .sort((a, b) => b.wrongTotal - a.wrongTotal || b.count - a.count || a.label.localeCompare(b.label));
+    }
+
+    function qWrongCount(question) {
+      return Number(question?.wrongCount || 0) || (question?.status === "wrong" ? 1 : 0);
+    }
+
+    function wrongTypeStats(questions) {
+      const groups = new Map();
+      wrongQuestions(questions).forEach(q => {
+        const label = examTypeLabel(q.examType);
+        const hint = q.category || "미분류";
+        addInsightGroup(groups, normalizeExamType(q.examType), label, q, hint);
+      });
+      return groupedInsightStats(groups);
+    }
+
+    function wrongCategoryTypeStats(questions) {
+      const groups = new Map();
+      wrongQuestions(questions).forEach(q => {
+        const category = q.category || "미분류";
+        const type = examTypeLabel(q.examType);
+        addInsightGroup(groups, `${category}|${type}`, `${category} · ${type}`, q, inferQuestionFormat(q).label);
+      });
+      return groupedInsightStats(groups);
+    }
+
+    function wrongFormatStats(questions) {
+      const groups = new Map();
+      wrongQuestions(questions).forEach(q => {
+        const format = inferQuestionFormat(q);
+        const hint = q.category || examTypeLabel(q.examType);
+        addInsightGroup(groups, format.key, format.label, q, hint);
+      });
+      return groupedInsightStats(groups);
+    }
+
+    function inferQuestionFormat(question) {
+      const q = String(question?.question || "");
+      const a = String(question?.answer || "");
+      const memo = String(question?.memo || "");
+      const combined = `${q}\n${a}\n${memo}`;
+      const examType = normalizeExamType(question?.examType);
+      if (question?.questionImage || question?.answerImage || /\[사진\]|사진 문제|도면|그림|이미지|TF도|SIGN/i.test(combined)) {
+        return { key: "image", label: "사진/도면형" };
+      }
+      if (extractChoiceBank(q).items.length || splitQuestionOptions(q).options.length >= 2 || /\[보기\]|보기\s*[:：]/.test(q)) {
+        return { key: "choice", label: "보기 선택형" };
+      }
+      if (/\{\{[^{}]+\}\}|빈칸|괄호|____|___/.test(combined)) {
+        return { key: "blank", label: "빈칸/괄호형" };
+      }
+      if (/계산|공식|풀이|산출|구하|구하여|계산하|산정|=\s*|×|÷|\b\d+\s*[%xX*/+\-]\s*\d+|m\/s|㎡|m2|dB|kg|kN/i.test(combined)) {
+        return { key: "calculation", label: "계산/산출형" };
+      }
+      if (isMarkdownTable(q) || isMarkdownTable(a) || /\|.+\|/.test(combined)) {
+        return { key: "table", label: "표 정리형" };
+      }
+      if (/법령|법규|기준|규정|산업안전보건법|시행령|시행규칙|고시|별표|허용기준|안전보건규칙/.test(combined)) {
+        return { key: "rule", label: "법령/기준형" };
+      }
+      if (/순서|절차|방법|작업방법|대책|조치|예방|유의사항|작성하시오|쓰시오/.test(combined)) {
+        return { key: "procedure", label: "절차/대책 서술형" };
+      }
+      if (parseNumberedAnswerItems(a).length >= 2 || /①|②|③|1\.\s|2\.\s/.test(a)) {
+        return { key: "list", label: "암기 목록형" };
+      }
+      if (/정의|설명|무엇|의미|용어|특징|목적/.test(combined)) {
+        return { key: "concept", label: "정의/개념형" };
+      }
+      if (examType === "multiple") return { key: "multiple-short", label: "필기 단답/선택형" };
+      if (examType === "practical") return { key: "practical-context", label: "작업상황 판단형" };
+      return { key: "short-answer", label: "일반 단답형" };
+    }
+
     function weakKeywordStats(questions) {
       const counts = new Map();
-      questions
-        .filter(q => q.status === "wrong" || (q.wrongCount || 0) > 0)
+      const examples = new Map();
+      wrongQuestions(questions)
         .forEach(q => {
-          answerKeywords(q.answer || q.question || q.category || "")
-            .slice(0, 10)
-            .forEach(word => counts.set(word, (counts.get(word) || 0) + 1));
+          answerKeywords(`${q.answer || ""}\n${q.question || ""}\n${normalizeTags(q.tags).join(" ")}`)
+            .filter(isUsefulInsightKeyword)
+            .slice(0, 8)
+            .forEach(word => {
+              counts.set(word, (counts.get(word) || 0) + 1);
+              if (!examples.has(word)) examples.set(word, new Set());
+              if (q.category) examples.get(word).add(q.category);
+            });
         });
       return [...counts.entries()]
-        .map(([word, count]) => ({ word, count }))
-        .filter(item => item.count >= 1)
+        .map(([word, count]) => ({ word, count, examples: [...(examples.get(word) || [])].slice(0, 2) }))
+        .filter(item => item.count >= 2)
         .sort((a, b) => b.count - a.count || a.word.localeCompare(b.word));
+    }
+
+    function isUsefulInsightKeyword(word) {
+      const compact = compactText(word);
+      const stop = new Set([
+        "또는", "관한", "대한", "있는", "하는", "한다", "하여", "하고", "에서", "으로", "에게", "위해", "위한",
+        "경우", "다음", "보기", "쓰시오", "작성하시오", "알맞은", "내용", "해당", "문제", "정답", "답안",
+        "설명", "아래", "위하여", "따라", "따른", "등의", "등", "및", "시", "수", "것", "작업", "안전",
+        "설치", "관리", "기준", "방법", "결과", "이상", "이하"
+      ]);
+      if (compact.length < 2 || compact.length > 12 || stop.has(compact)) return false;
+      if (/^\d+$/.test(compact) || /^[가-힣]$/.test(compact)) return false;
+      if (/[은는이가을를의로과와]$/.test(compact) && compact.length <= 3) return false;
+      return true;
     }
 
     function roundProgressStats(questions) {

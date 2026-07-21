@@ -1839,6 +1839,14 @@
       font-weight: 800;
     }
 
+    .weak-item em {
+      color: #3f5f5a;
+      font-size: 12px;
+      font-style: normal;
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
     .round-progress-top {
       display: flex;
       align-items: center;
@@ -1875,6 +1883,10 @@
     .side .round-progress-top span,
     .side .round-progress-meta {
       color: var(--muted);
+    }
+
+    .side .weak-item em {
+      color: #526c68;
     }
 
     .side .dash-tile {
