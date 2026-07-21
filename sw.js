@@ -1,4 +1,4 @@
-const CACHE_NAME = "exam-study-app-v105";
+const CACHE_NAME = "exam-study-app-v106";
 const APP_SHELL = [
   "./index.html",
   "./app.css",

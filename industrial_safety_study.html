@@ -90,6 +90,53 @@
           </div>
         </div>
         <div id="studyGrid" class="study-grid">
+          <aside id="studyRangeBox" class="panel side-panel range-box collapsed">
+            <div class="range-head">
+              <h2 class="mini-title">학습 범위</h2>
+              <button type="button" id="toggleRangeBtn" class="range-toggle" aria-expanded="false" aria-controls="studyRangeBody">펼치기</button>
+            </div>
+            <div id="studyRangeBody" class="range-body">
+              <div class="filters">
+                <label>시험 유형
+                  <select id="examTypeFilter">
+                    <option value="all">전체</option>
+                    <option value="multiple">필기 4지선다</option>
+                    <option value="written">실기 필답형</option>
+                    <option value="practical">실기 작업형</option>
+                  </select>
+                </label>
+                <label>분야
+                  <select id="categoryFilter"></select>
+                </label>
+                <label>태그
+                  <select id="tagFilter"></select>
+                </label>
+                <label>상태
+                  <select id="statusFilter">
+                    <option value="all">전체</option>
+                    <option value="new">미학습</option>
+                    <option value="wrong">오답</option>
+                    <option value="mastered">암기 완료</option>
+                  </select>
+                </label>
+                <label>정렬
+                  <select id="sortFilter">
+                    <option value="default">기본순</option>
+                    <option value="recent">최근 수정순</option>
+                    <option value="wrong">오답 많은순</option>
+                  </select>
+                </label>
+                <label class="check-filter">
+                  <input id="favoriteFilter" type="checkbox">
+                  중요만 보기
+                </label>
+              </div>
+              <div id="dashboardPanel" class="dashboard-panel"></div>
+              <div class="notice">
+                문제 데이터는 브라우저 저장소에만 저장됩니다. 다른 PC로 옮기려면 작성에서 CSV로 내보내세요.
+              </div>
+            </div>
+          </aside>
           <article class="panel card">
             <div class="study-options" aria-label="학습 표시 옵션">
               <div class="answer-stage-tabs" aria-label="정답 보기 단계">
@@ -141,61 +188,19 @@
 
       <section class="view" data-view="review">
         <div id="reviewGrid" class="review-grid">
-          <aside id="studyRangeBox" class="panel side-panel range-box collapsed">
+          <aside id="reviewInsightBox" class="panel side-panel review-insight-box">
             <div class="range-head">
-              <h2 class="mini-title">학습 범위</h2>
-              <button type="button" id="toggleRangeBtn" class="range-toggle" aria-expanded="false" aria-controls="studyRangeBody">펼치기</button>
+              <h2 class="mini-title">복습 큐</h2>
             </div>
-            <div id="studyRangeBody" class="range-body">
-              <div class="smart-actions">
-                <button id="writtenReviewQueueBtn" class="primary" type="button">필기 큐</button>
-                <button id="answerReviewQueueBtn" type="button">필답형 큐</button>
-                <button id="practicalReviewQueueBtn" type="button">작업형 큐</button>
-                <button id="newStudyBtn" type="button">미학습</button>
-                <button id="clearQueueBtn" type="button">전체</button>
-              </div>
-              <p id="queueStatus" class="queue-status">유형별로 오답, 중요, 오래 안 본 문제를 자동으로 모읍니다.</p>
-              <div class="filters">
-                <label>시험 유형
-                  <select id="examTypeFilter">
-                    <option value="all">전체</option>
-                    <option value="multiple">필기 4지선다</option>
-                    <option value="written">실기 필답형</option>
-                    <option value="practical">실기 작업형</option>
-                  </select>
-                </label>
-                <label>분야
-                  <select id="categoryFilter"></select>
-                </label>
-                <label>태그
-                  <select id="tagFilter"></select>
-                </label>
-                <label>상태
-                  <select id="statusFilter">
-                    <option value="all">전체</option>
-                    <option value="new">미학습</option>
-                    <option value="wrong">오답</option>
-                    <option value="mastered">암기 완료</option>
-                  </select>
-                </label>
-                <label>정렬
-                  <select id="sortFilter">
-                    <option value="default">기본순</option>
-                    <option value="recent">최근 수정순</option>
-                    <option value="wrong">오답 많은순</option>
-                  </select>
-                </label>
-                <label class="check-filter">
-                  <input id="favoriteFilter" type="checkbox">
-                  중요만 보기
-                </label>
-              </div>
-              <div id="dashboardPanel" class="dashboard-panel"></div>
-              <div id="insightPanel" class="insight-panel"></div>
-              <div class="notice">
-                문제 데이터는 브라우저 저장소에만 저장됩니다. 다른 PC로 옮기려면 작성에서 CSV로 내보내세요.
-              </div>
+            <div class="smart-actions">
+              <button id="writtenReviewQueueBtn" class="primary" type="button">필기 큐</button>
+              <button id="answerReviewQueueBtn" type="button">필답형 큐</button>
+              <button id="practicalReviewQueueBtn" type="button">작업형 큐</button>
+              <button id="newStudyBtn" type="button">미학습</button>
+              <button id="clearQueueBtn" type="button">전체</button>
             </div>
+            <p id="queueStatus" class="queue-status">유형별로 오답, 중요, 오래 안 본 문제를 자동으로 모읍니다.</p>
+            <div id="insightPanel" class="insight-panel"></div>
           </aside>
         </div>
       </section>

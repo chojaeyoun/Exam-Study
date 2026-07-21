@@ -1193,7 +1193,7 @@
         <div class="dash-tile"><b>${tagCount}</b><span>태그 수</span></div>
         <div class="dash-tile"><b>${wrongCount}</b><span>오답</span></div>
       `;
-      renderInsights(source);
+      renderInsights(filtered);
       const queueActive = studyMode === "question" && reviewQueueIds.length > 0;
       els.clearQueueBtn.classList.toggle("hidden", !queueActive);
       els.queueStatus.textContent = queueActive
@@ -3340,7 +3340,7 @@
       document.querySelectorAll("[data-view]").forEach(view => view.classList.toggle("active", view.dataset.view === name));
       document.querySelectorAll("[data-view-btn]").forEach(button => button.classList.toggle("active", button.dataset.viewBtn === name));
       els.studyRangeBox.classList.remove("hidden");
-      if (name === "review") placeStudyRangeBox();
+      placeStudyRangeBox();
       renderStudyDisplayOptions();
     }
 
@@ -3694,9 +3694,9 @@
     }
 
     function placeStudyRangeBox() {
-      const target = els.reviewGrid;
+      const target = els.studyGrid;
       if (!target || !els.studyRangeBox || els.studyRangeBox.parentElement === target) return;
-      target.appendChild(els.studyRangeBox);
+      target.insertBefore(els.studyRangeBox, target.firstElementChild);
     }
 
     function moveCard(delta) {
