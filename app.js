@@ -51,6 +51,7 @@
       summaryMastered: document.querySelector("#summaryMastered"),
       progressLabel: document.querySelector("#progressLabel"),
       progressFill: document.querySelector("#progressFill"),
+      studyModeTabs: document.querySelector(".mode-tabs"),
       studyReviewModeBtn: document.querySelector("#studyReviewModeBtn"),
       studyMultipleModeBtn: document.querySelector("#studyMultipleModeBtn"),
       studyWrittenModeBtn: document.querySelector("#studyWrittenModeBtn"),
@@ -311,10 +312,7 @@
     els.clearQueueBtn.addEventListener("click", clearReviewQueue);
     els.wrongReviewBtn.addEventListener("click", startWrongReviewQueue);
     els.masteredCheckBtn.addEventListener("click", startMasteredCheckQueue);
-    els.studyReviewModeBtn.addEventListener("click", startWrongReviewQueue);
-    els.studyMultipleModeBtn.addEventListener("click", () => setStudyExamType("multiple"));
-    els.studyWrittenModeBtn.addEventListener("click", () => setStudyExamType("written"));
-    els.studyPracticalModeBtn.addEventListener("click", () => setStudyExamType("practical"));
+    els.studyModeTabs.addEventListener("click", handleStudyModeTabClick);
     els.studyFavoriteBtn.addEventListener("click", toggleCurrentStudyFavorite);
     els.composeQuestionModeBtn.addEventListener("click", () => setComposeMode("question"));
     if (els.composeTheoryModeBtn) els.composeTheoryModeBtn.addEventListener("click", () => setComposeMode("theory"));
@@ -419,6 +417,7 @@
 
     initCloudInputs();
     placeStudyRangeBox();
+    setInitialStudyExamType();
     render();
     updateTheoryPreview();
     updateQuestionDiagnostics();
@@ -3423,6 +3422,25 @@
       renderStudy();
     }
 
+    function setInitialStudyExamType() {
+      if (!els.examTypeFilter || els.examTypeFilter.value !== "all") return;
+      els.examTypeFilter.value = "multiple";
+    }
+
+    function handleStudyModeTabClick(event) {
+      const button = event.target.closest("[data-study-mode]");
+      if (!button) return;
+      const mode = button.dataset.studyMode;
+      if (mode === "review") {
+        startWrongReviewQueue();
+        return;
+      }
+      if (["multiple", "written", "practical"].includes(mode)) {
+        setActiveStudyModeButton(mode);
+        setStudyExamType(mode);
+      }
+    }
+
     function setStudyExamType(type) {
       reviewQueueIds = [];
       reviewQueueLabel = "";
@@ -3444,13 +3462,16 @@
 
     function renderStudyModeButtons() {
       const reviewActive = studyMode === "question" && (reviewQueueIds.length > 0 || els.statusFilter.value === "wrong");
-      const examType = normalizeExamType(els.examTypeFilter.value);
-      els.studyReviewModeBtn.classList.toggle("active", reviewActive);
-      els.studyMultipleModeBtn.classList.toggle("active", !reviewActive && els.examTypeFilter.value === "multiple" && examType === "multiple");
-      els.studyWrittenModeBtn.classList.toggle("active", !reviewActive && els.examTypeFilter.value === "written" && examType === "written");
-      els.studyPracticalModeBtn.classList.toggle("active", !reviewActive && els.examTypeFilter.value === "practical" && examType === "practical");
+      const mode = reviewActive ? "review" : (els.examTypeFilter.value === "all" ? "multiple" : normalizeExamType(els.examTypeFilter.value));
+      setActiveStudyModeButton(mode);
       els.examTypeFilter.disabled = false;
       els.statusFilter.disabled = false;
+    }
+
+    function setActiveStudyModeButton(mode) {
+      document.querySelectorAll("[data-study-mode]").forEach(button => {
+        button.classList.toggle("active", button.dataset.studyMode === mode);
+      });
     }
 
     function setComposeMode(mode) {
