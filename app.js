@@ -3745,7 +3745,7 @@
     function placeStudyRangeBox() {
       const target = els.studyGrid;
       if (!target || !els.studyRangeBox || els.studyRangeBox.parentElement === target) return;
-      target.insertBefore(els.studyRangeBox, target.firstElementChild);
+      target.appendChild(els.studyRangeBox);
     }
 
     function moveCard(delta) {

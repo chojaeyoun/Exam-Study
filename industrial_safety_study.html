@@ -92,6 +92,52 @@
           </div>
         </div>
         <div id="studyGrid" class="study-grid">
+          <article class="panel card">
+            <div class="study-options" aria-label="학습 표시 옵션">
+              <div class="answer-stage-tabs" aria-label="정답 보기 단계">
+                <button id="answerHintBtn" type="button" data-answer-stage="hint">힌트</button>
+                <button id="answerKeywordBtn" type="button" data-answer-stage="keywords">키워드</button>
+                <button id="answerFullBtn" class="active" type="button" data-answer-stage="full">전체</button>
+              </div>
+              <button id="memoryModeBtn" class="memory-toggle" type="button">빠른 암기</button>
+            </div>
+            <div class="pillrow">
+              <div class="pillgroup">
+                <span class="pill" id="cardIndex">0 / 0</span>
+                <span class="pill" id="cardType">분야</span>
+                <span class="pill" id="cardLevel">중요도</span>
+                <span class="pill status-new" id="cardStatus">미학습</span>
+              </div>
+              <div class="step-controls" aria-label="문제 이동">
+                <button id="prevBtn" aria-keyshortcuts="Q">← 이전 문제</button>
+                <button id="nextBtn" aria-keyshortcuts="P">다음 문제 →</button>
+              </div>
+              <button id="studyFavoriteBtn" type="button" class="favorite-button study-favorite" aria-keyshortcuts="I">☆ 중요</button>
+            </div>
+            <div class="question">
+              <div id="questionText" class="question-box">문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.</div>
+              <div class="my-answer-wrap">
+                <div id="choiceAnswerPanel" class="choice-answer-panel hidden"></div>
+                <textarea id="myAnswer" placeholder="내 답안을 적어본 뒤 정답을 확인하세요. 입력 내용은 채점되지 않고 암기용으로만 사용됩니다."></textarea>
+              </div>
+              <div id="answerAssist" class="answer-assist hidden"></div>
+              <div id="answerText" class="answer"></div>
+            </div>
+            <div class="study-controls">
+              <div class="review-actions" aria-label="정답 확인과 학습 결과">
+                <button id="showAnswerBtn" class="primary" aria-keyshortcuts="Enter Space">정답 보기</button>
+                <button id="wrongBtn" class="wrong-action" aria-keyshortcuts="1">틀렸음</button>
+                <button id="masterBtn" class="master-action" aria-keyshortcuts="2">맞혔음</button>
+              </div>
+              <div class="study-edit-row">
+                <button id="memoryCardBtn" class="memory-card-button" type="button">요약 메모</button>
+                <button id="studyEditBtn" class="study-edit-button" type="button">이 문제 수정</button>
+                <button id="phoneKeyboardBtn" class="keyboard-mode-button" type="button" aria-label="키보드 조작" aria-pressed="false">⌨</button>
+                <input id="shortcutCapture" class="shortcut-capture" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="키보드 조작 입력">
+              </div>
+            </div>
+          </article>
+          <article id="memoryCardPanel" class="panel memory-card-panel hidden" aria-label="요약 메모"></article>
           <aside id="studyRangeBox" class="panel side-panel range-box collapsed">
             <div class="range-head">
               <h2 class="mini-title">학습 범위</h2>
@@ -139,52 +185,6 @@
               </div>
             </div>
           </aside>
-          <article class="panel card">
-            <div class="study-options" aria-label="학습 표시 옵션">
-              <div class="answer-stage-tabs" aria-label="정답 보기 단계">
-                <button id="answerHintBtn" type="button" data-answer-stage="hint">힌트</button>
-                <button id="answerKeywordBtn" type="button" data-answer-stage="keywords">키워드</button>
-                <button id="answerFullBtn" class="active" type="button" data-answer-stage="full">전체</button>
-              </div>
-              <button id="memoryModeBtn" class="memory-toggle" type="button">빠른 암기</button>
-            </div>
-            <div class="pillrow">
-              <div class="pillgroup">
-                <span class="pill" id="cardIndex">0 / 0</span>
-                <span class="pill" id="cardType">분야</span>
-                <span class="pill" id="cardLevel">중요도</span>
-                <span class="pill status-new" id="cardStatus">미학습</span>
-              </div>
-              <div class="step-controls" aria-label="문제 이동">
-                <button id="prevBtn" aria-keyshortcuts="Q">← 이전 문제</button>
-                <button id="nextBtn" aria-keyshortcuts="P">다음 문제 →</button>
-              </div>
-              <button id="studyFavoriteBtn" type="button" class="favorite-button study-favorite" aria-keyshortcuts="I">☆ 중요</button>
-            </div>
-            <div class="question">
-              <div id="questionText" class="question-box">문제를 추가하거나 CSV를 가져오면 학습을 시작할 수 있습니다.</div>
-              <div class="my-answer-wrap">
-                <div id="choiceAnswerPanel" class="choice-answer-panel hidden"></div>
-                <textarea id="myAnswer" placeholder="내 답안을 적어본 뒤 정답을 확인하세요. 입력 내용은 채점되지 않고 암기용으로만 사용됩니다."></textarea>
-              </div>
-              <div id="answerAssist" class="answer-assist hidden"></div>
-              <div id="answerText" class="answer"></div>
-            </div>
-            <div class="study-controls">
-              <div class="review-actions" aria-label="정답 확인과 학습 결과">
-                <button id="showAnswerBtn" class="primary" aria-keyshortcuts="Enter Space">정답 보기</button>
-                <button id="wrongBtn" class="wrong-action" aria-keyshortcuts="1">틀렸음</button>
-                <button id="masterBtn" class="master-action" aria-keyshortcuts="2">맞혔음</button>
-              </div>
-              <div class="study-edit-row">
-                <button id="memoryCardBtn" class="memory-card-button" type="button">요약 메모</button>
-                <button id="studyEditBtn" class="study-edit-button" type="button">이 문제 수정</button>
-                <button id="phoneKeyboardBtn" class="keyboard-mode-button" type="button" aria-label="키보드 조작" aria-pressed="false">⌨</button>
-                <input id="shortcutCapture" class="shortcut-capture" type="text" inputmode="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="키보드 조작 입력">
-              </div>
-            </div>
-          </article>
-          <article id="memoryCardPanel" class="panel memory-card-panel hidden" aria-label="요약 메모"></article>
         </div>
       </section>
 
