@@ -5,6 +5,7 @@
     const MUSIC_LINKS_KEY = appConfig.musicLinksKey || "examStudyApp.youtubeMusic.v1";
     const OLD_STORAGE_KEYS = appConfig.oldStorageKeys || ["industrialSafetyPracticalStudy.v1"];
     const APP_TITLE = appConfig.appTitle || "Sushi Vinegar";
+    const CANONICAL_EXAM_NAME = "산업안전기사 실기";
     const CLOUD_SYNC_START = "\n\n<!--EXAM_STUDY_SYNC:";
     const CLOUD_SYNC_END = "-->";
     const CLOUD_BACKUP_CATEGORY = "__sync_backup__";
@@ -12,8 +13,8 @@
     const DEFAULT_EXAMS = appConfig.defaultExams || [
       {
         id: DEFAULT_EXAM_ID,
-        name: "산업기사 실기",
-        description: "단답형·작업형"
+        name: CANONICAL_EXAM_NAME,
+        description: "필기·필답형·작업형"
       }
     ];
     const state = loadState();
@@ -456,31 +457,34 @@
         .filter(exam => exam && exam.id && exam.name)
         .map(exam => ({
           id: exam.id,
-          name: exam.name,
-          description: exam.description || "사용자 추가 시험"
+          name: normalizeExamName(exam.name),
+          description: normalizeExamDescription(exam.description || "사용자 추가 시험")
         }));
 
       if (!exams.length) exams.push(...DEFAULT_EXAMS);
+
+      const normalizedQuestions = saved.questions.map(q => ({
+        ...q,
+        id: q.id || crypto.randomUUID(),
+        examId: q.examId || DEFAULT_EXAM_ID,
+        examType: normalizeExamType(q.examType),
+        status: q.status || "new",
+        wrongCount: q.wrongCount || 0,
+        masteredAt: q.masteredAt || "",
+        tags: normalizeTags(q.tags),
+        favorite: Boolean(q.favorite),
+        studyNote: String(q.studyNote || ""),
+        memoryCard: normalizeMemoryCard(q.memoryCard),
+        memoryCardStatus: ["known", "confused", "unknown"].includes(q.memoryCardStatus) ? q.memoryCardStatus : "",
+        updatedAt: q.updatedAt || q.masteredAt || ""
+      }));
+      ensureExamTabsForItems(exams, normalizedQuestions, saved.theories || []);
 
       const activeExamId = exams.some(exam => exam.id === saved.activeExamId) ? saved.activeExamId : exams[0].id;
       return {
         exams,
         activeExamId,
-        questions: saved.questions.map(q => ({
-          ...q,
-          id: q.id || crypto.randomUUID(),
-          examId: q.examId || DEFAULT_EXAM_ID,
-          examType: normalizeExamType(q.examType),
-          status: q.status || "new",
-          wrongCount: q.wrongCount || 0,
-          masteredAt: q.masteredAt || "",
-          tags: normalizeTags(q.tags),
-          favorite: Boolean(q.favorite),
-          studyNote: String(q.studyNote || ""),
-          memoryCard: normalizeMemoryCard(q.memoryCard),
-          memoryCardStatus: ["known", "confused", "unknown"].includes(q.memoryCardStatus) ? q.memoryCardStatus : "",
-          updatedAt: q.updatedAt || q.masteredAt || ""
-        })),
+        questions: normalizedQuestions,
         theories: Array.isArray(saved.theories) ? saved.theories.map(theory => ({
           id: theory.id || crypto.randomUUID(),
           examId: theory.examId || DEFAULT_EXAM_ID,
@@ -493,6 +497,24 @@
           updatedAt: theory.updatedAt || ""
         })) : []
       };
+    }
+
+    function ensureExamTabsForItems(exams, questions, theories) {
+      const known = new Set(exams.map(exam => exam.id));
+      const ids = new Set([
+        ...questions.map(q => q.examId || DEFAULT_EXAM_ID),
+        ...(Array.isArray(theories) ? theories.map(theory => theory.examId || DEFAULT_EXAM_ID) : [])
+      ]);
+      ids.forEach(id => {
+        if (!id || known.has(id)) return;
+        const fallback = id === DEFAULT_EXAM_ID ? DEFAULT_EXAMS[0] : null;
+        exams.push({
+          id,
+          name: fallback ? normalizeExamName(fallback.name) : "복구된 시험",
+          description: fallback ? normalizeExamDescription(fallback.description) : "문제 데이터에서 복구"
+        });
+        known.add(id);
+      });
     }
 
     function loadCloudConfig() {
@@ -1257,6 +1279,19 @@
           <div class="round-progress-list">${roundHtml}</div>
         </section>
       `;
+    }
+
+    function normalizeExamName(name) {
+      const value = String(name || "").trim();
+      if (!value || value === "산업기사 실기" || value === "?곗뾽湲곗궗 ?ㅺ린") return CANONICAL_EXAM_NAME;
+      return value;
+    }
+
+    function normalizeExamDescription(description) {
+      const value = String(description || "").trim();
+      if (!value || value === "?⑤떟?빧룹옉?낇삎") return "필기·필답형·작업형";
+      if (value === "단답형·작업형") return "필기·필답형·작업형";
+      return value;
     }
 
     function renderInsightStatItem(title, meta, hint = "") {

@@ -9,8 +9,8 @@ window.EXAM_STUDY_CONFIG = {
   "defaultExams": [
     {
       "id": "industrial-practical",
-      "name": "산업기사 실기",
-      "description": "단답형·작업형"
+      "name": "산업안전기사 실기",
+      "description": "필기·필답형·작업형"
     }
   ],
   "appTitle": "Sushi Vinegar",
