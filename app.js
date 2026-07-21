@@ -331,7 +331,7 @@
     els.shortcutCapture.addEventListener("input", handleShortcutCaptureInput);
     els.shortcutCapture.addEventListener("focus", updateShortcutCaptureState);
     els.shortcutCapture.addEventListener("blur", updateShortcutCaptureState);
-    [els.answerHintBtn, els.answerKeywordBtn, els.answerFullBtn].forEach(button => {
+    [els.answerHintBtn, els.answerKeywordBtn, els.answerFullBtn].filter(Boolean).forEach(button => {
       button.addEventListener("click", () => setAnswerStage(button.dataset.answerStage));
     });
     els.memoryModeBtn.addEventListener("click", toggleMemoryMode);
@@ -1956,7 +1956,7 @@
     }
 
     function renderStudyDisplayOptions() {
-      [els.answerHintBtn, els.answerKeywordBtn, els.answerFullBtn].forEach(button => {
+      [els.answerHintBtn, els.answerKeywordBtn, els.answerFullBtn].filter(Boolean).forEach(button => {
         button.classList.toggle("active", button.dataset.answerStage === answerStage);
         button.disabled = studyMode !== "question";
       });
@@ -2283,14 +2283,10 @@
     }
 
     function formatStagedAnswerHtml(question) {
-      if (answerStage === "hint") return formatAnswerHintHtml(question);
-      if (answerStage === "keywords") return formatAnswerKeywordsHtml(question);
       return formatAnswerCardHtml(question);
     }
 
     function answerActionLabel() {
-      if (answerStage === "hint") return "힌트 보기";
-      if (answerStage === "keywords") return "키워드 보기";
       return "정답 보기";
     }
 
@@ -3781,30 +3777,40 @@
 
     function updateAnswerAssist() {
       const q = getCurrentQuestion();
-      if (!q || studyMode !== "question" || answerStage === "hint" || !els.answerText.classList.contains("visible")) {
+      if (!q || studyMode !== "question" || !els.answerText.classList.contains("visible")) {
         hideAnswerAssist();
         return;
       }
-      const keywords = answerKeywords(q.answer);
+      const keywords = answerKeywords(q.answer).slice(0, 8);
       if (!keywords.length) {
         hideAnswerAssist();
         return;
       }
       const mine = compactText(els.myAnswer.value);
+      if (!mine) {
+        els.answerAssist.innerHTML = `
+        <h3>채점 보조</h3>
+        <div class="assist-score">정확한 채점이 아니라, 정답과 비교할 때 볼 표현만 느슨하게 보여줍니다.</div>
+      `;
+        els.answerAssist.classList.remove("hidden");
+        return;
+      }
       const hits = [];
       const misses = [];
       keywords.forEach(keyword => {
         const bucket = mine.includes(compactText(keyword)) ? hits : misses;
         bucket.push(keyword);
       });
-      const score = Math.round((hits.length / keywords.length) * 100);
+      const hitHtml = hits.length
+        ? hits.slice(0, 5).map(word => `<span class="assist-chip hit">겹침 · ${escapeHtml(word)}</span>`).join("")
+        : `<span class="assist-chip">겹치는 표현이 적습니다</span>`;
+      const missHtml = misses.length
+        ? misses.slice(0, 5).map(word => `<span class="assist-chip miss">확인 · ${escapeHtml(word)}</span>`).join("")
+        : `<span class="assist-chip hit">큰 흐름은 비슷해 보입니다</span>`;
       els.answerAssist.innerHTML = `
         <h3>채점 보조</h3>
-        <div class="assist-score">핵심어 ${hits.length}/${keywords.length}개 포함 · ${score}%</div>
-        <div class="assist-row">
-          ${hits.slice(0, 10).map(word => `<span class="assist-chip hit">✓ ${escapeHtml(word)}</span>`).join("")}
-          ${misses.slice(0, 10).map(word => `<span class="assist-chip miss">+ ${escapeHtml(word)}</span>`).join("")}
-        </div>
+        <div class="assist-score">내 답안과 정답을 대략 비교하는 참고용입니다. 표현이 달라도 맞을 수 있습니다.</div>
+        <div class="assist-row">${hitHtml}${missHtml}</div>
       `;
       els.answerAssist.classList.remove("hidden");
     }
