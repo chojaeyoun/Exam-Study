@@ -1429,6 +1429,14 @@
       display: block !important;
     }
 
+    .record-panel {
+      display: none !important;
+    }
+
+    .record-panel.active {
+      display: block !important;
+    }
+
     .form-grid.bank-panel.active,
     .theory-grid.bank-panel.active {
       display: grid !important;

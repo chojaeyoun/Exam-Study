@@ -45,8 +45,8 @@
       <button id="addExamBtn" class="exam-add" type="button">+ 시험 추가</button>
       <nav class="nav" aria-label="화면 전환">
         <button class="active" data-view-btn="study">▣ 학습</button>
-        <button data-view-btn="wrong">※ 오답노트</button>
-        <button data-view-btn="mastered">✓ 완료</button>
+        <button data-view-btn="review">↻ 복습</button>
+        <button data-view-btn="record">※ 기록</button>
         <button data-view-btn="bank">☰ 작성</button>
         <button data-view-btn="more">⋯ 더보기</button>
       </nav>
@@ -136,6 +136,11 @@
             </div>
           </article>
           <article id="memoryCardPanel" class="panel memory-card-panel hidden" aria-label="요약 메모"></article>
+        </div>
+      </section>
+
+      <section class="view" data-view="review">
+        <div id="reviewGrid" class="review-grid">
           <aside id="studyRangeBox" class="panel side-panel range-box collapsed">
             <div class="range-head">
               <h2 class="mini-title">학습 범위</h2>
@@ -195,31 +200,36 @@
         </div>
       </section>
 
-      <section class="view" data-view="wrong">
-        <div class="panel side-panel">
-          <h2 class="mini-title">오답노트</h2>
-          <div class="review-tab-tools">
-            <div>
-              <strong>오답은 한 문제씩 처리하세요</strong>
-              <span>많이 틀린 문제와 중요 문제를 먼저 복습합니다.</span>
-            </div>
-            <button id="wrongReviewBtn" class="primary" type="button">오답 복습 시작</button>
-          </div>
-          <div id="wrongList" class="list"></div>
+      <section class="view" data-view="record">
+        <div class="panel compose-tabs" aria-label="기록 보기 선택">
+          <button class="active" type="button" data-record-btn="wrong">오답노트</button>
+          <button type="button" data-record-btn="mastered">완료</button>
         </div>
-      </section>
-
-      <section class="view" data-view="mastered">
-        <div class="panel side-panel">
-          <h2 class="mini-title">암기 완료</h2>
-          <div class="review-tab-tools">
-            <div>
-              <strong>완료 문제는 랜덤 점검</strong>
-              <span>전부 스크롤하지 말고 일부만 뽑아 유지 여부를 확인합니다.</span>
+        <div class="record-panel active" data-record-panel="wrong">
+          <div class="panel side-panel">
+            <h2 class="mini-title">오답노트</h2>
+            <div class="review-tab-tools">
+              <div>
+                <strong>오답은 한 문제씩 처리하세요</strong>
+                <span>많이 틀린 문제와 중요 문제를 먼저 확인합니다.</span>
+              </div>
+              <button id="wrongReviewBtn" class="primary" type="button">오답 복습 시작</button>
             </div>
-            <button id="masteredCheckBtn" class="primary" type="button">랜덤 점검 시작</button>
+            <div id="wrongList" class="list"></div>
           </div>
-          <div id="masteredList" class="list"></div>
+        </div>
+        <div class="record-panel" data-record-panel="mastered">
+          <div class="panel side-panel">
+            <h2 class="mini-title">암기 완료</h2>
+            <div class="review-tab-tools">
+              <div>
+                <strong>완료 문제는 랜덤 점검</strong>
+                <span>전부 스크롤하지 말고 일부만 뽑아 유지 여부를 확인합니다.</span>
+              </div>
+              <button id="masteredCheckBtn" class="primary" type="button">랜덤 점검 시작</button>
+            </div>
+            <div id="masteredList" class="list"></div>
+          </div>
         </div>
       </section>
 

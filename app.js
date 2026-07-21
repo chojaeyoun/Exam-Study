@@ -81,6 +81,7 @@
       answerFullBtn: document.querySelector("#answerFullBtn"),
       memoryModeBtn: document.querySelector("#memoryModeBtn"),
       studyGrid: document.querySelector("#studyGrid"),
+      reviewGrid: document.querySelector("#reviewGrid"),
       studyRangeBox: document.querySelector("#studyRangeBox"),
       toggleRangeBtn: document.querySelector("#toggleRangeBtn"),
       writtenReviewQueueBtn: document.querySelector("#writtenReviewQueueBtn"),
@@ -269,6 +270,10 @@
 
     document.querySelectorAll("[data-more-view-btn]").forEach(button => {
       button.addEventListener("click", () => setView(button.dataset.moreViewBtn));
+    });
+
+    document.querySelectorAll("[data-record-btn]").forEach(button => {
+      button.addEventListener("click", () => setRecordMode(button.dataset.recordBtn));
     });
 
     els.searchInput.addEventListener("input", () => { bankListMode = "filtered"; render(); });
@@ -3114,11 +3119,13 @@
 
     function openSummaryList(type) {
       if (type === "wrong") {
-        setView("wrong");
+        setRecordMode("wrong");
+        setView("record");
         return;
       }
       if (type === "mastered") {
-        setView("mastered");
+        setRecordMode("mastered");
+        setView("record");
         return;
       }
       startAllQuestionStudy();
@@ -3187,7 +3194,8 @@
       activeView = name;
       document.querySelectorAll("[data-view]").forEach(view => view.classList.toggle("active", view.dataset.view === name));
       document.querySelectorAll("[data-view-btn]").forEach(button => button.classList.toggle("active", button.dataset.viewBtn === name));
-      els.studyRangeBox.classList.toggle("hidden", name !== "study");
+      els.studyRangeBox.classList.toggle("hidden", name !== "review");
+      if (name === "review") placeStudyRangeBox();
       renderStudyDisplayOptions();
     }
 
@@ -3196,6 +3204,7 @@
         startDefaultStudyView();
         return;
       }
+      if (name === "record") setRecordMode("wrong");
       setView(name);
     }
 
@@ -3283,6 +3292,15 @@
       els.composeManageModeBtn.classList.toggle("active", mode === "manage");
       document.querySelectorAll("[data-bank-panel]").forEach(panel => {
         panel.classList.toggle("active", panel.dataset.bankPanel === mode);
+      });
+    }
+
+    function setRecordMode(mode) {
+      document.querySelectorAll("[data-record-btn]").forEach(button => {
+        button.classList.toggle("active", button.dataset.recordBtn === mode);
+      });
+      document.querySelectorAll("[data-record-panel]").forEach(panel => {
+        panel.classList.toggle("active", panel.dataset.recordPanel === mode);
       });
     }
 
@@ -3529,8 +3547,7 @@
     }
 
     function placeStudyRangeBox() {
-      const isMobile = window.matchMedia("(max-width: 980px)").matches;
-      const target = isMobile ? els.studyGrid : els.desktopSide;
+      const target = els.reviewGrid;
       if (!target || !els.studyRangeBox || els.studyRangeBox.parentElement === target) return;
       target.appendChild(els.studyRangeBox);
     }
