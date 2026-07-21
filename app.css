@@ -1652,7 +1652,6 @@
     }
 
     .memory-mode .study-summary,
-    .memory-mode .range-box,
     .memory-mode .my-answer-wrap,
     .memory-mode #answerAssist {
       display: none;

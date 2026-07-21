@@ -3194,7 +3194,7 @@
       activeView = name;
       document.querySelectorAll("[data-view]").forEach(view => view.classList.toggle("active", view.dataset.view === name));
       document.querySelectorAll("[data-view-btn]").forEach(button => button.classList.toggle("active", button.dataset.viewBtn === name));
-      els.studyRangeBox.classList.toggle("hidden", name !== "review");
+      els.studyRangeBox.classList.remove("hidden");
       if (name === "review") placeStudyRangeBox();
       renderStudyDisplayOptions();
     }
@@ -3300,7 +3300,9 @@
         button.classList.toggle("active", button.dataset.recordBtn === mode);
       });
       document.querySelectorAll("[data-record-panel]").forEach(panel => {
-        panel.classList.toggle("active", panel.dataset.recordPanel === mode);
+        const active = panel.dataset.recordPanel === mode;
+        panel.classList.toggle("active", active);
+        panel.classList.toggle("hidden", !active);
       });
     }
 
