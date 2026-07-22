@@ -3893,7 +3893,8 @@
         return;
       }
       const keywords = answerKeywords(q.answer).slice(0, 8);
-      if (!keywords.length) {
+      const requiredNumbers = answerNumberTokens(q.answer);
+      if (!keywords.length && !requiredNumbers.length) {
         hideAnswerAssist();
         return;
       }
@@ -3906,22 +3907,37 @@
         els.answerAssist.classList.remove("hidden");
         return;
       }
+      const mineNumbers = answerNumberTokens(els.myAnswer.value);
+      const missingNumbers = requiredNumbers.filter(number => !mineNumbers.includes(number));
+      const numberOk = !missingNumbers.length;
       const hits = [];
       const misses = [];
       keywords.forEach(keyword => {
-        const bucket = mine.includes(compactText(keyword)) ? hits : misses;
+        const keywordNumbers = answerNumberTokens(keyword);
+        const keywordNumbersOk = keywordNumbers.every(number => mineNumbers.includes(number));
+        const bucket = mine.includes(compactText(keyword)) && keywordNumbersOk ? hits : misses;
         bucket.push(keyword);
       });
-      const hitHtml = hits.length
+      const hitHtml = !keywords.length
+        ? ""
+        : hits.length
         ? hits.slice(0, 5).map(word => `<span class="assist-chip hit">겹침 · ${escapeHtml(word)}</span>`).join("")
         : `<span class="assist-chip">겹치는 표현이 적습니다</span>`;
+      const numberHtml = requiredNumbers.length
+        ? requiredNumbers.slice(0, 6).map(number => {
+            const matched = mineNumbers.includes(number);
+            return `<span class="assist-chip ${matched ? "hit" : "miss"}">${matched ? "숫자 일치" : "숫자 확인"} · ${escapeHtml(number)}</span>`;
+          }).join("")
+        : "";
       const missHtml = misses.length
         ? misses.slice(0, 5).map(word => `<span class="assist-chip miss">확인 · ${escapeHtml(word)}</span>`).join("")
-        : `<span class="assist-chip hit">큰 흐름은 비슷해 보입니다</span>`;
+        : numberOk
+          ? `<span class="assist-chip hit">큰 흐름은 비슷해 보입니다</span>`
+          : `<span class="assist-chip miss">정답 숫자가 모두 맞아야 합니다</span>`;
       els.answerAssist.innerHTML = `
         <h3>채점 보조</h3>
-        <div class="assist-score">내 답안과 정답을 대략 비교하는 참고용입니다. 표현이 달라도 맞을 수 있습니다.</div>
-        <div class="assist-row">${hitHtml}${missHtml}</div>
+        <div class="assist-score">${requiredNumbers.length ? "정답에 숫자가 있으면 숫자는 정확히 일치해야 합니다." : "내 답안과 정답을 대략 비교하는 참고용입니다. 표현이 달라도 맞을 수 있습니다."}</div>
+        <div class="assist-row">${numberHtml}${hitHtml}${missHtml}</div>
       `;
       els.answerAssist.classList.remove("hidden");
     }
@@ -3989,6 +4005,12 @@
 
     function compactText(value) {
       return String(value || "").toLowerCase().replace(/\s+/g, "");
+    }
+
+    function answerNumberTokens(value) {
+      const source = String(value || "").replace(/(\d),(?=\d{3}\b)/g, "$1");
+      const matches = source.match(/[+-]?(?:\d+(?:\.\d+)?|\.\d+)/g) || [];
+      return [...new Set(matches.map(number => number.replace(/^\+/, "")))];
     }
 
     function updateStudyFavoriteButton(item) {
