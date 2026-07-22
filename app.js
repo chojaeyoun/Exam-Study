@@ -643,6 +643,15 @@
       return labels[normalizeExamType(value)];
     }
 
+    function examTypeShortLabel(value) {
+      const labels = {
+        written: "필답형",
+        multiple: "필기",
+        practical: "작업형"
+      };
+      return labels[normalizeExamType(value)];
+    }
+
     function renderTags(tags) {
       const normalized = normalizeTags(tags);
       if (!normalized.length) return "";
@@ -756,8 +765,8 @@
 
     function render() {
       renderExamTabs();
-      renderStats();
       renderFilters();
+      renderStats();
       renderDashboard();
       renderStudy();
       renderTheories();
@@ -1167,21 +1176,66 @@
     function renderStats() {
       const questions = currentExamQuestions();
       const theories = currentExamTheories();
-      const mastered = questions.filter(q => q.status === "mastered").length;
-      const wrong = questions.filter(q => q.status === "wrong").length;
-      const progress = questions.length ? Math.round((mastered / questions.length) * 100) : 0;
+      const scopedQuestions = statsScopeQuestions();
+      const scopedTheories = statsScopeTheories();
+      const mastered = scopedQuestions.filter(q => q.status === "mastered").length;
+      const wrong = scopedQuestions.filter(q => q.status === "wrong").length;
+      const progress = scopedQuestions.length ? Math.round((mastered / scopedQuestions.length) * 100) : 0;
       const exam = currentExam();
+      const scopeText = statsScopeLabel();
 
       els.currentExamTitle.textContent = exam?.name || APP_TITLE;
-      els.studySummaryText.textContent = `${questions.length}문제 · ${theories.length}개 이론, ${mastered}문제 암기 완료, ${wrong}문제 오답 표시`;
-      els.summaryTotal.textContent = questions.length;
+      els.studySummaryText.textContent = `${scopeText}${scopedQuestions.length}문제 · ${scopedTheories.length}개 이론, ${mastered}문제 암기 완료, ${wrong}문제 오답 표시`;
+      els.summaryTotal.textContent = scopedQuestions.length;
       els.summaryWrong.textContent = wrong;
       els.summaryMastered.textContent = mastered;
       els.progressLabel.textContent = `${progress}% 완료`;
       els.progressFill.style.width = `${progress}%`;
-      els.totalCount.textContent = questions.length;
+      els.totalCount.textContent = scopedQuestions.length;
       els.wrongCount.textContent = wrong;
       els.masteredCount.textContent = mastered;
+    }
+
+    function statsScopeQuestions() {
+      const search = els.searchInput.value.trim().toLowerCase();
+      const examType = els.examTypeFilter.value;
+      const category = els.categoryFilter.value;
+      const tag = els.tagFilter.value;
+      return currentExamQuestions().filter(q => {
+        const text = [q.category, q.level, q.question, q.answer, q.memo, q.imageName, normalizeTags(q.tags).join(" ")].join(" ").toLowerCase();
+        const examTypeOk = !examType || examType === "all" || normalizeExamType(q.examType) === examType;
+        const categoryOk = !category || category === "all" || q.category === category;
+        const tagOk = tagMatches(q, tag);
+        const favoriteOk = favoriteMatches(q);
+        const searchOk = !search || text.includes(search);
+        return examTypeOk && categoryOk && tagOk && favoriteOk && searchOk;
+      });
+    }
+
+    function statsScopeTheories() {
+      const search = els.searchInput.value.trim().toLowerCase();
+      const category = els.categoryFilter.value;
+      const tag = els.tagFilter.value;
+      return currentExamTheories().filter(theory => {
+        const text = [theory.category, theory.title, theory.content, theory.prompt, normalizeTags(theory.tags).join(" ")].join(" ").toLowerCase();
+        const categoryOk = !category || category === "all" || theory.category === category;
+        const tagOk = tagMatches(theory, tag);
+        const favoriteOk = favoriteMatches(theory);
+        const searchOk = !search || text.includes(search);
+        return categoryOk && tagOk && favoriteOk && searchOk;
+      });
+    }
+
+    function statsScopeLabel() {
+      const parts = [];
+      const examType = els.examTypeFilter.value;
+      const category = els.categoryFilter.value;
+      const tag = els.tagFilter.value;
+      if (["multiple", "written", "practical"].includes(examType)) parts.push(examTypeShortLabel(examType));
+      if (category && category !== "all") parts.push(category);
+      if (tag && tag !== "all") parts.push(`#${tag}`);
+      if (els.favoriteFilter.checked) parts.push("중요");
+      return parts.length ? `${parts.join(" · ")} 기준, ` : "";
     }
 
     function renderFilters() {
@@ -1205,7 +1259,7 @@
     }
 
     function renderDashboard() {
-      const source = studyMode === "theory" ? currentExamTheories() : currentExamQuestions();
+      const source = studyMode === "theory" ? statsScopeTheories() : statsScopeQuestions();
       const filtered = studyMode === "theory" ? filteredTheories() : filteredQuestions();
       const favoriteCount = source.filter(item => item.favorite).length;
       const tagCount = new Set(source.flatMap(item => normalizeTags(item.tags))).size;
