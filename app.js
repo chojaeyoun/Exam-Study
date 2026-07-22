@@ -2589,10 +2589,10 @@
         els.photoFile.click();
       } else if (action === "memo") {
         openComposeDetails();
-        requestAnimationFrame(() => els.memoInput.focus());
+        requestAnimationFrame(() => els.memoInput.focus({ preventScroll: true }));
       } else if (action === "tag") {
         openComposeDetails();
-        requestAnimationFrame(() => els.tagsInput.focus());
+        requestAnimationFrame(() => els.tagsInput.focus({ preventScroll: true }));
       }
     }
 
@@ -2968,9 +2968,9 @@
       if (action === "photo") {
         requestAnimationFrame(() => els.photoFile.click());
       } else if (action === "memo") {
-        requestAnimationFrame(() => els.memoInput.focus());
+        requestAnimationFrame(() => els.memoInput.focus({ preventScroll: true }));
       } else if (action === "tag") {
-        requestAnimationFrame(() => els.tagsInput.focus());
+        requestAnimationFrame(() => els.tagsInput.focus({ preventScroll: true }));
       }
     }
 
