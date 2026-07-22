@@ -32,6 +32,7 @@
     let deferredInstallPrompt = null;
     let supabaseClient = null;
     let pendingPhotoQuestions = [];
+    let csvFileMode = "import";
     let removeQuestionImageOnSave = false;
     let removeAnswerImageOnSave = false;
     let answerStage = "full";
@@ -174,8 +175,10 @@
       clearBankSearchBtn: document.querySelector("#clearBankSearchBtn"),
       csvFile: document.querySelector("#csvFile"),
       pickCsvBtn: document.querySelector("#pickCsvBtn"),
+      deleteCsvFileBtn: document.querySelector("#deleteCsvFileBtn"),
       csvPaste: document.querySelector("#csvPaste"),
       importPasteBtn: document.querySelector("#importPasteBtn"),
+      deletePasteCsvBtn: document.querySelector("#deletePasteCsvBtn"),
       downloadTemplateBtn: document.querySelector("#downloadTemplateBtn"),
       supabaseUrlInput: document.querySelector("#supabaseUrlInput"),
       supabaseAnonInput: document.querySelector("#supabaseAnonInput"),
@@ -380,9 +383,17 @@
     });
     els.applyOcrBtn.addEventListener("click", applyOcrText);
     els.clearPhotoBtn.addEventListener("click", clearAttachedPhotos);
-    els.pickCsvBtn.addEventListener("click", () => els.csvFile.click());
+    els.pickCsvBtn.addEventListener("click", () => {
+      csvFileMode = "import";
+      els.csvFile.click();
+    });
+    els.deleteCsvFileBtn.addEventListener("click", () => {
+      csvFileMode = "delete";
+      els.csvFile.click();
+    });
     els.csvFile.addEventListener("change", importCsvFile);
     els.importPasteBtn.addEventListener("click", () => importCsvText(els.csvPaste.value));
+    els.deletePasteCsvBtn.addEventListener("click", () => deleteCsvMatches(els.csvPaste.value));
     els.downloadTemplateBtn.addEventListener("click", downloadTemplate);
     els.saveCloudConfigBtn.addEventListener("click", saveCloudConfig);
     els.signUpBtn.addEventListener("click", signUpCloud);
@@ -4452,19 +4463,68 @@
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => importCsvText(String(reader.result || ""));
+      reader.onload = () => {
+        const text = String(reader.result || "");
+        if (csvFileMode === "delete") {
+          deleteCsvMatches(text);
+        } else {
+          importCsvText(text);
+        }
+        csvFileMode = "import";
+      };
       reader.readAsText(file, "utf-8");
       event.target.value = "";
     }
 
     function importCsvText(text) {
+      const imported = parseQuestionCsv(text);
+      if (!imported.length) return alert("가져올 CSV 내용이 없습니다.");
+
+      const existing = new Set(currentExamQuestions().map(q => `${q.category}|${q.question}`));
+      let added = 0;
+      imported.forEach(q => {
+        const key = `${q.category}|${q.question}`;
+        if (!existing.has(key)) {
+          state.questions.push(q);
+          existing.add(key);
+          added += 1;
+        }
+      });
+
+      persist();
+      render();
+      alert(`${added}개 문제를 가져왔습니다.`);
+      setView("study");
+    }
+
+    function deleteCsvMatches(text) {
+      const imported = parseQuestionCsv(text);
+      if (!imported.length) return alert("삭제 기준으로 사용할 CSV 내용이 없습니다.");
+
+      const deleteKeys = new Set(imported.map(csvQuestionDeleteKey));
+      const before = state.questions.length;
+      const matches = state.questions.filter(q => {
+        return (q.examId || DEFAULT_EXAM_ID) === state.activeExamId && deleteKeys.has(savedQuestionDeleteKey(q));
+      });
+      if (!matches.length) return alert("현재 시험 탭에서 CSV와 일치하는 문제가 없습니다.");
+      const sample = matches.slice(0, 3).map(q => `- ${q.question.slice(0, 40)}`).join("\n");
+      if (!confirm(`${matches.length}개 문제를 삭제합니다.\n\n${sample}${matches.length > 3 ? "\n..." : ""}\n\n삭제 전 CSV 내보내기로 백업해두는 것을 권장합니다. 계속할까요?`)) return;
+
+      const matchIds = new Set(matches.map(q => q.id));
+      state.questions = state.questions.filter(q => !matchIds.has(q.id));
+      persist();
+      render();
+      alert(`${before - state.questions.length}개 문제를 삭제했습니다.`);
+    }
+
+    function parseQuestionCsv(text) {
       const rows = parseCsv(text).filter(row => row.some(cell => cell.trim()));
-      if (!rows.length) return alert("가져올 CSV 내용이 없습니다.");
+      if (!rows.length) return [];
 
       const header = rows[0].map(cell => cell.trim().toLowerCase());
       const hasHeader = ["category", "level", "question", "answer"].every(name => header.includes(name));
       const dataRows = hasHeader ? rows.slice(1) : rows;
-      const imported = dataRows.map(row => {
+      return dataRows.map(row => {
         const get = name => hasHeader ? row[header.indexOf(name)] || "" : "";
         return {
           id: crypto.randomUUID(),
@@ -4483,22 +4543,18 @@
           updatedAt: new Date().toISOString()
         };
       }).filter(q => q.question && q.answer);
+    }
 
-      const existing = new Set(currentExamQuestions().map(q => `${q.category}|${q.question}`));
-      let added = 0;
-      imported.forEach(q => {
-        const key = `${q.category}|${q.question}`;
-        if (!existing.has(key)) {
-          state.questions.push(q);
-          existing.add(key);
-          added += 1;
-        }
-      });
+    function savedQuestionDeleteKey(question) {
+      return `${normalizeDeleteText(question.question)}|${normalizeDeleteText(question.answer)}`;
+    }
 
-      persist();
-      render();
-      alert(`${added}개 문제를 가져왔습니다.`);
-      setView("study");
+    function csvQuestionDeleteKey(question) {
+      return `${normalizeDeleteText(question.question)}|${normalizeDeleteText(question.answer)}`;
+    }
+
+    function normalizeDeleteText(value) {
+      return String(value || "").replace(/\s+/g, " ").trim();
     }
 
     function exportCsv() {

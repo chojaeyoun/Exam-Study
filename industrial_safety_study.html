@@ -451,12 +451,14 @@
                 <input id="csvFile" class="hidden-file" type="file" accept=".csv,text/csv">
                 <div class="actions">
                   <button id="pickCsvBtn" class="primary">CSV 파일 선택</button>
+                  <button id="deleteCsvFileBtn" class="danger" type="button">삭제할 CSV 선택</button>
                 </div>
                 <label>붙여넣기 가져오기
                   <textarea id="csvPaste" placeholder="category,level,question,answer,memo&#10;안전관리,상,예시 문제,예시 정답,메모"></textarea>
                 </label>
                 <div class="actions">
                   <button id="importPasteBtn">붙여넣은 CSV 가져오기</button>
+                  <button id="deletePasteCsvBtn" class="danger" type="button">붙여넣은 CSV와 같은 문제 삭제</button>
                   <button id="downloadTemplateBtn">양식 다운로드</button>
                 </div>
               </div>
