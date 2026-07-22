@@ -241,6 +241,7 @@
     const CALC_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "calc");
     const QUESTION_EXTRA_BLOCKS = [
       { id: "choices", label: "보기", icon: "V", hint: "통짜 보기 묶음", template: "\n1. 보기1\n2. 보기2\n3. 보기3\n4. 보기4\n\n" },
+      { id: "box", label: "박스", icon: "□", hint: "선택 문장을 박스로 감싸기", template: "\n[박스]\n내용을 입력하세요.\n[/박스]\n" },
       { id: "cloze", label: "빈칸", icon: "□", hint: "빈칸 표시 삽입", template: "{{정답}}" },
       { id: "photo", label: "사진", icon: "⌁", hint: "사진 선택 또는 붙여넣기", action: "photo" },
       { id: "memo", label: "메모", icon: "M", hint: "메모 입력칸 열기", action: "memo" },
@@ -2550,7 +2551,7 @@
 
     function setupComposeBlocks() {
       renderComposeBlockButtons(els.questionBlockButtons, [
-        ...QUESTION_SLASH_BLOCKS.filter(block => ["choices", "table", "cloze", "photo"].includes(block.id)),
+        ...QUESTION_SLASH_BLOCKS.filter(block => ["choices", "table", "box", "cloze", "photo"].includes(block.id)),
         { id: "hint", label: "힌트", icon: "H", hint: "정답 힌트", template: "\n힌트: \n" }
       ], els.questionInput);
       renderComposeBlockButtons(els.answerBlockButtons, [
@@ -2576,6 +2577,10 @@
           }
           if (block.id === "table") {
             openTableEditor(textarea);
+            return;
+          }
+          if (block.id === "box") {
+            wrapSelectionAsQuestionBox(textarea);
             return;
           }
           insertAtCursor(textarea, blockTemplate(block));
@@ -2949,6 +2954,18 @@
         textarea.dispatchEvent(new Event("input", { bubbles: true }));
         closeSlashMenu();
         openTableEditor(textarea);
+        return;
+      }
+      if (block.id === "box") {
+        const text = blockTemplate(block);
+        textarea.value = `${before}${text}${after}`;
+        const contentStart = before.length + text.indexOf("내용을 입력하세요.");
+        const contentEnd = contentStart + "내용을 입력하세요.".length;
+        textarea.focus();
+        textarea.setSelectionRange(contentStart, contentEnd);
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+        closeSlashMenu();
+        updateQuestionDiagnostics();
         return;
       }
       const text = blockTemplate(block);
@@ -4759,6 +4776,24 @@
       const cursor = before.length + insertText.length;
       textarea.focus();
       textarea.setSelectionRange(cursor, cursor);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function wrapSelectionAsQuestionBox(textarea) {
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? textarea.value.length;
+      const selected = textarea.value.slice(start, end).trim();
+      const boxText = selected
+        ? `[박스]\n${selected}\n[/박스]`
+        : "[박스]\n내용을 입력하세요.\n[/박스]";
+      const before = textarea.value.slice(0, start);
+      const after = textarea.value.slice(end);
+      const insertText = needsLeadingLineBreak(before, boxText) ? `\n${boxText}` : boxText;
+      textarea.value = `${before}${insertText}${after}`;
+      const placeholderStart = before.length + insertText.indexOf(selected || "내용을 입력하세요.");
+      const placeholderEnd = placeholderStart + (selected || "내용을 입력하세요.").length;
+      textarea.focus();
+      textarea.setSelectionRange(placeholderStart, placeholderEnd);
       textarea.dispatchEvent(new Event("input", { bubbles: true }));
     }
 
