@@ -766,7 +766,6 @@
     function render() {
       renderExamTabs();
       renderFilters();
-      renderStats();
       renderDashboard();
       renderStudy();
       renderTheories();
@@ -1259,6 +1258,7 @@
     }
 
     function renderDashboard() {
+      renderStats();
       const source = studyMode === "theory" ? statsScopeTheories() : statsScopeQuestions();
       const filtered = studyMode === "theory" ? filteredTheories() : filteredQuestions();
       const favoriteCount = source.filter(item => item.favorite).length;
