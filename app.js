@@ -4367,7 +4367,10 @@
       persist();
       clearForm({ keepContext: !existing });
       render();
-      requestAnimationFrame(() => els.questionInput.focus());
+      requestAnimationFrame(() => {
+        els.questionForm.scrollIntoView({ block: "start" });
+        els.questionInput.focus({ preventScroll: true });
+      });
     }
 
     function clearForm(options = {}) {
