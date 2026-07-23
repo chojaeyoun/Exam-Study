@@ -1738,11 +1738,11 @@
       const questionSource = boxed.body;
       const choiceHtml = choiceBank.items.length ? renderChoiceBank(choiceBank.items) : "";
       const parts = splitQuestionOptions(questionSource);
-      if (parts.options.length >= 2) {
+      if (parts.options.length >= 3) {
         const main = parts.body || "다음 조건을 보고 답하세요.";
         const mainHtml = hasQuestionBoxToken(main)
           ? renderQuestionBodyWithBoxes(main, boxed.boxes)
-          : `<p class="question-main">${formatInlineHtml(main)}</p>`;
+          : formatRichTextHtml(main);
         return [
           mainHtml,
           choiceHtml,
