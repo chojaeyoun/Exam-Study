@@ -236,17 +236,21 @@
       { id: "numbered-list", group: "기본 블록", label: "번호 매기기 목록", icon: "1.", hint: "번호 목록", shortcut: "1.", aliases: ["number", "번호"], template: "1. 첫 번째 항목\n2. 두 번째 항목", selectText: "첫 번째 항목" },
       { id: "check-list", group: "기본 블록", label: "할 일 목록", icon: "☑", hint: "체크 목록", shortcut: "[]", aliases: ["todo", "check", "체크"], template: "- [ ] 확인할 항목\n- [ ] 헷갈리는 항목", selectText: "확인할 항목" }
     ];
-    const THEORY_BLOCKS = [
+    const FORMAT_SLASH_BLOCKS = [
       ...BASIC_TEXT_BLOCKS,
+      { id: "quote", group: "기본 블록", label: "인용", icon: "❝", hint: "인용 또는 설명 박스", shortcut: ">", aliases: ["quote", "인용문"], template: "> 인용 내용을 입력하세요.", selectText: "인용 내용을 입력하세요." },
+      { id: "divider", group: "기본 블록", label: "구분선", icon: "―", hint: "내용 구간 나누기", shortcut: "---", aliases: ["line"], template: "\n---\n" },
+      { id: "table", group: "기본 블록", label: "표", icon: "▦", hint: "표 만들기", shortcut: "|", aliases: ["table"], template: () => buildMarkdownTable(3, 3) }
+    ];
+    const THEORY_BLOCKS = [
+      ...FORMAT_SLASH_BLOCKS,
       { id: "key", group: "학습 블록", label: "핵심 요약", icon: "!", hint: "핵심 개념과 암기 포인트", shortcut: "##", aliases: ["요약", "핵심"], template: "\n## 핵심 요약\n\n- 핵심 개념:\n- 암기 포인트:\n- 주의할 표현:\n", selectText: "핵심 개념" },
       { id: "formula", group: "학습 블록", label: "공식", icon: "√", hint: "공식, 단위, 기준", shortcut: "", aliases: ["수식"], template: "\n## 공식\n\n공식: \n단위: \n기준: \n" },
       { id: "calc", group: "학습 블록", label: "계산 풀이", icon: "=", hint: "공식, 대입, 계산, 답", shortcut: "", aliases: ["계산"], template: CALCULATION_TEMPLATE },
-      { id: "callout", group: "학습 블록", label: "암기 박스", icon: "※", hint: "강조해서 볼 문장", shortcut: ">", aliases: ["콜아웃", "박스"], template: "\n> 암기 박스\n> 꼭 외워야 할 문장을 여기에 적으세요.\n", selectText: "꼭 외워야 할 문장" },
-      { id: "table", group: "학습 블록", label: "표", icon: "▦", hint: "3 x 3 표", shortcut: "|", aliases: ["table"], template: () => buildMarkdownTable(3, 3) },
-      { id: "divider", group: "학습 블록", label: "구분선", icon: "―", hint: "내용 구간 나누기", shortcut: "---", aliases: ["line"], template: "\n---\n" }
+      { id: "callout", group: "학습 블록", label: "암기 박스", icon: "※", hint: "강조해서 볼 문장", shortcut: ">", aliases: ["콜아웃", "박스"], template: "\n> 암기 박스\n> 꼭 외워야 할 문장을 여기에 적으세요.\n", selectText: "꼭 외워야 할 문장" }
     ];
 
-    const TABLE_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "table");
+    const TABLE_SLASH_BLOCK = FORMAT_SLASH_BLOCKS.find(block => block.id === "table");
     const CALC_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "calc");
     const QUESTION_EXTRA_BLOCKS = [
       { id: "choices", group: "문제 블록", label: "보기", icon: "V", hint: "4지선다 보기 묶음", shortcut: "1.", aliases: ["선택지", "choice"], template: "\n1. 보기1\n2. 보기2\n3. 보기3\n4. 보기4\n\n", selectText: "보기1" },
@@ -256,9 +260,9 @@
       { id: "memo", group: "문제 블록", label: "메모", icon: "M", hint: "메모 입력칸 열기", shortcut: "", aliases: ["note"], action: "memo" },
       { id: "tag", group: "문제 블록", label: "태그", icon: "#", hint: "태그 입력칸 열기", shortcut: "", aliases: ["tag"], action: "tag" }
     ];
-    const QUESTION_SLASH_BLOCKS = [...BASIC_TEXT_BLOCKS, TABLE_SLASH_BLOCK, CALC_SLASH_BLOCK, ...QUESTION_EXTRA_BLOCKS].filter(Boolean);
+    const QUESTION_SLASH_BLOCKS = FORMAT_SLASH_BLOCKS;
     const SLASH_TARGETS = new Map([
-      [els.theoryContentInput, THEORY_BLOCKS],
+      [els.theoryContentInput, FORMAT_SLASH_BLOCKS],
       [els.questionInput, QUESTION_SLASH_BLOCKS],
       [els.answerInput, QUESTION_SLASH_BLOCKS],
       [els.memoInput, QUESTION_SLASH_BLOCKS]
