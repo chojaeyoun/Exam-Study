@@ -238,8 +238,8 @@
     ];
     const FORMAT_SLASH_BLOCKS = [
       ...BASIC_TEXT_BLOCKS,
-      { id: "quote", group: "기본 블록", label: "인용", icon: "❝", hint: "인용 또는 설명 박스", shortcut: ">", aliases: ["quote", "인용문"], template: "> 인용 내용을 입력하세요.", selectText: "인용 내용을 입력하세요." },
       { id: "divider", group: "기본 블록", label: "구분선", icon: "―", hint: "내용 구간 나누기", shortcut: "---", aliases: ["line"], template: "\n---\n" },
+      { id: "quote", group: "기본 블록", label: "인용", icon: "❝", hint: "인용 또는 설명 박스", shortcut: ">", aliases: ["quote", "인용문"], template: "> 인용 내용을 입력하세요.", selectText: "인용 내용을 입력하세요." },
       { id: "table", group: "기본 블록", label: "표", icon: "▦", hint: "표 만들기", shortcut: "|", aliases: ["table"], template: () => buildMarkdownTable(3, 3) }
     ];
     const THEORY_BLOCKS = [
@@ -1844,8 +1844,7 @@
     }
 
     function formatRichTextHtml(text) {
-      const normalizedText = String(text || "")
-        .replace(/(^|\n)(#{1,4}\s+[^\n]+)\n(?!\n)/g, "$1$2\n\n");
+      const normalizedText = normalizeMarkdownBlockBreaks(text);
       const blocks = normalizedText
         .split(/\n{2,}/)
         .map(block => block.trim())
@@ -1855,6 +1854,20 @@
         if (isMarkdownTable(block)) return renderMarkdownTable(block);
         return renderRichTextBlock(block);
       }).join("");
+    }
+
+    function normalizeMarkdownBlockBreaks(text) {
+      const output = [];
+      String(text || "").split(/\r?\n/).forEach(line => {
+        const trimmed = line.trim();
+        const isStandaloneBlock = /^#{1,4}\s+\S/.test(trimmed) || /^---+$/.test(trimmed);
+        if (isStandaloneBlock && output.length && output[output.length - 1] !== "") {
+          output.push("");
+        }
+        output.push(isStandaloneBlock ? trimmed : line);
+        if (isStandaloneBlock) output.push("");
+      });
+      return output.join("\n").replace(/\n{3,}/g, "\n\n").trim();
     }
 
     function formatInlineHtml(text) {
