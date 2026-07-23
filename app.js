@@ -226,28 +226,37 @@
     ]);
 
     const CALCULATION_TEMPLATE = "\n공식:\n\n대입:\n\n계산:\n\n답:\n";
+    const BASIC_TEXT_BLOCKS = [
+      { id: "text", group: "기본 블록", label: "텍스트", icon: "T", hint: "일반 문장", shortcut: "", aliases: ["plain", "문장"], template: "텍스트를 입력하세요.", selectText: "텍스트를 입력하세요." },
+      { id: "heading1", group: "기본 블록", label: "제목1", icon: "H1", hint: "가장 큰 제목", shortcut: "#", aliases: ["h1", "제목", "큰제목"], template: "# 제목1", selectText: "제목1" },
+      { id: "heading2", group: "기본 블록", label: "제목2", icon: "H2", hint: "중간 제목", shortcut: "##", aliases: ["h2", "소제목"], template: "## 제목2", selectText: "제목2" },
+      { id: "heading3", group: "기본 블록", label: "제목3", icon: "H3", hint: "작은 제목", shortcut: "###", aliases: ["h3"], template: "### 제목3", selectText: "제목3" },
+      { id: "heading4", group: "기본 블록", label: "제목4", icon: "H4", hint: "더 작은 제목", shortcut: "####", aliases: ["h4"], template: "#### 제목4", selectText: "제목4" },
+      { id: "bullet-list", group: "기본 블록", label: "글머리 기호 목록", icon: "•", hint: "점 목록", shortcut: "-", aliases: ["bullet", "목록", "list"], template: "- 항목\n- 항목", selectText: "항목" },
+      { id: "numbered-list", group: "기본 블록", label: "번호 매기기 목록", icon: "1.", hint: "번호 목록", shortcut: "1.", aliases: ["number", "번호"], template: "1. 첫 번째 항목\n2. 두 번째 항목", selectText: "첫 번째 항목" },
+      { id: "check-list", group: "기본 블록", label: "할 일 목록", icon: "☑", hint: "체크 목록", shortcut: "[]", aliases: ["todo", "check", "체크"], template: "- [ ] 확인할 항목\n- [ ] 헷갈리는 항목", selectText: "확인할 항목" }
+    ];
     const THEORY_BLOCKS = [
-      { id: "heading", label: "제목", icon: "H", hint: "# 제목 블록", template: "\n# 새 이론 제목\n\n정리할 내용을 입력하세요.\n" },
-      { id: "key", label: "핵심 요약", icon: "!", hint: "핵심 개념과 암기 포인트", template: "\n## 핵심 요약\n\n- 핵심 개념:\n- 암기 포인트:\n- 주의할 표현:\n" },
-      { id: "formula", label: "공식", icon: "√", hint: "공식, 단위, 기준", template: "\n## 공식\n\n공식: \n단위: \n기준: \n" },
-      { id: "calc", label: "계산 풀이", icon: "=", hint: "공식, 대입, 계산, 답", template: CALCULATION_TEMPLATE },
-      { id: "check", label: "체크리스트", icon: "☑", hint: "암기할 항목 확인", template: "\n- [ ] 암기할 항목\n- [ ] 헷갈리는 예외\n- [ ] 기출 연결 포인트\n" },
-      { id: "callout", label: "암기 박스", icon: "※", hint: "강조해서 볼 문장", template: "\n> 암기 박스\n> 꼭 외워야 할 문장을 여기에 적으세요.\n" },
-      { id: "table", label: "표", icon: "▦", hint: "3 x 3 표", template: () => buildMarkdownTable(3, 3) },
-      { id: "divider", label: "구분선", icon: "―", hint: "내용 구간 나누기", template: "\n---\n" }
+      ...BASIC_TEXT_BLOCKS,
+      { id: "key", group: "학습 블록", label: "핵심 요약", icon: "!", hint: "핵심 개념과 암기 포인트", shortcut: "##", aliases: ["요약", "핵심"], template: "\n## 핵심 요약\n\n- 핵심 개념:\n- 암기 포인트:\n- 주의할 표현:\n", selectText: "핵심 개념" },
+      { id: "formula", group: "학습 블록", label: "공식", icon: "√", hint: "공식, 단위, 기준", shortcut: "", aliases: ["수식"], template: "\n## 공식\n\n공식: \n단위: \n기준: \n" },
+      { id: "calc", group: "학습 블록", label: "계산 풀이", icon: "=", hint: "공식, 대입, 계산, 답", shortcut: "", aliases: ["계산"], template: CALCULATION_TEMPLATE },
+      { id: "callout", group: "학습 블록", label: "암기 박스", icon: "※", hint: "강조해서 볼 문장", shortcut: ">", aliases: ["콜아웃", "박스"], template: "\n> 암기 박스\n> 꼭 외워야 할 문장을 여기에 적으세요.\n", selectText: "꼭 외워야 할 문장" },
+      { id: "table", group: "학습 블록", label: "표", icon: "▦", hint: "3 x 3 표", shortcut: "|", aliases: ["table"], template: () => buildMarkdownTable(3, 3) },
+      { id: "divider", group: "학습 블록", label: "구분선", icon: "―", hint: "내용 구간 나누기", shortcut: "---", aliases: ["line"], template: "\n---\n" }
     ];
 
     const TABLE_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "table");
     const CALC_SLASH_BLOCK = THEORY_BLOCKS.find(block => block.id === "calc");
     const QUESTION_EXTRA_BLOCKS = [
-      { id: "choices", label: "보기", icon: "V", hint: "통짜 보기 묶음", template: "\n1. 보기1\n2. 보기2\n3. 보기3\n4. 보기4\n\n" },
-      { id: "box", label: "박스", icon: "□", hint: "선택 문장을 박스로 감싸기", template: "\n[박스]\n내용을 입력하세요.\n[/박스]\n" },
-      { id: "cloze", label: "빈칸", icon: "□", hint: "빈칸 표시 삽입", template: "{{정답}}" },
-      { id: "photo", label: "사진", icon: "⌁", hint: "사진 선택 또는 붙여넣기", action: "photo" },
-      { id: "memo", label: "메모", icon: "M", hint: "메모 입력칸 열기", action: "memo" },
-      { id: "tag", label: "태그", icon: "#", hint: "태그 입력칸 열기", action: "tag" }
+      { id: "choices", group: "문제 블록", label: "보기", icon: "V", hint: "4지선다 보기 묶음", shortcut: "1.", aliases: ["선택지", "choice"], template: "\n1. 보기1\n2. 보기2\n3. 보기3\n4. 보기4\n\n", selectText: "보기1" },
+      { id: "box", group: "문제 블록", label: "보기 박스", icon: "□", hint: "지문을 박스로 감싸기", shortcut: "[박스]", aliases: ["박스", "지문"], template: "\n[박스]\n내용을 입력하세요.\n[/박스]\n", selectText: "내용을 입력하세요." },
+      { id: "cloze", group: "문제 블록", label: "빈칸", icon: "{}", hint: "빈칸 표시 삽입", shortcut: "{{}}", aliases: ["blank"], template: "{{정답}}", selectText: "정답" },
+      { id: "photo", group: "문제 블록", label: "사진", icon: "⌁", hint: "사진 선택 또는 붙여넣기", shortcut: "", aliases: ["이미지"], action: "photo" },
+      { id: "memo", group: "문제 블록", label: "메모", icon: "M", hint: "메모 입력칸 열기", shortcut: "", aliases: ["note"], action: "memo" },
+      { id: "tag", group: "문제 블록", label: "태그", icon: "#", hint: "태그 입력칸 열기", shortcut: "", aliases: ["tag"], action: "tag" }
     ];
-    const QUESTION_SLASH_BLOCKS = [TABLE_SLASH_BLOCK, CALC_SLASH_BLOCK, ...QUESTION_EXTRA_BLOCKS].filter(Boolean);
+    const QUESTION_SLASH_BLOCKS = [...BASIC_TEXT_BLOCKS, TABLE_SLASH_BLOCK, CALC_SLASH_BLOCK, ...QUESTION_EXTRA_BLOCKS].filter(Boolean);
     const SLASH_TARGETS = new Map([
       [els.theoryContentInput, THEORY_BLOCKS],
       [els.questionInput, QUESTION_SLASH_BLOCKS],
@@ -1831,7 +1840,9 @@
     }
 
     function formatRichTextHtml(text) {
-      const blocks = String(text || "")
+      const normalizedText = String(text || "")
+        .replace(/(^|\n)(#{1,4}\s+[^\n]+)\n(?!\n)/g, "$1$2\n\n");
+      const blocks = normalizedText
         .split(/\n{2,}/)
         .map(block => block.trim())
         .filter(Boolean);
@@ -1860,6 +1871,8 @@
       const source = String(block || "").trim();
       if (!source) return "";
       if (/^---+$/.test(source)) return `<hr class="rich-divider">`;
+      if (source.startsWith("#### ")) return `<h6 class="rich-heading-4">${formatInlineHtml(source.slice(5).trim())}</h6>`;
+      if (source.startsWith("### ")) return `<h5 class="rich-heading-3">${formatInlineHtml(source.slice(4).trim())}</h5>`;
       if (source.startsWith("## ")) return `<h4 class="rich-subheading">${formatInlineHtml(source.slice(3).trim())}</h4>`;
       if (source.startsWith("# ")) return `<h3 class="rich-heading">${formatInlineHtml(source.slice(2).trim())}</h3>`;
       if (source.startsWith(">")) {
@@ -1876,6 +1889,10 @@
       if (/^-\s+/m.test(source)) {
         const items = source.split("\n").map(line => line.replace(/^-\s+/, "").trim()).filter(Boolean);
         return `<ul class="rich-list">${items.map(item => `<li><span>•</span><span>${formatInlineHtml(item)}</span></li>`).join("")}</ul>`;
+      }
+      if (/^\d+[.)]\s+/m.test(source)) {
+        const items = source.split("\n").map(line => line.replace(/^\d+[.)]\s+/, "").trim()).filter(Boolean);
+        return `<ol class="rich-numbered-list">${items.map(item => `<li>${formatInlineHtml(item)}</li>`).join("")}</ol>`;
       }
       return `<p class="rich-paragraph question-paragraph">${formatInlineHtml(source)}</p>`;
     }
@@ -2524,7 +2541,8 @@
     }
 
     function insertTheoryBlock(type) {
-      const block = THEORY_BLOCKS.find(item => item.id === type);
+      const legacyTypeMap = { heading: "heading1", check: "check-list" };
+      const block = THEORY_BLOCKS.find(item => item.id === (legacyTypeMap[type] || type));
       if (block?.id === "table") {
         openTableEditor(els.theoryContentInput);
         return;
@@ -2907,24 +2925,32 @@
       const blocks = DYNAMIC_SLASH_TARGETS.get(textarea) || SLASH_TARGETS.get(textarea) || [];
       if (!query) return blocks;
       return blocks.filter(block => {
+        const aliases = block.aliases || [];
         return block.label.toLowerCase().includes(query) ||
           block.id.toLowerCase().includes(query) ||
-          block.hint.toLowerCase().includes(query);
+          String(block.hint || "").toLowerCase().includes(query) ||
+          String(block.shortcut || "").toLowerCase().includes(query) ||
+          aliases.some(alias => String(alias).toLowerCase().includes(query));
       });
     }
 
     function renderSlashMenu() {
       const { options, selectedIndex } = slashState;
+      let lastGroup = "";
       els.slashMenu.innerHTML = options.map((block, index) => {
-        return `<button class="slash-option${index === selectedIndex ? " active" : ""}" type="button" data-slash-id="${block.id}" role="option" aria-selected="${index === selectedIndex}">
+        const group = block.group || "블록";
+        const groupHtml = group !== lastGroup ? `<div class="slash-group">${escapeHtml(group)}</div>` : "";
+        lastGroup = group;
+        return `${groupHtml}<button class="slash-option${index === selectedIndex ? " active" : ""}" type="button" data-slash-index="${index}" role="option" aria-selected="${index === selectedIndex}">
           <b>${escapeHtml(block.icon)}</b>
-          <span>${escapeHtml(block.label)}<small>${escapeHtml(block.hint)}</small></span>
+          <span>${escapeHtml(block.label)}<small>${escapeHtml(block.hint || "")}</small></span>
+          <kbd>${escapeHtml(block.shortcut || "")}</kbd>
         </button>`;
       }).join("");
-      els.slashMenu.querySelectorAll("[data-slash-id]").forEach(button => {
+      els.slashMenu.querySelectorAll("[data-slash-index]").forEach(button => {
         button.addEventListener("mousedown", event => {
           event.preventDefault();
-          const block = slashState.options.find(item => item.id === button.dataset.slashId);
+          const block = slashState.options[Number(button.dataset.slashIndex)];
           applySlashOption(block);
         });
       });
@@ -2978,14 +3004,27 @@
       }
       const text = blockTemplate(block);
       textarea.value = `${before}${text}${after}`;
-      const cursor = before.length + text.length;
+      const selection = slashSelectionRange(text, before.length, block);
       textarea.focus();
-      textarea.setSelectionRange(cursor, cursor);
+      textarea.setSelectionRange(selection.start, selection.end);
       textarea.dispatchEvent(new Event("input", { bubbles: true }));
       closeSlashMenu();
       if (textarea === els.theoryContentInput) {
         updateTheoryPreview();
       }
+      updateQuestionDiagnostics();
+    }
+
+    function slashSelectionRange(text, offset, block) {
+      const selectText = block?.selectText;
+      if (selectText) {
+        const index = text.indexOf(selectText);
+        if (index >= 0) {
+          return { start: offset + index, end: offset + index + selectText.length };
+        }
+      }
+      const cursor = offset + text.length;
+      return { start: cursor, end: cursor };
     }
 
     function runSlashAction(action) {

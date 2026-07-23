@@ -1166,9 +1166,9 @@
       position: fixed;
       z-index: 80;
       width: min(320px, calc(100vw - 28px));
-      max-height: 280px;
+      max-height: min(380px, calc(100vh - 32px));
       overflow-y: auto;
-      padding: 7px;
+      padding: 8px;
       border: 1px solid #cfded9;
       border-radius: 8px;
       background: #fff;
@@ -1276,11 +1276,18 @@
       box-shadow: inset 0 0 0 2px rgba(17, 124, 109, 0.2);
     }
 
+    .slash-group {
+      padding: 8px 7px 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
     .slash-option {
       width: 100%;
       min-height: 48px;
       display: grid;
-      grid-template-columns: 34px minmax(0, 1fr);
+      grid-template-columns: 34px minmax(0, 1fr) auto;
       gap: 9px;
       align-items: center;
       padding: 7px 9px;
@@ -1302,7 +1309,9 @@
       border-radius: 8px;
       background: #e7f1ef;
       color: var(--accent-dark);
-      font-size: 14px;
+      font-size: 13px;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-weight: 900;
     }
 
     .slash-option span {
@@ -1318,6 +1327,15 @@
       font-size: 11px;
       font-weight: 700;
       line-height: 1.35;
+    }
+
+    .slash-option kbd {
+      min-width: 28px;
+      color: #9aa6a3;
+      font-size: 12px;
+      font-family: inherit;
+      font-weight: 900;
+      text-align: right;
     }
 
     .note-preview-panel {
@@ -2268,9 +2286,12 @@
 
     .rich-heading,
     .rich-subheading,
+    .rich-heading-3,
+    .rich-heading-4,
     .rich-paragraph,
     .rich-callout,
     .rich-list,
+    .rich-numbered-list,
     .rich-checklist {
       margin: 0;
       line-height: 1.65;
@@ -2289,12 +2310,25 @@
       color: #26524b;
     }
 
+    .rich-heading-3 {
+      font-size: 15px;
+      font-weight: 900;
+      color: #2d5a53;
+    }
+
+    .rich-heading-4 {
+      font-size: 14px;
+      font-weight: 900;
+      color: #48645f;
+    }
+
     .rich-paragraph {
       color: #28423c;
       white-space: pre-wrap;
     }
 
     .rich-list,
+    .rich-numbered-list,
     .rich-checklist {
       display: grid;
       gap: 7px;
@@ -2308,6 +2342,24 @@
       grid-template-columns: 22px minmax(0, 1fr);
       gap: 7px;
       color: #28423c;
+    }
+
+    .rich-numbered-list {
+      counter-reset: rich-numbered;
+    }
+
+    .rich-numbered-list li {
+      counter-increment: rich-numbered;
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr);
+      gap: 7px;
+      color: #28423c;
+    }
+
+    .rich-numbered-list li::before {
+      content: counter(rich-numbered) ".";
+      color: var(--accent-dark);
+      font-weight: 900;
     }
 
     .rich-checklist .box {
