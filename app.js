@@ -405,6 +405,7 @@
     });
     els.applyOcrBtn.addEventListener("click", applyOcrText);
     els.clearPhotoBtn.addEventListener("click", clearAttachedPhotos);
+    preserveScrollOnTextareaFocus(els.memoInput);
     els.pickCsvBtn.addEventListener("click", () => {
       csvFileMode = "import";
       els.csvFile.click();
@@ -2636,11 +2637,11 @@
       if (action === "photo") {
         els.photoFile.click();
       } else if (action === "memo") {
-        openComposeDetails();
-        requestAnimationFrame(() => els.memoInput.focus({ preventScroll: true }));
+        openComposeDetails({ preserveScroll: true });
+        focusWithoutScrollJump(els.memoInput);
       } else if (action === "tag") {
-        openComposeDetails();
-        requestAnimationFrame(() => els.tagsInput.focus({ preventScroll: true }));
+        openComposeDetails({ preserveScroll: true });
+        focusWithoutScrollJump(els.tagsInput);
       }
     }
 
@@ -3045,20 +3046,55 @@
     }
 
     function runSlashAction(action) {
-      openComposeDetails();
+      openComposeDetails({ preserveScroll: true });
       if (action === "photo") {
         requestAnimationFrame(() => els.photoFile.click());
       } else if (action === "memo") {
-        requestAnimationFrame(() => els.memoInput.focus({ preventScroll: true }));
+        focusWithoutScrollJump(els.memoInput);
       } else if (action === "tag") {
-        requestAnimationFrame(() => els.tagsInput.focus({ preventScroll: true }));
+        focusWithoutScrollJump(els.tagsInput);
       }
     }
 
-    function openComposeDetails() {
+    function openComposeDetails(options = {}) {
+      const scroll = options.preserveScroll ? captureScrollPosition() : null;
       els.ocrBox.classList.remove("collapsed");
       els.toggleOcrBtn.textContent = "옵션 접기";
       els.toggleOcrBtn.setAttribute("aria-expanded", "true");
+      if (scroll) restoreScrollPosition(scroll);
+    }
+
+    function captureScrollPosition() {
+      return { x: window.scrollX, y: window.scrollY };
+    }
+
+    function restoreScrollPosition(position) {
+      requestAnimationFrame(() => {
+        window.scrollTo(position.x, position.y);
+        requestAnimationFrame(() => window.scrollTo(position.x, position.y));
+      });
+    }
+
+    function focusWithoutScrollJump(element) {
+      if (!element) return;
+      const scroll = captureScrollPosition();
+      requestAnimationFrame(() => {
+        element.focus({ preventScroll: true });
+        restoreScrollPosition(scroll);
+      });
+    }
+
+    function preserveScrollOnTextareaFocus(textarea) {
+      if (!textarea) return;
+      let pointerScroll = null;
+      textarea.addEventListener("pointerdown", () => {
+        pointerScroll = captureScrollPosition();
+      });
+      textarea.addEventListener("focus", () => {
+        if (!pointerScroll) return;
+        restoreScrollPosition(pointerScroll);
+        pointerScroll = null;
+      });
     }
 
     function closeSlashMenu() {
@@ -4166,10 +4202,12 @@
     }
 
     function toggleOcrBox() {
+      const scroll = captureScrollPosition();
       const willExpand = els.ocrBox.classList.contains("collapsed");
       els.ocrBox.classList.toggle("collapsed", !willExpand);
       els.toggleOcrBtn.textContent = willExpand ? "옵션 접기" : "상세 옵션";
       els.toggleOcrBtn.setAttribute("aria-expanded", String(willExpand));
+      restoreScrollPosition(scroll);
     }
 
     async function readQuestionPhoto(event) {
