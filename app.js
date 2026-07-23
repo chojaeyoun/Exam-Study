@@ -1875,9 +1875,13 @@
       const source = String(text || "");
       const parts = [];
       let cursor = 0;
-      source.replace(/\{\{([^{}]+)\}\}/g, (match, answer, index) => {
+      source.replace(/(\{\{([^{}]+)\}\}|\*\*([^*\n]+)\*\*)/g, (match, _token, answer, boldText, index) => {
         parts.push(escapeHtml(source.slice(cursor, index)));
-        parts.push(`<button class="cloze" type="button" data-answer="${escapeHtml(answer.trim())}">빈칸</button>`);
+        if (answer) {
+          parts.push(`<button class="cloze" type="button" data-answer="${escapeHtml(answer.trim())}">빈칸</button>`);
+        } else {
+          parts.push(`<strong class="rich-bold">${escapeHtml(boldText.trim())}</strong>`);
+        }
         cursor = index + match.length;
         return match;
       });
