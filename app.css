@@ -2165,6 +2165,29 @@
       background: transparent;
     }
 
+    .format-tools {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .format-tool {
+      min-height: 34px;
+      padding: 0 10px;
+      border-color: #cfe0dc;
+      background: #fff;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .format-tool:hover,
+    .symbol-toggle:hover {
+      border-color: var(--accent);
+      color: var(--accent-dark);
+    }
+
     .symbol-toggle {
       width: fit-content;
       min-height: 34px;

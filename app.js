@@ -255,6 +255,14 @@
       [els.memoInput, QUESTION_SLASH_BLOCKS]
     ]);
     const DYNAMIC_SLASH_TARGETS = new WeakMap();
+    const TEXT_FORMAT_TOOLS = [
+      { action: "bold", label: "굵게", hint: "선택한 글자를 굵게 표시" },
+      { action: "cloze", label: "빈칸", hint: "선택한 글자를 {{빈칸}}으로 만들기" },
+      { action: "box", label: "박스", hint: "선택한 문장을 문제 박스로 감싸기" },
+      { action: "choices", label: "보기", hint: "보기 4개 틀 넣기" },
+      { action: "numbered", label: "번호", hint: "선택한 줄을 1. 2. 번호 목록으로 바꾸기" },
+      { action: "bullet", label: "목록", hint: "선택한 줄을 글머리표 목록으로 바꾸기" }
+    ];
 
     let slashState = null;
     let tableEditorState = null;
@@ -4600,7 +4608,10 @@
         if (!textarea) return;
         toolbox.dataset.toolsReady = "true";
         toolbox.innerHTML = `
-          <button class="symbol-toggle" type="button" aria-expanded="false">특수기호</button>
+          <div class="format-tools" aria-label="빠른 서식">
+            ${TEXT_FORMAT_TOOLS.map(tool => `<button class="format-tool" type="button" data-format-action="${escapeHtml(tool.action)}" title="${escapeHtml(tool.hint)}">${escapeHtml(tool.label)}</button>`).join("")}
+            <button class="symbol-toggle" type="button" aria-expanded="false">특수기호</button>
+          </div>
           <div class="symbol-tools" aria-label="특수기호 입력">
             ${WRITING_SYMBOLS.map(symbol => `<button class="symbol-tool" type="button" data-symbol="${escapeHtml(symbol)}" title="${escapeHtml(symbolTitle(symbol))}">${escapeHtml(symbol)}</button>`).join("")}
           </div>
@@ -4613,6 +4624,9 @@
         });
         toolbox.querySelectorAll("[data-symbol]").forEach(button => {
           button.addEventListener("click", () => insertAtCursor(textarea, button.dataset.symbol));
+        });
+        toolbox.querySelectorAll("[data-format-action]").forEach(button => {
+          button.addEventListener("click", () => applyTextFormat(textarea, button.dataset.formatAction));
         });
       });
     }
@@ -4630,6 +4644,76 @@
     function symbolTitle(symbol) {
       const shortcut = [...CIRCLED_NUMBER_SHORTCUTS.entries()].find(([, value]) => value === symbol);
       return shortcut ? `${symbol} (Alt+${shortcut[0]})` : symbol;
+    }
+
+    function applyTextFormat(textarea, action) {
+      if (!(textarea instanceof HTMLTextAreaElement)) return;
+      if (action === "box") {
+        wrapSelectionAsQuestionBox(textarea);
+        updateQuestionDiagnostics();
+        return;
+      }
+      if (action === "choices") {
+        insertAtCursor(textarea, "\n1. 보기1\n2. 보기2\n3. 보기3\n4. 보기4\n\n");
+        updateQuestionDiagnostics();
+        return;
+      }
+      const start = textarea.selectionStart ?? textarea.value.length;
+      const end = textarea.selectionEnd ?? start;
+      const selected = textarea.value.slice(start, end);
+      const replacement = formatTextSelection(selected, action);
+      replaceTextareaSelection(textarea, start, end, replacement.text, replacement.selectionStart, replacement.selectionEnd);
+      updateQuestionDiagnostics();
+      if (textarea === els.theoryContentInput) updateTheoryPreview();
+    }
+
+    function formatTextSelection(selected, action) {
+      const text = selected || "";
+      if (action === "bold") {
+        const fallback = "강조할 내용";
+        const content = text.trim() || fallback;
+        return selectionReplacement(`**${content}**`, 2, content.length);
+      }
+      if (action === "cloze") {
+        const fallback = "암기할 내용";
+        const content = text.trim() || fallback;
+        return selectionReplacement(`{{${content}}}`, 2, content.length);
+      }
+      if (action === "numbered") {
+        const lines = selectedLines(text, ["첫 번째 항목", "두 번째 항목"]);
+        return selectionReplacement(lines.map((line, index) => `${index + 1}. ${stripListMarker(line)}`).join("\n"));
+      }
+      if (action === "bullet") {
+        const lines = selectedLines(text, ["항목"]);
+        return selectionReplacement(lines.map(line => `- ${stripListMarker(line)}`).join("\n"));
+      }
+      return selectionReplacement(text);
+    }
+
+    function selectionReplacement(text, innerOffset = 0, innerLength = text.length) {
+      return { text, selectionStart: innerOffset, selectionEnd: innerOffset + innerLength };
+    }
+
+    function selectedLines(text, fallback) {
+      const lines = String(text || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      return lines.length ? lines : fallback;
+    }
+
+    function stripListMarker(line) {
+      return String(line || "").replace(/^\s*(?:[-*•]|\d+[.)]|[①-⑳])\s*/, "").trim();
+    }
+
+    function replaceTextareaSelection(textarea, start, end, text, relativeSelectionStart = text.length, relativeSelectionEnd = relativeSelectionStart) {
+      const before = textarea.value.slice(0, start);
+      const after = textarea.value.slice(end);
+      const insertText = needsLeadingLineBreak(before, text) ? `\n${text}` : text;
+      const offset = insertText.length - text.length;
+      textarea.value = `${before}${insertText}${after}`;
+      const selectionStart = before.length + offset + relativeSelectionStart;
+      const selectionEnd = before.length + offset + relativeSelectionEnd;
+      textarea.focus();
+      textarea.setSelectionRange(selectionStart, selectionEnd);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
     }
 
     function openTableEditor(textarea) {
