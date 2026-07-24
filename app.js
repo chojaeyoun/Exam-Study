@@ -210,7 +210,7 @@
 
     const WRITING_SYMBOLS = [
       "²", "³", "√", "±", "×", "÷", "≤", "≥", "≠", "°", "㎡", "㎥",
-      "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩", "→", "←", "∑", "π", "μ", "Ω", "※", "·", "ㆍ"
+      "π", "μ", "Ω", "※", "·", "ㆍ"
     ];
     const CIRCLED_NUMBER_SHORTCUTS = new Map([
       ["1", "①"],
@@ -226,6 +226,20 @@
     ]);
 
     const CALCULATION_TEMPLATE = "\n공식:\n\n대입:\n\n계산:\n\n답:\n";
+    const SYMBOL_SLASH_BLOCKS = WRITING_SYMBOLS.map((symbol, index) => ({
+      id: `symbol-${index}`,
+      group: "특수기호",
+      label: symbol,
+      icon: symbol,
+      hint: "기호 입력",
+      shortcut: symbol,
+      aliases: ["기호", "특수기호", symbolTitle(symbol)],
+      template: symbol
+    }));
+    const FORMAT_TOOL_SLASH_BLOCKS = [
+      { id: "bold", group: "서식", label: "굵게", icon: "B", hint: "굵게 표시", shortcut: "**", aliases: ["bold", "강조"], template: "**강조할 내용**", selectText: "강조할 내용" },
+      { id: "cloze-format", group: "서식", label: "빈칸", icon: "{}", hint: "빈칸 표시", shortcut: "{{}}", aliases: ["blank", "암기"], template: "{{정답}}", selectText: "정답" }
+    ];
     const BASIC_TEXT_BLOCKS = [
       { id: "text", group: "기본 블록", label: "텍스트", icon: "T", hint: "일반 문장", shortcut: "", aliases: ["plain", "문장"], template: "텍스트를 입력하세요.", selectText: "텍스트를 입력하세요." },
       { id: "heading1", group: "기본 블록", label: "제목1", icon: "H1", hint: "가장 큰 제목", shortcut: "#", aliases: ["h1", "제목", "큰제목"], template: "# 제목1", selectText: "제목1" },
@@ -237,10 +251,12 @@
       { id: "check-list", group: "기본 블록", label: "할 일 목록", icon: "☑", hint: "체크 목록", shortcut: "[]", aliases: ["todo", "check", "체크"], template: "- [ ] 확인할 항목\n- [ ] 헷갈리는 항목", selectText: "확인할 항목" }
     ];
     const FORMAT_SLASH_BLOCKS = [
+      ...FORMAT_TOOL_SLASH_BLOCKS,
       ...BASIC_TEXT_BLOCKS,
       { id: "divider", group: "기본 블록", label: "구분선", icon: "―", hint: "내용 구간 나누기", shortcut: "---", aliases: ["line"], template: "\n---\n" },
       { id: "quote", group: "기본 블록", label: "인용", icon: "❝", hint: "인용 또는 설명 박스", shortcut: ">", aliases: ["quote", "인용문"], template: "> 인용 내용을 입력하세요.", selectText: "인용 내용을 입력하세요." },
-      { id: "table", group: "기본 블록", label: "표", icon: "▦", hint: "표 만들기", shortcut: "|", aliases: ["table"], template: () => buildMarkdownTable(3, 3) }
+      { id: "table", group: "기본 블록", label: "표", icon: "▦", hint: "표 만들기", shortcut: "|", aliases: ["table"], template: () => buildMarkdownTable(3, 3) },
+      ...SYMBOL_SLASH_BLOCKS
     ];
     const THEORY_BLOCKS = [
       ...FORMAT_SLASH_BLOCKS,
@@ -260,7 +276,7 @@
       { id: "memo", group: "문제 블록", label: "메모", icon: "M", hint: "메모 입력칸 열기", shortcut: "", aliases: ["note"], action: "memo" },
       { id: "tag", group: "문제 블록", label: "태그", icon: "#", hint: "태그 입력칸 열기", shortcut: "", aliases: ["tag"], action: "tag" }
     ];
-    const QUESTION_SLASH_BLOCKS = FORMAT_SLASH_BLOCKS;
+    const QUESTION_SLASH_BLOCKS = [...FORMAT_SLASH_BLOCKS, ...QUESTION_EXTRA_BLOCKS];
     const SLASH_TARGETS = new Map([
       [els.theoryContentInput, FORMAT_SLASH_BLOCKS],
       [els.questionInput, QUESTION_SLASH_BLOCKS],
@@ -4705,27 +4721,8 @@
           : toolbox.closest("[data-quick-form]")?.querySelector(`[data-quick-field="${toolbox.dataset.toolsForQuick}"]`);
         if (!textarea) return;
         toolbox.dataset.toolsReady = "true";
-        toolbox.innerHTML = `
-          <div class="format-tools" aria-label="빠른 서식">
-            ${TEXT_FORMAT_TOOLS.map(tool => `<button class="format-tool" type="button" data-format-action="${escapeHtml(tool.action)}" title="${escapeHtml(tool.hint)}">${escapeHtml(tool.label)}</button>`).join("")}
-            <button class="symbol-toggle" type="button" aria-expanded="false">특수기호</button>
-          </div>
-          <div class="symbol-tools" aria-label="특수기호 입력">
-            ${WRITING_SYMBOLS.map(symbol => `<button class="symbol-tool" type="button" data-symbol="${escapeHtml(symbol)}" title="${escapeHtml(symbolTitle(symbol))}">${escapeHtml(symbol)}</button>`).join("")}
-          </div>
-        `;
-        const toggle = toolbox.querySelector(".symbol-toggle");
-        toggle.addEventListener("click", () => {
-          const willOpen = !toolbox.classList.contains("open");
-          toolbox.classList.toggle("open", willOpen);
-          toggle.setAttribute("aria-expanded", String(willOpen));
-        });
-        toolbox.querySelectorAll("[data-symbol]").forEach(button => {
-          button.addEventListener("click", () => insertAtCursor(textarea, button.dataset.symbol));
-        });
-        toolbox.querySelectorAll("[data-format-action]").forEach(button => {
-          button.addEventListener("click", () => applyTextFormat(textarea, button.dataset.formatAction));
-        });
+        toolbox.innerHTML = "";
+        toolbox.hidden = true;
       });
     }
 
