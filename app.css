@@ -2084,6 +2084,7 @@
       line-height: 1.65;
     }
 
+    .compose-choice-editor,
     .compose-choice-picker {
       display: grid;
       gap: 8px;
@@ -2093,14 +2094,52 @@
       background: #f3faf8;
     }
 
+    .compose-choice-editor.hidden,
     .compose-choice-picker.hidden {
       display: none;
     }
 
+    .compose-choice-editor > span,
     .compose-choice-picker span {
       color: var(--accent-dark);
       font-size: 12px;
       font-weight: 900;
+    }
+
+    .compose-choice-inputs {
+      display: grid;
+      gap: 7px;
+    }
+
+    .compose-choice-inputs label {
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      margin: 0;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .compose-choice-inputs b {
+      display: grid;
+      place-items: center;
+      min-height: 30px;
+      border-radius: 999px;
+      background: #dff7f2;
+      color: #0b4f47;
+      font-size: 13px;
+    }
+
+    .compose-choice-inputs input {
+      min-height: 34px;
+      padding: 6px 10px;
+      border-color: #cfe0dc;
+      border-radius: 8px;
+      background: #fff;
+      font-size: 14px;
+      font-weight: 800;
     }
 
     .compose-choice-buttons {

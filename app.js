@@ -155,6 +155,7 @@
       questionBlockButtons: document.querySelector("#questionBlockButtons"),
       answerBlockButtons: document.querySelector("#answerBlockButtons"),
       questionDiagnostics: document.querySelector("#questionDiagnostics"),
+      composeChoiceEditor: document.querySelector("#composeChoiceEditor"),
       composeChoiceAnswer: document.querySelector("#composeChoiceAnswer"),
       questionPreview: document.querySelector("#questionPreview"),
       memoInput: document.querySelector("#memoInput"),
@@ -297,6 +298,7 @@
     let slashState = null;
     let tableEditorState = null;
     let activeMemoryCardQuestionId = "";
+    let syncingChoiceEditor = false;
 
     setupTextTools();
     setupComposeBlocks();
@@ -2692,7 +2694,7 @@
       };
     }
 
-    function updateQuestionDiagnostics() {
+    function updateQuestionDiagnostics(options = {}) {
       if (!els.questionDiagnostics) return;
       const draft = buildQuestionDraft();
       const types = detectQuestionTypes(draft);
@@ -2703,8 +2705,73 @@
         ...warnings.map(text => `<span class="warn">${escapeHtml(text)}</span>`),
         ...lintIssues.map(issue => `<span class="lint-chip">${escapeHtml(issue.field)}: ${escapeHtml(issue.short)}</span>`)
       ].join("");
+      renderComposeChoiceEditor(draft, options);
       renderComposeChoiceAnswer(draft);
       renderQuestionPreview(draft);
+    }
+
+    function renderComposeChoiceEditor(draft = buildQuestionDraft(), options = {}) {
+      if (!els.composeChoiceEditor) return;
+      const isMultiple = normalizeExamType(draft.examType) === "multiple";
+      els.composeChoiceEditor.classList.toggle("hidden", !isMultiple);
+      if (!isMultiple) {
+        els.composeChoiceEditor.innerHTML = "";
+        return;
+      }
+      if (options.preserveChoiceFocus && els.composeChoiceEditor.contains(document.activeElement)) return;
+
+      const optionItems = choiceAnswerOptions(draft.question).slice(0, 4);
+      els.composeChoiceEditor.innerHTML = `
+        <span>보기 입력</span>
+        <div class="compose-choice-inputs">
+          ${[1, 2, 3, 4].map(number => {
+            const value = optionItems[number - 1]?.text || "";
+            return `<label><b>${number}</b><input type="text" data-compose-choice-text="${number}" value="${escapeHtml(value)}" placeholder="${number}번 보기"></label>`;
+          }).join("")}
+        </div>
+      `;
+      els.composeChoiceEditor.querySelectorAll("[data-compose-choice-text]").forEach(input => {
+        input.addEventListener("input", () => updateQuestionChoiceText(input));
+      });
+    }
+
+    function updateQuestionChoiceText(input) {
+      if (!input || syncingChoiceEditor) return;
+      const values = [1, 2, 3, 4].map(number => {
+        return els.composeChoiceEditor.querySelector(`[data-compose-choice-text="${number}"]`)?.value.trim() || "";
+      });
+      const nextQuestion = applyChoiceItemsToQuestion(els.questionInput.value, values);
+      syncingChoiceEditor = true;
+      els.questionInput.value = nextQuestion;
+      syncingChoiceEditor = false;
+      updateQuestionDiagnostics({ preserveChoiceFocus: true });
+    }
+
+    function applyChoiceItemsToQuestion(questionText, items) {
+      const source = String(questionText || "").trimEnd();
+      const body = questionBodyWithoutChoiceBlock(source);
+      const cleanItems = items.map(item => String(item || "").trim());
+      if (!cleanItems.some(Boolean)) return body;
+      const choiceLines = cleanItems.map((item, index) => `${index + 1}. ${item}`);
+      return `${body.trimEnd()}${body.trim() ? "\n\n" : ""}${choiceLines.join("\n")}`;
+    }
+
+    function questionBodyWithoutChoiceBlock(questionText) {
+      const source = String(questionText || "").trimEnd();
+      const lines = source.split("\n");
+      const markerIndex = lines.findIndex(line => /^\s*(?:\[보기\]|보기)\s*[:：]?\s*$/i.test(line.trim()));
+      if (markerIndex >= 0) {
+        let index = markerIndex + 1;
+        for (; index < lines.length; index += 1) {
+          if (/^\s*\[\/보기\]\s*$/i.test(lines[index].trim())) {
+            index += 1;
+            break;
+          }
+        }
+        return [...lines.slice(0, markerIndex), ...lines.slice(index)].join("\n").trimEnd();
+      }
+      const parts = splitQuestionOptions(source);
+      return parts.options.length >= 2 ? parts.body.trimEnd() : source;
     }
 
     function renderComposeChoiceAnswer(draft = buildQuestionDraft()) {
