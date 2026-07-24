@@ -11,7 +11,7 @@
   <link rel="icon" href="icons/sushi-vinegar-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/sushi-vinegar-icon.svg">
   <title>Sushi Vinegar</title>
-  <link rel="stylesheet" href="app.css?v=137">
+  <link rel="stylesheet" href="app.css?v=138">
 </head>
 <body>
   <div class="app">
@@ -288,6 +288,15 @@
               <option value="practical">실기 작업형</option>
             </select>
           </label>
+          <div class="wide compose-meta-grid">
+            <label>분야
+              <input id="categoryInput" placeholder="예: 안전관리, 전기, 화학, 건설">
+            </label>
+            <label class="wide">메모
+              <div class="text-tools" data-tools-for="memoInput"></div>
+              <textarea id="memoInput" placeholder="기출 연도, 헷갈리는 포인트, 암기법 등을 적어두세요."></textarea>
+            </label>
+          </div>
           <label class="wide compose-field">문제
             <div class="text-tools" data-tools-for="questionInput"></div>
             <textarea id="questionInput" class="notion-textarea question-draft" required placeholder="문제를 입력하세요. /제목1 /목록 /표 또는 # 제목, ## 소제목"></textarea>
@@ -317,9 +326,6 @@
             <div id="ocrBody" class="ocr-body">
               <input id="photoFile" class="hidden-file" type="file" accept="image/*" multiple>
               <div class="compose-option-grid">
-                <label>분야
-                  <input id="categoryInput" placeholder="예: 안전관리, 전기, 화학, 건설">
-                </label>
                 <label>중요도
                   <select id="levelInput">
                     <option value="상">상</option>
@@ -329,10 +335,6 @@
                 </label>
                 <label class="wide">태그
                   <input id="tagsInput" placeholder="예: 법령, 계산, 암기">
-                </label>
-                <label class="wide">메모
-                  <div class="text-tools" data-tools-for="memoInput"></div>
-                  <textarea id="memoInput" placeholder="헷갈리는 포인트, 암기법, 관련 회차 등을 적어두세요."></textarea>
                 </label>
                 <div class="wide quick-compose-actions">
                   <button class="primary" type="submit">저장하고 계속 작성</button>
@@ -580,8 +582,8 @@
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app-config.js?v=137"></script>
-  <script src="app.js?v=137"></script>
-  <script src="local-ai.js?v=137"></script>
+  <script src="app-config.js?v=138"></script>
+  <script src="app.js?v=138"></script>
+  <script src="local-ai.js?v=138"></script>
 </body>
 </html>
