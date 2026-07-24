@@ -2614,20 +2614,18 @@
     }
 
     function setupComposeBlocks() {
-      renderComposeBlockButtons(els.questionBlockButtons, [
-        ...QUESTION_SLASH_BLOCKS.filter(block => ["choices", "table", "box", "cloze", "photo"].includes(block.id)),
-        { id: "hint", label: "힌트", icon: "H", hint: "정답 힌트", template: "\n힌트: \n" }
-      ], els.questionInput);
-      renderComposeBlockButtons(els.answerBlockButtons, [
-        CALC_SLASH_BLOCK,
-        TABLE_SLASH_BLOCK,
-        { id: "explain", label: "해설", icon: "E", hint: "해설 구역", template: "\n해설:\n- \n" },
-        { id: "source", label: "출처", icon: "S", hint: "출처 메모", template: "\n출처: \n" }
-      ].filter(Boolean), els.answerInput);
+      renderComposeBlockButtons(els.questionBlockButtons, [], els.questionInput);
+      renderComposeBlockButtons(els.answerBlockButtons, [], els.answerInput);
     }
 
     function renderComposeBlockButtons(container, blocks, textarea) {
       if (!container) return;
+      if (!blocks.length) {
+        container.hidden = true;
+        container.innerHTML = "";
+        return;
+      }
+      container.hidden = false;
       container.innerHTML = blocks.map(block => {
         return `<button type="button" data-compose-block="${escapeHtml(block.id)}" title="${escapeHtml(block.hint || block.label)}">${escapeHtml(block.label)}</button>`;
       }).join("");
