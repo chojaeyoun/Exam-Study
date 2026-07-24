@@ -1590,11 +1590,16 @@
       gap: 8px;
     }
 
+    .choice-answer-grid.long-options {
+      grid-template-columns: 1fr;
+    }
+
     .choice-answer-grid button {
       min-height: 44px;
       padding: 0 10px;
       font-size: 15px;
       font-weight: 900;
+      text-align: left;
       white-space: normal;
     }
 

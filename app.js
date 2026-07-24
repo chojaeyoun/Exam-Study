@@ -1558,7 +1558,8 @@
 
     function formatQuestionCardHtml(question, options = {}) {
       const textHtml = formatQuestionHtml(question.question || "사진 문제", {
-        selectedAnswer: options.highlightAnswer ? selectedAnswerNumber(question.answer) : ""
+        selectedAnswer: options.highlightAnswer ? selectedAnswerNumber(question.answer) : "",
+        hideChoices: Boolean(options.hideChoices)
       });
       const metaHtml = `${question.favorite ? `<p class="favorite-mark">★ 중요</p>` : ""}${renderTypeChips(question)}${renderTags(question.tags)}`;
       if (!question.questionImage) return `${textHtml}${metaHtml}`;
@@ -1760,13 +1761,15 @@
       const boxed = extractQuestionBoxes(choiceBank.body || source);
       const questionSource = boxed.body;
       const selectedAnswer = String(options.selectedAnswer || "");
-      const choiceHtml = choiceBank.items.length ? renderChoiceBank(choiceBank.items, selectedAnswer) : "";
+      const hideChoices = Boolean(options.hideChoices);
+      const choiceHtml = !hideChoices && choiceBank.items.length ? renderChoiceBank(choiceBank.items, selectedAnswer) : "";
       const parts = splitQuestionOptions(questionSource);
       if (parts.options.length >= 3) {
         const main = parts.body || "다음 조건을 보고 답하세요.";
         const mainHtml = hasQuestionBoxToken(main)
           ? renderQuestionBodyWithBoxes(main, boxed.boxes)
           : formatRichTextHtml(main);
+        if (hideChoices) return mainHtml;
         return [
           mainHtml,
           choiceHtml,
@@ -2072,7 +2075,9 @@
       els.cardType.textContent = current.category || "미분류";
       els.cardLevel.textContent = `${examTypeLabel(current.examType)} · 중요도 ${current.level || "중"}`;
       setStudyStatusBadge(current);
-      els.questionText.innerHTML = formatQuestionCardHtml(current);
+      els.questionText.innerHTML = formatQuestionCardHtml(current, {
+        hideChoices: normalizeExamType(current.examType) === "multiple"
+      });
       els.answerText.innerHTML = formatStagedAnswerHtml(current);
       els.answerText.classList.remove("visible");
       els.myAnswer.value = "";
@@ -2374,7 +2379,8 @@
         return;
       }
 
-      const options = splitQuestionOptions(String(question?.question || "")).options.slice(0, 4);
+      const options = choiceAnswerOptions(String(question?.question || "")).slice(0, 4);
+      const hasLongOptions = options.some(option => String(option.text || "").length >= 12);
       const optionButtons = [1, 2, 3, 4].map((number, index) => {
         const option = options[index];
         const label = option ? `${option.number}. ${option.text}` : `${number}번`;
@@ -2382,7 +2388,7 @@
       }).join("");
       els.choiceAnswerPanel.innerHTML = `
         <p class="choice-answer-title">필기형 답 선택</p>
-        <div class="choice-answer-grid">${optionButtons}</div>
+        <div class="choice-answer-grid${hasLongOptions ? " long-options" : ""}">${optionButtons}</div>
         <p class="choice-answer-result">정답을 보기 전에 하나를 골라보세요.</p>
       `;
       const result = els.choiceAnswerPanel.querySelector(".choice-answer-result");
