@@ -1609,6 +1609,12 @@
       background: var(--accent);
     }
 
+    .choice-answer-grid button.wrong {
+      color: #fff;
+      border-color: #dc2626;
+      background: #dc2626;
+    }
+
     .choice-answer-result {
       margin: 0;
       min-height: 20px;

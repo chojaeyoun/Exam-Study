@@ -2395,15 +2395,15 @@
       const normalizedAnswer = selectedAnswerNumber(question?.answer);
       els.choiceAnswerPanel.querySelectorAll("[data-choice-answer]").forEach(button => {
         button.addEventListener("click", () => {
-          els.choiceAnswerPanel.querySelectorAll("[data-choice-answer]").forEach(item => item.classList.remove("selected"));
-          button.classList.add("selected");
+          els.choiceAnswerPanel.querySelectorAll("[data-choice-answer]").forEach(item => item.classList.remove("selected", "wrong"));
           if (!normalizedAnswer) {
+            button.classList.add("selected");
             result.textContent = `${button.dataset.choiceAnswer}번을 선택했습니다.`;
             return;
           }
-          result.textContent = button.dataset.choiceAnswer === normalizedAnswer
-            ? "선택한 답이 정답과 같습니다."
-            : `선택한 답: ${button.dataset.choiceAnswer}번`;
+          const isCorrect = button.dataset.choiceAnswer === normalizedAnswer;
+          button.classList.add(isCorrect ? "selected" : "wrong");
+          result.textContent = isCorrect ? "정답" : "오답";
         });
       });
     }
@@ -2484,8 +2484,8 @@
       return formatAnswerCardHtml(question);
     }
 
-    function answerActionLabel() {
-      return "정답 보기";
+    function answerActionLabel(question = filteredStudyQuestions()[currentIndex]) {
+      return normalizeExamType(question?.examType) === "multiple" ? "해설 보기" : "정답 보기";
     }
 
     function formatAnswerHintHtml(question) {
