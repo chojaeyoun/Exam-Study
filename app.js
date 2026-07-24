@@ -2445,6 +2445,7 @@
         </div>
       `;
       const textarea = els.memoryCardPanel.querySelector("#studyNoteInput");
+      preserveScrollOnTextareaFocus(textarea);
       textarea?.addEventListener("input", () => {
         question.studyNote = textarea.value;
         question.updatedAt = new Date().toISOString();
@@ -3250,13 +3251,20 @@
     function preserveScrollOnTextareaFocus(textarea) {
       if (!textarea) return;
       let pointerScroll = null;
-      textarea.addEventListener("pointerdown", () => {
+      const rememberScroll = () => {
         pointerScroll = captureScrollPosition();
-      });
+      };
+      textarea.addEventListener("pointerdown", rememberScroll, { capture: true });
+      textarea.addEventListener("mousedown", rememberScroll, { capture: true });
+      textarea.addEventListener("touchstart", rememberScroll, { capture: true, passive: true });
       textarea.addEventListener("focus", () => {
         if (!pointerScroll) return;
         restoreScrollPosition(pointerScroll);
-        pointerScroll = null;
+        setTimeout(() => restoreScrollPosition(pointerScroll), 80);
+        setTimeout(() => {
+          restoreScrollPosition(pointerScroll);
+          pointerScroll = null;
+        }, 180);
       });
     }
 
@@ -3580,6 +3588,7 @@
       setupTextTools(root);
       root.querySelectorAll("[data-quick-field='question'], [data-quick-field='answer'], [data-quick-field='memo']").forEach(textarea => {
         registerSlashTextarea(textarea, QUESTION_SLASH_BLOCKS);
+        preserveScrollOnTextareaFocus(textarea);
       });
       root.querySelectorAll("[data-quick-edit]").forEach(button => {
         button.addEventListener("click", () => {
