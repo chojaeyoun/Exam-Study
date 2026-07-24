@@ -288,13 +288,14 @@
               <option value="practical">실기 작업형</option>
             </select>
           </label>
-          <label class="wide">문제
+          <label class="wide compose-field">문제
             <div class="text-tools" data-tools-for="questionInput"></div>
             <textarea id="questionInput" class="notion-textarea question-draft" required placeholder="문제를 입력하세요. /제목1 /목록 /표 또는 # 제목, ## 소제목"></textarea>
             <div id="questionDiagnostics" class="compose-diagnostics"></div>
           </label>
-          <label class="wide">정답
+          <label class="wide compose-field">정답
             <div class="text-tools" data-tools-for="answerInput"></div>
+            <div id="composeChoiceAnswer" class="compose-choice-picker hidden" aria-label="필기형 정답 번호 선택"></div>
             <textarea id="answerInput" class="notion-textarea answer-draft" required placeholder="정답을 입력하세요. /제목2 /번호 /표 또는 - 목록, 1. 번호"></textarea>
           </label>
           <div class="wide quick-compose-actions">

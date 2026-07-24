@@ -636,6 +636,20 @@
       line-height: 1.35;
     }
 
+    .choice-bank-chip.selected,
+    .question-option.selected {
+      border-color: #0d9488;
+      background: #dff7f2;
+      color: #0b4f47;
+      box-shadow: inset 0 0 0 1px rgba(13, 148, 136, 0.18);
+    }
+
+    .question-option.selected {
+      padding: 8px 10px;
+      border: 1px solid #0d9488;
+      border-radius: 8px;
+    }
+
     .question-paragraph {
       margin: 0;
       white-space: pre-wrap;
@@ -2042,6 +2056,21 @@
       box-shadow: none;
     }
 
+    .compose-field {
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid #d5e3df;
+      border-radius: 8px;
+      background: #fbfdfc;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+    }
+
+    .compose-field:focus-within {
+      border-color: #92c9bf;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(17, 124, 109, 0.1);
+    }
+
     .question-draft {
       min-height: 160px;
       font-size: 24px;
@@ -2053,6 +2082,48 @@
       min-height: 130px;
       font-size: 18px;
       line-height: 1.65;
+    }
+
+    .compose-choice-picker {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid #d7e6e1;
+      border-radius: 8px;
+      background: #f3faf8;
+    }
+
+    .compose-choice-picker.hidden {
+      display: none;
+    }
+
+    .compose-choice-picker span {
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .compose-choice-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+    }
+
+    .compose-choice-buttons button {
+      min-height: 34px;
+      padding: 0 8px;
+      border-color: #cfe0dc;
+      background: #fff;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .compose-choice-buttons button.selected {
+      border-color: #0d9488;
+      background: #0f8f7f;
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(15, 143, 127, 0.18);
     }
 
     .quick-compose-actions {

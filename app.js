@@ -155,6 +155,7 @@
       questionBlockButtons: document.querySelector("#questionBlockButtons"),
       answerBlockButtons: document.querySelector("#answerBlockButtons"),
       questionDiagnostics: document.querySelector("#questionDiagnostics"),
+      composeChoiceAnswer: document.querySelector("#composeChoiceAnswer"),
       questionPreview: document.querySelector("#questionPreview"),
       memoInput: document.querySelector("#memoInput"),
       insertClozeBtn: document.querySelector("#insertClozeBtn"),
@@ -1552,8 +1553,10 @@
         .sort((a, b) => b.total - a.total || a.category.localeCompare(b.category));
     }
 
-    function formatQuestionCardHtml(question) {
-      const textHtml = formatQuestionHtml(question.question || "사진 문제");
+    function formatQuestionCardHtml(question, options = {}) {
+      const textHtml = formatQuestionHtml(question.question || "사진 문제", {
+        selectedAnswer: options.highlightAnswer ? selectedAnswerNumber(question.answer) : ""
+      });
       const metaHtml = `${question.favorite ? `<p class="favorite-mark">★ 중요</p>` : ""}${renderTypeChips(question)}${renderTags(question.tags)}`;
       if (!question.questionImage) return `${textHtml}${metaHtml}`;
       return `${textHtml}<img class="question-photo" src="${escapeHtml(question.questionImage)}" alt="${escapeHtml(question.imageName || "사진 문제")}">${metaHtml}`;
@@ -1746,14 +1749,15 @@
       return null;
     }
 
-    function formatQuestionHtml(text) {
+    function formatQuestionHtml(text, options = {}) {
       const source = String(text || "").trim();
       if (!source) return "";
 
       const choiceBank = extractChoiceBank(source);
       const boxed = extractQuestionBoxes(choiceBank.body || source);
       const questionSource = boxed.body;
-      const choiceHtml = choiceBank.items.length ? renderChoiceBank(choiceBank.items) : "";
+      const selectedAnswer = String(options.selectedAnswer || "");
+      const choiceHtml = choiceBank.items.length ? renderChoiceBank(choiceBank.items, selectedAnswer) : "";
       const parts = splitQuestionOptions(questionSource);
       if (parts.options.length >= 3) {
         const main = parts.body || "다음 조건을 보고 답하세요.";
@@ -1768,7 +1772,8 @@
             const optionHtml = hasQuestionBoxToken(option.text)
               ? renderQuestionBodyWithBoxes(option.text, boxed.boxes)
               : formatInlineHtml(option.text);
-            return `<div class="question-option"><b>${escapeHtml(option.number)}</b><span>${optionHtml}</span></div>`;
+            const selectedClass = selectedAnswer && option.number === selectedAnswer ? " selected" : "";
+            return `<div class="question-option${selectedClass}"><b>${escapeHtml(option.number)}</b><span>${optionHtml}</span></div>`;
           }),
           `</div>`
         ].join("");
@@ -1852,11 +1857,14 @@
         .filter(Boolean);
     }
 
-    function renderChoiceBank(items) {
+    function renderChoiceBank(items, selectedAnswer = "") {
       if (!items.length) return "";
       return `<div class="question-choice-bank">
         <p class="choice-bank-title">보기</p>
-        <div class="choice-bank-items">${items.map(item => `<span class="choice-bank-chip">${formatInlineHtml(item)}</span>`).join("")}</div>
+        <div class="choice-bank-items">${items.map((item, index) => {
+          const selectedClass = selectedAnswer === String(index + 1) ? " selected" : "";
+          return `<span class="choice-bank-chip${selectedClass}">${formatInlineHtml(item)}</span>`;
+        }).join("")}</div>
       </div>`;
     }
 
@@ -2375,12 +2383,7 @@
         <p class="choice-answer-result">정답을 보기 전에 하나를 골라보세요.</p>
       `;
       const result = els.choiceAnswerPanel.querySelector(".choice-answer-result");
-      const answerText = String(question?.answer || "");
-      const answerNumber = answerText.match(/(?:정답|답)?\s*[:：]?\s*([1-4①②③④])/);
-      const normalizedAnswer = answerNumber ? "①②③④".indexOf(answerNumber[1]) >= 0
-        ? String("①②③④".indexOf(answerNumber[1]) + 1)
-        : answerNumber[1]
-        : "";
+      const normalizedAnswer = selectedAnswerNumber(question?.answer);
       els.choiceAnswerPanel.querySelectorAll("[data-choice-answer]").forEach(button => {
         button.addEventListener("click", () => {
           els.choiceAnswerPanel.querySelectorAll("[data-choice-answer]").forEach(item => item.classList.remove("selected"));
@@ -2700,7 +2703,65 @@
         ...warnings.map(text => `<span class="warn">${escapeHtml(text)}</span>`),
         ...lintIssues.map(issue => `<span class="lint-chip">${escapeHtml(issue.field)}: ${escapeHtml(issue.short)}</span>`)
       ].join("");
+      renderComposeChoiceAnswer(draft);
       renderQuestionPreview(draft);
+    }
+
+    function renderComposeChoiceAnswer(draft = buildQuestionDraft()) {
+      if (!els.composeChoiceAnswer) return;
+      const isMultiple = normalizeExamType(draft.examType) === "multiple";
+      els.composeChoiceAnswer.classList.toggle("hidden", !isMultiple);
+      if (!isMultiple) {
+        els.composeChoiceAnswer.innerHTML = "";
+        return;
+      }
+
+      const options = choiceAnswerOptions(draft.question).slice(0, 4);
+      const selected = selectedAnswerNumber(draft.answer);
+      els.composeChoiceAnswer.innerHTML = `
+        <span>정답 번호</span>
+        <div class="compose-choice-buttons">
+          ${[1, 2, 3, 4].map(number => {
+            const option = options[number - 1];
+            const isSelected = selected === String(number);
+            const title = option?.text ? `${number}. ${option.text}` : `${number}번`;
+            return `<button type="button" class="${isSelected ? "selected" : ""}" data-compose-answer-choice="${number}" aria-pressed="${isSelected}" title="${escapeHtml(title)}">${number}</button>`;
+          }).join("")}
+        </div>
+      `;
+      els.composeChoiceAnswer.querySelectorAll("[data-compose-answer-choice]").forEach(button => {
+        button.addEventListener("click", () => setComposeAnswerChoice(button.dataset.composeAnswerChoice));
+      });
+    }
+
+    function choiceAnswerOptions(questionText) {
+      const choiceBank = extractChoiceBank(String(questionText || ""));
+      if (choiceBank.items.length) {
+        return choiceBank.items.map((text, index) => ({ number: String(index + 1), text }));
+      }
+      return splitQuestionOptions(String(questionText || "")).options;
+    }
+
+    function selectedAnswerNumber(answerText) {
+      const match = String(answerText || "").match(/(?:정답|답)?\s*[:：]?\s*([1-4①②③④])/);
+      if (!match) return "";
+      const circledIndex = "①②③④".indexOf(match[1]);
+      return circledIndex >= 0 ? String(circledIndex + 1) : match[1];
+    }
+
+    function setComposeAnswerChoice(number) {
+      const selected = String(number || "");
+      if (!/^[1-4]$/.test(selected)) return;
+      const current = els.answerInput.value.trim();
+      if (!current) {
+        els.answerInput.value = `정답: ${selected}`;
+      } else if (/^(?:정답|답)\s*[:：]?\s*[1-4①②③④]/.test(current)) {
+        els.answerInput.value = current.replace(/^(?:정답|답)\s*[:：]?\s*[1-4①②③④]/, `정답: ${selected}`);
+      } else {
+        els.answerInput.value = `정답: ${selected}\n${current}`;
+      }
+      els.answerInput.dispatchEvent(new Event("input", { bubbles: true }));
+      els.answerInput.focus({ preventScroll: true });
     }
 
     function renderQuestionPreview(draft = buildQuestionDraft()) {
@@ -2708,7 +2769,7 @@
       const hasQuestion = Boolean(draft.question || draft.questionImage);
       const hasAnswer = Boolean(draft.answer || draft.memo || draft.answerImage);
       const questionHtml = hasQuestion
-        ? formatQuestionCardHtml(draft)
+        ? formatQuestionCardHtml(draft, { highlightAnswer: true })
         : `<p class="compose-preview-empty">문제를 입력하면 실제 문제풀이 카드 모양으로 여기에 표시됩니다.</p>`;
       const answerHtml = hasAnswer
         ? formatAnswerCardHtml(draft)
