@@ -300,6 +300,7 @@
     let activeMemoryCardQuestionId = "";
     let syncingChoiceEditor = false;
 
+    ensureComposeChoiceEditor();
     setupTextTools();
     setupComposeBlocks();
     updateQuestionDiagnostics();
@@ -2733,6 +2734,16 @@
       els.composeChoiceEditor.querySelectorAll("[data-compose-choice-text]").forEach(input => {
         input.addEventListener("input", () => updateQuestionChoiceText(input));
       });
+    }
+
+    function ensureComposeChoiceEditor() {
+      if (els.composeChoiceEditor || !els.questionInput) return;
+      const editor = document.createElement("div");
+      editor.id = "composeChoiceEditor";
+      editor.className = "compose-choice-editor hidden";
+      editor.setAttribute("aria-label", "필기형 보기 입력");
+      els.questionInput.insertAdjacentElement("afterend", editor);
+      els.composeChoiceEditor = editor;
     }
 
     function updateQuestionChoiceText(input) {
