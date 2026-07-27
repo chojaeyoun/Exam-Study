@@ -528,6 +528,7 @@
         tags: normalizeTags(q.tags),
         favorite: Boolean(q.favorite),
         studyNote: String(q.studyNote || ""),
+        aiExplanation: normalizeAiExplanation(q.aiExplanation),
         memoryCard: normalizeMemoryCard(q.memoryCard),
         memoryCardStatus: ["known", "confused", "unknown"].includes(q.memoryCardStatus) ? q.memoryCardStatus : "",
         updatedAt: q.updatedAt || q.masteredAt || ""
@@ -1049,6 +1050,7 @@
           tags: normalizeTags(cloudMemo.payload.tags),
           favorite: Boolean(cloudMemo.payload.favorite),
           studyNote: String(cloudMemo.payload.studyNote || ""),
+          aiExplanation: normalizeAiExplanation(cloudMemo.payload.aiExplanation),
           memoryCard: normalizeMemoryCard(cloudMemo.payload.memoryCard),
           memoryCardStatus: ["known", "confused", "unknown"].includes(cloudMemo.payload.memoryCardStatus) ? cloudMemo.payload.memoryCardStatus : "",
           status: row.status || "new",
@@ -1192,6 +1194,7 @@
         tags: normalizeTags(question.tags),
         favorite: Boolean(question.favorite),
         studyNote: String(question.studyNote || ""),
+        aiExplanation: normalizeAiExplanation(question.aiExplanation),
         memoryCard: normalizeMemoryCard(question.memoryCard),
         memoryCardStatus: question.memoryCardStatus || "",
         updatedAt: question.updatedAt || ""
@@ -2268,6 +2271,18 @@
       };
     }
 
+    function normalizeAiExplanation(value) {
+      if (!value || typeof value !== "object") return null;
+      const explanation = String(value.explanation || "").trim();
+      const answerAnalysis = String(value.answerAnalysis || "").trim();
+      const noteSummary = String(value.noteSummary || "").trim();
+      const wrongReason = String(value.wrongReason || "").trim();
+      const tags = normalizeTags(value.tags);
+      const updatedAt = String(value.updatedAt || "").trim();
+      if (!explanation && !answerAnalysis && !noteSummary && !wrongReason && !tags.length) return null;
+      return { explanation, answerAnalysis, noteSummary, wrongReason, tags, updatedAt };
+    }
+
     function buildMemoryCard(question) {
       const answer = String(question.answer || "").trim();
       const keywords = memoryKeywords(answer);
@@ -2431,6 +2446,19 @@
         return;
       }
 
+      const ai = normalizeAiExplanation(question.aiExplanation);
+      const aiPanel = ai ? `
+        <div class="ai-explanation-saved">
+          <div class="ai-explanation-head">
+            <strong>저장된 AI 해설</strong>
+            ${ai.updatedAt ? `<span>${escapeHtml(formatShortDate(ai.updatedAt))}</span>` : ""}
+          </div>
+          ${ai.explanation ? `<details open><summary>AI 해설</summary><div>${formatRichTextHtml(ai.explanation)}</div></details>` : ""}
+          ${ai.answerAnalysis ? `<details><summary>내 답안 분석</summary><div>${formatRichTextHtml(ai.answerAnalysis)}</div></details>` : ""}
+          ${ai.noteSummary ? `<details><summary>오답노트 요약</summary><div>${formatRichTextHtml(ai.noteSummary)}</div></details>` : ""}
+        </div>
+      ` : "";
+
       els.memoryCardPanel.classList.remove("hidden");
       els.memoryCardPanel.innerHTML = `
         <div class="memory-card-head">
@@ -2439,6 +2467,7 @@
           </div>
           <h3>${escapeHtml(question.question || "문제")}</h3>
         </div>
+        ${aiPanel}
         <div class="study-note-editor">
           <textarea id="studyNoteInput" placeholder="이 문제를 풀 때 기억할 핵심 단어, 공식, 주의점, 요약을 자유롭게 적어두세요.">${escapeHtml(question.studyNote || "")}</textarea>
           <p class="study-note-hint">입력하면 자동 저장됩니다.</p>
@@ -4336,6 +4365,71 @@
       return filteredStudyQuestions()[currentIndex];
     }
 
+    function getCurrentAiQuestionContext() {
+      const q = getCurrentQuestion();
+      if (!q) return null;
+      return {
+        id: q.id,
+        examTitle: currentExam()?.name || APP_TITLE,
+        examType: normalizeExamType(q.examType),
+        examTypeLabel: examTypeLabel(q.examType),
+        category: q.category || "미분류",
+        level: q.level || "중",
+        question: q.question || "",
+        answer: q.answer || "",
+        memo: q.memo || "",
+        tags: normalizeTags(q.tags),
+        status: q.status || "new",
+        wrongCount: q.wrongCount || 0,
+        studyNote: q.studyNote || "",
+        aiExplanation: normalizeAiExplanation(q.aiExplanation),
+        myAnswer: els.myAnswer?.value?.trim() || ""
+      };
+    }
+
+    function saveCurrentAiExplanation(kind, content, meta = {}) {
+      const q = getCurrentQuestion();
+      const text = String(content || "").trim();
+      if (!q || !text) return false;
+      const current = normalizeAiExplanation(q.aiExplanation) || {};
+      q.aiExplanation = normalizeAiExplanation({
+        ...current,
+        [kind]: text,
+        wrongReason: meta.wrongReason || current.wrongReason || "",
+        tags: meta.tags || current.tags || [],
+        updatedAt: new Date().toISOString()
+      });
+      q.updatedAt = new Date().toISOString();
+      persist();
+      renderBank();
+      renderWrongList();
+      renderMasteredList();
+      window.dispatchEvent(new CustomEvent("exam-study-ai-saved", { detail: getCurrentAiQuestionContext() }));
+      return true;
+    }
+
+    function appendCurrentStudyNoteFromAi(content, title = "AI 오답노트") {
+      const q = getCurrentQuestion();
+      const text = String(content || "").trim();
+      if (!q || !text) return false;
+      const heading = `## ${title}`;
+      q.studyNote = [q.studyNote || "", `${heading}\n${text}`].filter(part => String(part).trim()).join("\n\n");
+      q.updatedAt = new Date().toISOString();
+      persist();
+      els.memoryCardBtn.textContent = "요약 메모 보기";
+      if (activeMemoryCardQuestionId === q.id) renderMemoryCardPanel(q);
+      renderBank();
+      renderWrongList();
+      renderMasteredList();
+      return true;
+    }
+
+    window.ExamStudyLocalAi = {
+      getCurrentQuestionContext: getCurrentAiQuestionContext,
+      saveCurrentAiExplanation,
+      appendCurrentStudyNoteFromAi
+    };
+
     function editCurrentStudyQuestion() {
       const q = getCurrentQuestion();
       if (!q) return;
@@ -4628,6 +4722,7 @@
       const nextQuestion = els.questionInput.value.trim();
       const nextAnswer = els.answerInput.value.trim();
       const keepMemoryCard = existing && existing.question === nextQuestion && existing.answer === nextAnswer;
+      const keepAiExplanation = keepMemoryCard;
       const data = {
         id,
         examId: existing?.examId || state.activeExamId,
@@ -4647,6 +4742,7 @@
         wrongCount: existing?.wrongCount || 0,
         masteredAt: existing?.masteredAt || "",
         studyNote: existing?.studyNote || "",
+        aiExplanation: keepAiExplanation ? normalizeAiExplanation(existing.aiExplanation) : null,
         memoryCard: keepMemoryCard ? existing.memoryCard : null,
         memoryCardStatus: keepMemoryCard ? existing.memoryCardStatus || "" : "",
         updatedAt: new Date().toISOString()
