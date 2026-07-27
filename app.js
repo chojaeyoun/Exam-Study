@@ -1940,14 +1940,17 @@
 
     function formatPlainInlineHtml(text) {
       const source = String(text || "");
+      if (!shouldAutoFormatMath(source)) return escapeHtml(source);
       const parts = [];
-      const term = "[0-9]+(?:\\.\\d+)?|[A-Za-z가-힣μΩπ㎡㎥][A-Za-z가-힣0-9μΩπ㎡㎥().-]*(?:\\s+[A-Za-z가-힣μΩπ㎡㎥][A-Za-z가-힣0-9μΩπ㎡㎥().-]*){0,2}";
-      const pattern = new RegExp(`(^|[^\\w./])(${term})\\s*\\/\\s*(${term})(?![\\w./])|(\\s)[xX](\\s)`, "g");
+      const wordTerm = "[A-Za-z가-힣μΩπ㎡㎥][A-Za-z가-힣0-9μΩπ㎡㎥.-]*";
+      const term = `[0-9]+(?:\\.\\d+)?|${wordTerm}(?:\\s+(?![xX](?:\\s|$))${wordTerm}){0,2}`;
+      const denominator = `\\([^()\\n]{1,60}\\)|${term}`;
+      const pattern = new RegExp(`(^|[^\\w./])(${term})\\s*\\/\\s*(${denominator})(?![\\w./])|(\\s)[xX](\\s)`, "g");
       let cursor = 0;
       source.replace(pattern, (match, fractionPrefix, numerator, denominator, timesPrefix, timesSuffix, index) => {
         parts.push(escapeHtml(source.slice(cursor, index)));
         if (numerator && denominator) {
-          parts.push(`${escapeHtml(fractionPrefix || "")}${renderInlineFraction(numerator, denominator)}`);
+          parts.push(`${escapeHtml(fractionPrefix || "")}${renderInlineFraction(numerator, normalizeAutoFractionTerm(denominator))}`);
         } else {
           parts.push(`${escapeHtml(timesPrefix || "")}<span class="math-times" role="math" aria-label="곱하기">×</span>${escapeHtml(timesSuffix || "")}`);
         }
@@ -1956,6 +1959,17 @@
       });
       parts.push(escapeHtml(source.slice(cursor)));
       return parts.join("");
+    }
+
+    function shouldAutoFormatMath(text) {
+      const source = String(text || "");
+      return /=/.test(source) || /(?:^|\n)\s*(?:공식|대입|계산|답)\s*:/.test(source);
+    }
+
+    function normalizeAutoFractionTerm(value) {
+      const source = String(value || "").trim();
+      if (source.startsWith("(") && source.endsWith(")")) return source.slice(1, -1).trim();
+      return source;
     }
 
     function renderInlineFraction(numerator, denominator) {
