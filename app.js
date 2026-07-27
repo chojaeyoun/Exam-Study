@@ -1598,14 +1598,14 @@
       const coreHtml = parsed.core
         ? `<section class="answer-section">
             <h4 class="answer-section-title">정답</h4>
-            <p class="answer-core">${escapeHtml(parsed.core)}</p>
+            <p class="answer-core">${formatInlineHtml(parsed.core)}</p>
           </section>`
         : "";
       const pointsHtml = parsed.points.length
         ? `<section class="answer-section">
             <h4 class="answer-section-title">의미 · 해설</h4>
             <div class="answer-points">${parsed.points.map(point => {
-              return `<div class="answer-point"><b>${escapeHtml(point.label)}</b><span>${escapeHtml(point.text)}</span></div>`;
+              return `<div class="answer-point"><b>${escapeHtml(point.label)}</b><span>${formatInlineHtml(point.text)}</span></div>`;
             }).join("")}</div>
           </section>`
         : "";
@@ -1618,7 +1618,7 @@
       const memoHtml = memo
         ? `<section class="answer-section">
             <h4 class="answer-section-title">메모</h4>
-            <p class="answer-note">${escapeHtml(memo.replace(/^메모:\s*/i, ""))}</p>
+            <p class="answer-note">${formatInlineHtml(memo.replace(/^메모:\s*/i, ""))}</p>
           </section>`
         : "";
       return `<div class="answer-card">${coreHtml}${pointsHtml}${extraHtml}${memoHtml}</div>`;
@@ -1638,13 +1638,13 @@
       const itemsHtml = `<section class="answer-section">
         <h4 class="answer-section-title">정답 항목</h4>
         <div class="answer-points">${items.map(point => {
-          return `<div class="answer-point"><b>${escapeHtml(point.label)}</b><span>${escapeHtml(point.text)}</span></div>`;
+          return `<div class="answer-point"><b>${escapeHtml(point.label)}</b><span>${formatInlineHtml(point.text)}</span></div>`;
         }).join("")}</div>
       </section>`;
       const memoHtml = memo
         ? `<section class="answer-section">
             <h4 class="answer-section-title">메모</h4>
-            <p class="answer-note">${escapeHtml(memo.replace(/^메모:\s*/i, ""))}</p>
+            <p class="answer-note">${formatInlineHtml(memo.replace(/^메모:\s*/i, ""))}</p>
           </section>`
         : "";
       return `<div class="answer-card">${itemsHtml}${memoHtml}</div>`;
@@ -1697,13 +1697,13 @@
         const isFinal = section.label === "답";
         return `<section class="calc-step${isFinal ? " final" : ""}">
           <h4 class="calc-label">${escapeHtml(isFinal ? "최종 답" : section.label)}</h4>
-          <p class="calc-equation">${escapeHtml(section.text)}</p>
+          <p class="calc-equation">${formatInlineHtml(section.text)}</p>
         </section>`;
       }).join("");
       const memoHtml = memo
         ? `<section class="answer-section">
             <h4 class="answer-section-title">메모</h4>
-            <p class="answer-note">${escapeHtml(memo.replace(/^메모:\s*/i, ""))}</p>
+            <p class="answer-note">${formatInlineHtml(memo.replace(/^메모:\s*/i, ""))}</p>
           </section>`
         : "";
       return `<div class="answer-card calc-answer">${stepsHtml}${memoHtml}</div>`;
