@@ -28,6 +28,7 @@
     let bankListMode = "filtered";
     let reviewQueueIds = [];
     let reviewQueueLabel = "";
+    let reviewExamSession = null;
     let includeMasteredInStudyAll = false;
     let deferredInstallPrompt = null;
     let supabaseClient = null;
@@ -386,6 +387,7 @@
     els.wrongBtn.addEventListener("click", markWrong);
     els.masterBtn.addEventListener("click", markMastered);
     els.myAnswer.addEventListener("input", updateAnswerAssist);
+    els.myAnswer.addEventListener("input", saveReviewExamDraft);
     els.theoryForm.addEventListener("submit", saveTheory);
     [els.theoryTitleInput, els.theoryCategoryInput, els.theoryContentInput, els.theoryPromptInput].forEach(input => {
       input.addEventListener("input", updateTheoryPreview);
@@ -863,6 +865,7 @@
         button.addEventListener("click", () => {
           state.activeExamId = button.dataset.examId;
           reviewQueueIds = [];
+          clearReviewExamSession();
           currentIndex = 0;
           persist();
           render();
@@ -892,6 +895,7 @@
       state.exams.push(exam);
       state.activeExamId = exam.id;
       reviewQueueIds = [];
+      clearReviewExamSession();
       currentIndex = 0;
       persist();
       render();
@@ -928,6 +932,7 @@
       state.theories = (state.theories || []).filter(theory => (theory.examId || DEFAULT_EXAM_ID) !== id);
       if (state.activeExamId === id) state.activeExamId = state.exams[0].id;
       reviewQueueIds = [];
+      clearReviewExamSession();
       currentIndex = 0;
       persist();
       render();
@@ -1333,7 +1338,7 @@
       const queueActive = studyMode === "question" && reviewQueueIds.length > 0;
       els.clearQueueBtn.classList.toggle("hidden", !queueActive);
       els.queueStatus.textContent = queueActive
-        ? `${reviewQueueLabel || "복습 큐"} ${reviewQueueIds.length}개를 학습 중입니다.`
+        ? `${reviewQueueLabel || "복습 큐"} ${reviewQueueIds.length}개를 시험처럼 풀고 있습니다. 마지막에 한 번에 채점합니다.`
         : "유형별로 오답, 중요, 오래 안 본 문제를 자동으로 모읍니다.";
     }
 
@@ -2083,16 +2088,16 @@
       });
       els.answerText.innerHTML = formatStagedAnswerHtml(current);
       els.answerText.classList.remove("visible");
-      els.myAnswer.value = "";
+      els.myAnswer.value = reviewExamAnswerFor(current) || "";
       renderChoiceAnswerPanel(current);
       hideAnswerAssist();
       els.myAnswer.classList.remove("hidden");
-      els.showAnswerBtn.textContent = answerActionLabel();
+      els.showAnswerBtn.textContent = reviewExamActive() ? reviewExamActionLabel() : answerActionLabel();
       updateStudyFavoriteButton(current);
       els.prevBtn.textContent = "← 이전 문제";
       els.nextBtn.textContent = "다음 문제 →";
-      els.wrongBtn.classList.remove("hidden");
-      els.masterBtn.classList.remove("hidden");
+      els.wrongBtn.classList.toggle("hidden", reviewExamActive());
+      els.masterBtn.classList.toggle("hidden", reviewExamActive());
       els.memoryCardBtn.classList.remove("hidden");
       els.memoryCardBtn.textContent = current.studyNote ? "요약 메모 보기" : "요약 메모";
       els.studyEditBtn.classList.remove("hidden");
@@ -2163,7 +2168,7 @@
     function renderStudyDisplayOptions() {
       [els.answerHintBtn, els.answerKeywordBtn, els.answerFullBtn].filter(Boolean).forEach(button => {
         button.classList.toggle("active", button.dataset.answerStage === answerStage);
-        button.disabled = studyMode !== "question";
+        button.disabled = studyMode !== "question" || reviewExamActive();
       });
       els.memoryModeBtn.classList.toggle("active", memoryMode);
       document.body.classList.toggle("memory-mode", memoryMode && studyMode === "question" && activeView === "study");
@@ -2173,7 +2178,7 @@
       answerStage = ["hint", "keywords", "full"].includes(stage) ? stage : "full";
       const current = getCurrentQuestion();
       if (current) els.answerText.innerHTML = formatStagedAnswerHtml(current);
-      els.showAnswerBtn.textContent = answerActionLabel();
+      els.showAnswerBtn.textContent = reviewExamActive() ? reviewExamActionLabel() : answerActionLabel();
       if (els.answerText.classList.contains("visible")) updateAnswerAssist();
       renderStudyDisplayOptions();
     }
@@ -2207,6 +2212,7 @@
       els.statusFilter.value = q.status === "mastered" ? "mastered" : "all";
       els.favoriteFilter.checked = false;
       reviewQueueIds = [];
+      clearReviewExamSession();
       studyMode = "question";
       activeMemoryCardQuestionId = q.id;
       persist();
@@ -2383,6 +2389,28 @@
       hideAnswerAssist();
     }
 
+    function reviewExamActive() {
+      return Boolean(reviewExamSession?.active && reviewQueueIds.length && studyMode === "question");
+    }
+
+    function reviewExamAnswerFor(question) {
+      if (!reviewExamActive() || !question) return "";
+      return reviewExamSession.answers?.[question.id] || "";
+    }
+
+    function reviewExamActionLabel() {
+      const count = filteredStudyQuestions().length;
+      if (!count) return "답 저장";
+      return currentIndex >= count - 1 ? "제출하고 채점" : "답 저장 후 다음";
+    }
+
+    function saveReviewExamDraft() {
+      if (!reviewExamActive()) return;
+      const q = getCurrentQuestion();
+      if (!q) return;
+      reviewExamSession.answers[q.id] = els.myAnswer.value.trim();
+    }
+
     function renderChoiceAnswerPanel(question) {
       if (!els.choiceAnswerPanel) return;
       const wrap = els.choiceAnswerPanel.closest(".my-answer-wrap");
@@ -2399,18 +2427,26 @@
       const optionButtons = [1, 2, 3, 4].map((number, index) => {
         const option = options[index];
         const label = option ? `${option.number}. ${option.text}` : `${number}번`;
-        return `<button type="button" data-choice-answer="${number}">${escapeHtml(label)}</button>`;
+        const selected = reviewExamActive() && reviewExamAnswerFor(question) === String(number);
+        return `<button type="button" data-choice-answer="${number}" class="${selected ? "selected" : ""}">${escapeHtml(label)}</button>`;
       }).join("");
       els.choiceAnswerPanel.innerHTML = `
         <p class="choice-answer-title">필기형 답 선택</p>
         <div class="choice-answer-grid${hasLongOptions ? " long-options" : ""}">${optionButtons}</div>
-        <p class="choice-answer-result">정답을 보기 전에 하나를 골라보세요.</p>
+        <p class="choice-answer-result">${reviewExamActive() ? "실제 시험처럼 정답은 마지막 채점 때 보여줍니다." : "정답을 보기 전에 하나를 골라보세요."}</p>
       `;
       const result = els.choiceAnswerPanel.querySelector(".choice-answer-result");
       const normalizedAnswer = selectedAnswerNumber(question?.answer);
       els.choiceAnswerPanel.querySelectorAll("[data-choice-answer]").forEach(button => {
         button.addEventListener("click", () => {
           els.choiceAnswerPanel.querySelectorAll("[data-choice-answer]").forEach(item => item.classList.remove("selected", "wrong"));
+          if (reviewExamActive()) {
+            button.classList.add("selected");
+            els.myAnswer.value = button.dataset.choiceAnswer;
+            saveReviewExamDraft();
+            result.textContent = `${button.dataset.choiceAnswer}번을 선택했습니다.`;
+            return;
+          }
           if (!normalizedAnswer) {
             button.classList.add("selected");
             result.textContent = `${button.dataset.choiceAnswer}번을 선택했습니다.`;
@@ -3690,6 +3726,7 @@
       els.statusFilter.value = "all";
       els.favoriteFilter.checked = false;
       reviewQueueIds = [];
+      clearReviewExamSession();
       studyMode = "question";
       activeMemoryCardQuestionId = "";
       setView("study");
@@ -3795,6 +3832,7 @@
     function startDefaultStudyView() {
       reviewQueueIds = [];
       reviewQueueLabel = "";
+      clearReviewExamSession();
       includeMasteredInStudyAll = false;
       studyMode = "question";
       els.examTypeFilter.value = "all";
@@ -3812,6 +3850,7 @@
       if (!candidates.length) return alert("미학습 문제가 없습니다.");
       reviewQueueIds = [];
       reviewQueueLabel = "";
+      clearReviewExamSession();
       includeMasteredInStudyAll = false;
       studyMode = "question";
       els.searchInput.value = "";
@@ -3831,6 +3870,7 @@
     function startAllQuestionStudy() {
       reviewQueueIds = [];
       reviewQueueLabel = "";
+      clearReviewExamSession();
       includeMasteredInStudyAll = true;
       studyMode = "question";
       els.searchInput.value = "";
@@ -3880,6 +3920,7 @@
     function setStudyExamType(type) {
       reviewQueueIds = [];
       reviewQueueLabel = "";
+      clearReviewExamSession();
       includeMasteredInStudyAll = false;
       studyMode = "question";
       els.searchInput.value = "";
@@ -4079,6 +4120,7 @@
         .sort((a, b) => b.score - a.score || a.time - b.time)
         .slice(0, 20)
         .map(item => item.id);
+      startReviewExamSession(reviewQueueLabel, reviewQueueIds);
       currentIndex = 0;
       studyMode = "question";
       els.searchInput.value = "";
@@ -4119,6 +4161,7 @@
         .map(q => ({ id: q.id, score: reviewScore(q), time: itemTime(q) }))
         .sort((a, b) => b.score - a.score || b.time - a.time)
         .map(item => item.id);
+      startReviewExamSession(reviewQueueLabel, reviewQueueIds);
       currentIndex = 0;
       studyMode = "question";
       els.searchInput.value = "";
@@ -4141,6 +4184,7 @@
       reviewQueueIds = shuffleArray(candidates)
         .slice(0, 20)
         .map(q => q.id);
+      clearReviewExamSession();
       currentIndex = 0;
       studyMode = "question";
       els.searchInput.value = "";
@@ -4157,6 +4201,146 @@
 
     function clearReviewQueue() {
       startAllQuestionStudy();
+    }
+
+    function startReviewExamSession(label, ids) {
+      reviewExamSession = {
+        active: true,
+        label: label || "복습 큐",
+        questionIds: [...ids],
+        answers: {},
+        results: [],
+        startedAt: new Date().toISOString()
+      };
+    }
+
+    function clearReviewExamSession() {
+      reviewExamSession = null;
+    }
+
+    function finishReviewExamSession() {
+      if (!reviewExamActive()) return;
+      saveReviewExamDraft();
+      const session = reviewExamSession;
+      const results = session.questionIds
+        .map(id => state.questions.find(q => q.id === id))
+        .filter(Boolean)
+        .map(question => gradeReviewExamQuestion(question, session.answers[question.id] || ""));
+      session.active = false;
+      session.results = results;
+      session.finishedAt = new Date().toISOString();
+
+      results.forEach(result => {
+        if (!result.answered) return;
+        if (result.passed) {
+          result.question.status = "mastered";
+          result.question.masteredAt = new Date().toISOString();
+        } else {
+          result.question.status = "wrong";
+          result.question.wrongCount = (result.question.wrongCount || 0) + 1;
+        }
+        result.question.updatedAt = new Date().toISOString();
+      });
+      persist();
+      renderReviewExamResults(results, session.label);
+      renderStats();
+      renderDashboard();
+      renderWrongList();
+      renderMasteredList();
+      renderBank();
+    }
+
+    function gradeReviewExamQuestion(question, myAnswer) {
+      const examType = normalizeExamType(question.examType);
+      const mine = String(myAnswer || "").trim();
+      const answered = Boolean(mine);
+      if (examType === "multiple") {
+        const expected = selectedAnswerNumber(question.answer);
+        const selected = selectedAnswerNumber(mine) || mine.match(/[1-4①②③④]/)?.[0] || "";
+        const normalizedSelected = selectedAnswerNumber(selected) || selected;
+        const passed = Boolean(answered && expected && normalizedSelected === expected);
+        return {
+          question,
+          myAnswer: mine,
+          passed,
+          answered,
+          score: passed ? 100 : 0,
+          label: passed ? "정답" : "오답",
+          detail: expected ? `선택 ${normalizedSelected || "-"} / 정답 ${expected}` : "저장된 정답 번호를 찾지 못했습니다."
+        };
+      }
+
+      const keywords = answerKeywords(question.answer).slice(0, 8);
+      const requiredNumbers = answerNumberTokens(question.answer);
+      const mineCompact = compactText(mine);
+      const mineNumbers = answerNumberTokens(mine);
+      const hitKeywords = keywords.filter(keyword => mineCompact.includes(compactText(keyword)));
+      const missingNumbers = requiredNumbers.filter(number => !mineNumbers.includes(number));
+      const keywordRate = keywords.length ? hitKeywords.length / keywords.length : (answered ? 0.5 : 0);
+      const numberOk = !missingNumbers.length;
+      const passed = answered && numberOk && keywordRate >= 0.6;
+      const score = Math.round((keywordRate * 80) + (numberOk ? 20 : 0));
+      return {
+        question,
+        myAnswer: mine,
+        passed,
+        answered,
+        score,
+        label: passed ? "맞음 가능" : "확인 필요",
+        detail: keywords.length
+          ? `핵심어 ${hitKeywords.length}/${keywords.length}${requiredNumbers.length ? ` · 숫자 ${numberOk ? "일치" : "확인"}` : ""}`
+          : "핵심어를 충분히 뽑기 어려워 직접 확인이 필요합니다.",
+        hitKeywords,
+        missingKeywords: keywords.filter(keyword => !hitKeywords.includes(keyword)).slice(0, 5)
+      };
+    }
+
+    function renderReviewExamResults(results, label) {
+      const total = results.length;
+      const answered = results.filter(result => result.answered).length;
+      const passed = results.filter(result => result.passed).length;
+      els.questionText.innerHTML = `
+        <div class="review-exam-summary">
+          <h3>${escapeHtml(label || "복습 큐")} 채점 결과</h3>
+          <p>${total}문제 중 ${answered}문제 답안 작성 · ${passed}문제 통과</p>
+          <div class="review-exam-score">${total ? Math.round((passed / total) * 100) : 0}%</div>
+        </div>
+      `;
+      els.answerText.innerHTML = `
+        <div class="review-exam-results">
+          ${results.map((result, index) => `
+            <article class="review-exam-result ${result.passed ? "passed" : "failed"}">
+              <div class="review-exam-result-head">
+                <strong>${index + 1}. ${escapeHtml(result.question.category || "미분류")}</strong>
+                <span>${escapeHtml(result.label)} · ${result.score}점</span>
+              </div>
+              <div class="review-exam-question">${formatQuestionHtml(result.question.question || "문제")}</div>
+              <div class="review-exam-answer-grid">
+                <div>
+                  <b>내 답안</b>
+                  <p>${escapeHtml(result.myAnswer || "미작성")}</p>
+                </div>
+                <div>
+                  <b>저장된 정답</b>
+                  <div>${formatStagedAnswerHtml(result.question)}</div>
+                </div>
+              </div>
+              <p class="review-exam-detail">${escapeHtml(result.detail || "")}</p>
+              ${result.missingKeywords?.length ? `<p class="review-exam-detail">확인할 핵심어: ${escapeHtml(result.missingKeywords.join(", "))}</p>` : ""}
+            </article>
+          `).join("")}
+        </div>
+      `;
+      els.answerText.classList.add("visible");
+      els.myAnswer.value = "";
+      renderChoiceAnswerPanel(null);
+      hideAnswerAssist();
+      els.showAnswerBtn.textContent = "전체 학습으로 돌아가기";
+      els.wrongBtn.classList.add("hidden");
+      els.masterBtn.classList.add("hidden");
+      reviewQueueIds = [];
+      reviewQueueLabel = "";
+      currentIndex = 0;
     }
 
     function shuffleArray(items) {
@@ -4185,6 +4369,7 @@
     }
 
     function moveCard(delta) {
+      saveReviewExamDraft();
       if (studyMode === "theory") {
         const count = filteredTheories().length;
         if (!count) return;
@@ -4204,6 +4389,15 @@
         if (theory) createQuestionFromTheory(theory.id);
         return;
       }
+      if (reviewExamSession?.results?.length && !reviewExamActive()) {
+        clearReviewExamSession();
+        startAllQuestionStudy();
+        return;
+      }
+      if (reviewExamActive()) {
+        handleReviewExamAction();
+        return;
+      }
       const current = getCurrentQuestion();
       if (current) els.answerText.innerHTML = formatStagedAnswerHtml(current);
       els.answerText.classList.toggle("visible");
@@ -4213,6 +4407,18 @@
       } else {
         hideAnswerAssist();
       }
+    }
+
+    function handleReviewExamAction() {
+      saveReviewExamDraft();
+      const count = filteredStudyQuestions().length;
+      if (!count) return;
+      if (currentIndex < count - 1) {
+        currentIndex += 1;
+        renderStudy();
+        return;
+      }
+      finishReviewExamSession();
     }
 
     function updateAnswerAssist() {

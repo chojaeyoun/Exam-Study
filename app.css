@@ -1572,6 +1572,93 @@
       font-size: 14px;
     }
 
+    .review-exam-summary {
+      display: grid;
+      gap: 8px;
+      padding: 16px;
+      border: 1px solid #d8e7e3;
+      border-radius: 8px;
+      background: #f7fbfa;
+    }
+
+    .review-exam-summary h3,
+    .review-exam-summary p {
+      margin: 0;
+    }
+
+    .review-exam-score {
+      width: fit-content;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--accent);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .review-exam-results {
+      display: grid;
+      gap: 12px;
+    }
+
+    .review-exam-result {
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .review-exam-result.passed {
+      border-color: #b8ddd2;
+      background: #f6fbf9;
+    }
+
+    .review-exam-result.failed {
+      border-color: #edc1ba;
+      background: #fff8f6;
+    }
+
+    .review-exam-result-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .review-exam-result-head span {
+      font-weight: 900;
+      color: var(--accent-dark);
+    }
+
+    .review-exam-answer-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .review-exam-answer-grid > div {
+      min-width: 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .review-exam-answer-grid b,
+    .review-exam-answer-grid p,
+    .review-exam-detail {
+      margin: 0;
+    }
+
+    .review-exam-detail {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
     .assist-score {
       color: var(--muted);
       font-size: 13px;
@@ -3516,6 +3603,10 @@
 
       .question-main {
         font-size: 18px;
+      }
+
+      .review-exam-answer-grid {
+        grid-template-columns: 1fr;
       }
 
       .question-option {
