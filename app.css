@@ -1901,7 +1901,8 @@
     }
 
     .math-fraction,
-    .math-power {
+    .math-power,
+    .math-times {
       display: inline-flex;
       align-items: center;
       vertical-align: middle;
@@ -1948,6 +1949,12 @@
       top: -0.3em;
       font-size: 0.72em;
       line-height: 1;
+    }
+
+    .math-times {
+      justify-content: center;
+      min-width: 0.9em;
+      font-size: 1.02em;
     }
 
     .card .actions button {

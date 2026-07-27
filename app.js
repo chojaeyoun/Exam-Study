@@ -1917,9 +1917,9 @@
       const source = String(text || "");
       const parts = [];
       let cursor = 0;
-      const pattern = /(\{\{([^{}]+)\}\}|\*\*([^*\n]+)\*\*|\\frac\{([^{}\n]+)\}\{([^{}\n]+)\}|([A-Za-z가-힣0-9㎡㎥μΩπ().+\-*/]+)\^\{([^{}\n]+)\}|([A-Za-z가-힣0-9㎡㎥μΩπ().+\-*/]+)\^([0-9A-Za-z가-힣+\-]+)|(^|[^\w./])(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)(?![\w./]))/g;
-      source.replace(pattern, (match, _token, answer, boldText, numerator, denominator, bracedBase, bracedExponent, simpleBase, simpleExponent, fractionPrefix, numericNumerator, numericDenominator, index) => {
-        parts.push(escapeHtml(source.slice(cursor, index)));
+      const pattern = /(\{\{([^{}]+)\}\}|\*\*([^*\n]+)\*\*|\\frac\{([^{}\n]+)\}\{([^{}\n]+)\}|([A-Za-z가-힣0-9㎡㎥μΩπ().+\-*/]+)\^\{([^{}\n]+)\}|([A-Za-z가-힣0-9㎡㎥μΩπ().+\-*/]+)\^([0-9A-Za-z가-힣+\-]+))/g;
+      source.replace(pattern, (match, _token, answer, boldText, numerator, denominator, bracedBase, bracedExponent, simpleBase, simpleExponent, index) => {
+        parts.push(formatPlainInlineHtml(source.slice(cursor, index)));
         if (answer) {
           parts.push(`<button class="cloze" type="button" data-answer="${escapeHtml(answer.trim())}">빈칸</button>`);
         } else if (numerator && denominator) {
@@ -1928,10 +1928,28 @@
           parts.push(renderInlinePower(bracedBase, bracedExponent));
         } else if (simpleBase && simpleExponent) {
           parts.push(renderInlinePower(simpleBase, simpleExponent));
-        } else if (numericNumerator && numericDenominator) {
-          parts.push(`${escapeHtml(fractionPrefix || "")}${renderInlineFraction(numericNumerator, numericDenominator)}`);
         } else {
           parts.push(`<strong class="rich-bold">${escapeHtml(boldText.trim())}</strong>`);
+        }
+        cursor = index + match.length;
+        return match;
+      });
+      parts.push(formatPlainInlineHtml(source.slice(cursor)));
+      return parts.join("");
+    }
+
+    function formatPlainInlineHtml(text) {
+      const source = String(text || "");
+      const parts = [];
+      const term = "[0-9]+(?:\\.\\d+)?|[A-Za-z가-힣μΩπ㎡㎥][A-Za-z가-힣0-9μΩπ㎡㎥().-]*(?:\\s+[A-Za-z가-힣μΩπ㎡㎥][A-Za-z가-힣0-9μΩπ㎡㎥().-]*){0,2}";
+      const pattern = new RegExp(`(^|[^\\w./])(${term})\\s*\\/\\s*(${term})(?![\\w./])|(\\s)[xX](\\s)`, "g");
+      let cursor = 0;
+      source.replace(pattern, (match, fractionPrefix, numerator, denominator, timesPrefix, timesSuffix, index) => {
+        parts.push(escapeHtml(source.slice(cursor, index)));
+        if (numerator && denominator) {
+          parts.push(`${escapeHtml(fractionPrefix || "")}${renderInlineFraction(numerator, denominator)}`);
+        } else {
+          parts.push(`${escapeHtml(timesPrefix || "")}<span class="math-times" role="math" aria-label="곱하기">×</span>${escapeHtml(timesSuffix || "")}`);
         }
         cursor = index + match.length;
         return match;
@@ -1941,9 +1959,11 @@
     }
 
     function renderInlineFraction(numerator, denominator) {
-      const top = escapeHtml(String(numerator || "").trim());
-      const bottom = escapeHtml(String(denominator || "").trim());
-      const label = `${top} 나누기 ${bottom}`;
+      const rawTop = String(numerator || "").trim();
+      const rawBottom = String(denominator || "").trim();
+      const top = escapeHtml(rawTop);
+      const bottom = escapeHtml(rawBottom);
+      const label = escapeHtml(`${rawTop} 나누기 ${rawBottom}`);
       return `<span class="math-fraction" role="math" aria-label="${label}"><span class="math-numerator">${top}</span><span class="math-denominator">${bottom}</span></span>`;
     }
 
