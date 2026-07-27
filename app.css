@@ -1902,7 +1902,8 @@
 
     .math-fraction,
     .math-power,
-    .math-times {
+    .math-times,
+    .math-root {
       display: inline-flex;
       align-items: center;
       vertical-align: middle;
@@ -1955,6 +1956,26 @@
       justify-content: center;
       min-width: 0.9em;
       font-size: 1.02em;
+    }
+
+    .math-root {
+      align-items: flex-start;
+      gap: 1px;
+      margin: 0 2px;
+      line-height: 1.2;
+    }
+
+    .math-root-symbol {
+      font-size: 1.2em;
+      line-height: 1.18;
+    }
+
+    .math-root-body {
+      display: inline-flex;
+      align-items: center;
+      min-height: 1.25em;
+      padding: 1px 3px 0;
+      border-top: 2px solid currentColor;
     }
 
     .card .actions button {

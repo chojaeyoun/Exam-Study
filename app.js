@@ -1938,19 +1938,23 @@
       return parts.join("");
     }
 
-    function formatPlainInlineHtml(text) {
+    function formatPlainInlineHtml(text, forceMath = false) {
       const source = String(text || "");
-      if (!shouldAutoFormatMath(source)) return escapeHtml(source);
+      if (!forceMath && !shouldAutoFormatMath(source)) return escapeHtml(source);
       const parts = [];
       const wordTerm = "[A-Za-z가-힣μΩπ㎡㎥][A-Za-z가-힣0-9μΩπ㎡㎥.-]*";
-      const term = `[0-9]+(?:\\.\\d+)?|${wordTerm}(?:\\s+(?![xX](?:\\s|$))${wordTerm}){0,2}`;
+      const term = `[0-9]+(?:\\.\\d+)?|${wordTerm}(?:\\s+(?![xX*](?:\\s|$))${wordTerm}){0,2}`;
       const denominator = `\\([^()\\n]{1,60}\\)|${term}`;
-      const pattern = new RegExp(`(^|[^\\w./])(${term})\\s*\\/\\s*(${denominator})(?![\\w./])|(\\s)[xX](\\s)`, "g");
+      const pattern = new RegExp(`√\\(([^()\\n]{1,80})\\)|(^|[^\\w./])(${term})\\s*\\/\\s*(${denominator})(?![\\w./])|(\\S)\\s*\\*\\s*(\\S)|(\\s)[xX](\\s)`, "g");
       let cursor = 0;
-      source.replace(pattern, (match, fractionPrefix, numerator, denominator, timesPrefix, timesSuffix, index) => {
+      source.replace(pattern, (match, rootBody, fractionPrefix, numerator, denominator, starLeft, starRight, timesPrefix, timesSuffix, index) => {
         parts.push(escapeHtml(source.slice(cursor, index)));
-        if (numerator && denominator) {
+        if (rootBody) {
+          parts.push(renderInlineRoot(rootBody));
+        } else if (numerator && denominator) {
           parts.push(`${escapeHtml(fractionPrefix || "")}${renderInlineFraction(numerator, normalizeAutoFractionTerm(denominator))}`);
+        } else if (starLeft && starRight) {
+          parts.push(`${escapeHtml(starLeft)}<span class="math-times" role="math" aria-label="곱하기">×</span>${escapeHtml(starRight)}`);
         } else {
           parts.push(`${escapeHtml(timesPrefix || "")}<span class="math-times" role="math" aria-label="곱하기">×</span>${escapeHtml(timesSuffix || "")}`);
         }
@@ -1972,13 +1976,24 @@
       return source;
     }
 
+    function renderInlineRoot(body) {
+      const rawBody = String(body || "").trim();
+      const bodyHtml = formatPlainInlineHtml(rawBody, true);
+      const label = escapeHtml(`루트 ${rawBody}`);
+      return `<span class="math-root" role="math" aria-label="${label}"><span class="math-root-symbol">√</span><span class="math-root-body">${bodyHtml}</span></span>`;
+    }
+
     function renderInlineFraction(numerator, denominator) {
       const rawTop = String(numerator || "").trim();
       const rawBottom = String(denominator || "").trim();
-      const top = escapeHtml(rawTop);
-      const bottom = escapeHtml(rawBottom);
+      const top = formatMathTermHtml(rawTop);
+      const bottom = formatMathTermHtml(rawBottom);
       const label = escapeHtml(`${rawTop} 나누기 ${rawBottom}`);
       return `<span class="math-fraction" role="math" aria-label="${label}"><span class="math-numerator">${top}</span><span class="math-denominator">${bottom}</span></span>`;
+    }
+
+    function formatMathTermHtml(value) {
+      return escapeHtml(String(value || "").trim()).replace(/(\S)\s*[xX*]\s*(\S)/g, `$1<span class="math-times" role="math" aria-label="곱하기">×</span>$2`);
     }
 
     function renderInlinePower(base, exponent) {
