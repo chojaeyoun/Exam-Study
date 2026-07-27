@@ -4266,7 +4266,15 @@
           answered,
           score: passed ? 100 : 0,
           label: passed ? "정답" : "오답",
-          detail: expected ? `선택 ${normalizedSelected || "-"} / 정답 ${expected}` : "저장된 정답 번호를 찾지 못했습니다."
+          detail: expected ? `선택 ${normalizedSelected || "-"} / 정답 ${expected}` : "저장된 정답 번호를 찾지 못했습니다.",
+          feedback: buildReviewExamFeedback({
+            question,
+            myAnswer: mine,
+            passed,
+            answered,
+            expectedChoice: expected,
+            selectedChoice: normalizedSelected
+          })
         };
       }
 
@@ -4291,7 +4299,79 @@
           ? `핵심어 ${hitKeywords.length}/${keywords.length}${requiredNumbers.length ? ` · 숫자 ${numberOk ? "일치" : "확인"}` : ""}`
           : "핵심어를 충분히 뽑기 어려워 직접 확인이 필요합니다.",
         hitKeywords,
-        missingKeywords: keywords.filter(keyword => !hitKeywords.includes(keyword)).slice(0, 5)
+        missingKeywords: keywords.filter(keyword => !hitKeywords.includes(keyword)).slice(0, 5),
+        feedback: buildReviewExamFeedback({
+          question,
+          myAnswer: mine,
+          passed,
+          answered,
+          hitKeywords,
+          missingKeywords: keywords.filter(keyword => !hitKeywords.includes(keyword)).slice(0, 5),
+          missingNumbers,
+          requiredNumbers,
+          score
+        })
+      };
+    }
+
+    function buildReviewExamFeedback(data) {
+      const examType = normalizeExamType(data.question?.examType);
+      if (!data.answered) {
+        return {
+          title: "미작성",
+          summary: "답안을 작성하지 않아 채점할 수 없습니다. 실제 시험에서는 빈 답안이 바로 감점되므로 핵심어라도 먼저 적는 연습이 필요합니다.",
+          hit: "",
+          miss: "내 답안이 비어 있습니다.",
+          next: "저장된 정답에서 핵심 명사와 조치 동사를 골라 짧게라도 다시 작성하세요."
+        };
+      }
+      if (examType === "multiple") {
+        const selected = data.selectedChoice || "-";
+        const expected = data.expectedChoice || "-";
+        return {
+          title: data.passed ? "선택 일치" : "선택 번호 확인",
+          summary: data.passed
+            ? `선택한 ${selected}번이 저장된 정답과 일치합니다.`
+            : `선택한 답은 ${selected}번이고 저장된 정답은 ${expected}번입니다. 보기의 핵심 표현을 다시 비교하세요.`,
+          hit: data.passed ? "정답 번호가 맞았습니다." : "",
+          miss: data.passed ? "" : `정답 번호 ${expected}번과 일치하지 않습니다.`,
+          next: data.passed ? "해설을 보며 왜 이 보기가 맞는지 근거를 한 줄로 정리하세요." : "정답 보기의 조건과 내가 고른 보기의 차이를 오답노트에 적어두세요."
+        };
+      }
+
+      const hit = data.hitKeywords || [];
+      const miss = data.missingKeywords || [];
+      const missingNumbers = data.missingNumbers || [];
+      const requiredNumbers = data.requiredNumbers || [];
+      const hitText = hit.length ? hit.slice(0, 5).join(", ") : "";
+      const missText = miss.length ? miss.join(", ") : "";
+      const numberText = missingNumbers.length ? missingNumbers.join(", ") : "";
+      const numberOkText = requiredNumbers.length && !missingNumbers.length ? "정답의 숫자 조건은 들어갔습니다." : "";
+
+      let summary = "";
+      if (data.passed) {
+        summary = "저장된 정답의 핵심어와 숫자 조건이 대부분 들어가 맞음 가능으로 보입니다.";
+      } else if (miss.length && missingNumbers.length) {
+        summary = `핵심어 일부와 숫자 조건이 빠져 확인 필요입니다. 특히 ${miss[0]} 부분을 보완해야 합니다.`;
+      } else if (miss.length) {
+        summary = `답의 방향은 일부 맞지만 ${miss[0]} 같은 핵심 항목이 빠져 확인 필요입니다.`;
+      } else if (missingNumbers.length) {
+        summary = `표현은 일부 맞지만 정답에 필요한 숫자 ${numberText}이 빠져 확인 필요입니다.`;
+      } else {
+        summary = "정답과 겹치는 표현이 적어 직접 확인이 필요합니다.";
+      }
+
+      return {
+        title: data.passed ? "맞음 가능" : "틀린 부분 설명",
+        summary,
+        hit: hitText ? `내 답안에 들어간 핵심어: ${hitText}` : numberOkText,
+        miss: [
+          missText ? `빠진 핵심어: ${missText}` : "",
+          numberText ? `빠진 숫자/수치: ${numberText}` : ""
+        ].filter(Boolean).join(" · "),
+        next: missText || numberText
+          ? "빠진 항목을 그대로 외우기보다, 정답 문장에 맞춰 한 문장으로 다시 써보세요."
+          : "저장된 정답과 내 표현이 같은 의미인지 직접 한 번 더 비교하세요."
       };
     }
 
@@ -4326,7 +4406,7 @@
                 </div>
               </div>
               <p class="review-exam-detail">${escapeHtml(result.detail || "")}</p>
-              ${result.missingKeywords?.length ? `<p class="review-exam-detail">확인할 핵심어: ${escapeHtml(result.missingKeywords.join(", "))}</p>` : ""}
+              ${renderReviewExamFeedback(result.feedback)}
             </article>
           `).join("")}
         </div>
@@ -4341,6 +4421,19 @@
       reviewQueueIds = [];
       reviewQueueLabel = "";
       currentIndex = 0;
+    }
+
+    function renderReviewExamFeedback(feedback) {
+      if (!feedback) return "";
+      return `
+        <div class="review-exam-feedback">
+          <strong>${escapeHtml(feedback.title || "채점 설명")}</strong>
+          <p>${escapeHtml(feedback.summary || "")}</p>
+          ${feedback.hit ? `<p class="feedback-hit">${escapeHtml(feedback.hit)}</p>` : ""}
+          ${feedback.miss ? `<p class="feedback-miss">${escapeHtml(feedback.miss)}</p>` : ""}
+          ${feedback.next ? `<p class="feedback-next">${escapeHtml(feedback.next)}</p>` : ""}
+        </div>
+      `;
     }
 
     function shuffleArray(items) {
