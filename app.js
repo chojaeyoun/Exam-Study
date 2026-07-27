@@ -241,7 +241,9 @@
     }));
     const FORMAT_TOOL_SLASH_BLOCKS = [
       { id: "bold", group: "서식", label: "굵게", icon: "B", hint: "굵게 표시", shortcut: "**", aliases: ["bold", "강조"], template: "**강조할 내용**", selectText: "강조할 내용" },
-      { id: "cloze-format", group: "서식", label: "빈칸", icon: "{}", hint: "빈칸 표시", shortcut: "{{}}", aliases: ["blank", "암기"], template: "{{정답}}", selectText: "정답" }
+      { id: "cloze-format", group: "서식", label: "빈칸", icon: "{}", hint: "빈칸 표시", shortcut: "{{}}", aliases: ["blank", "암기"], template: "{{정답}}", selectText: "정답" },
+      { id: "fraction", group: "수식", label: "분수", icon: "a/b", hint: "세로 분수 표시", shortcut: "\\frac", aliases: ["frac", "분자", "계산", "수식"], template: "\\frac{분자}{분모}", selectText: "분자" },
+      { id: "power", group: "수식", label: "지수", icon: "x2", hint: "위첨자 지수 표시", shortcut: "^", aliases: ["exponent", "제곱", "승", "수식"], template: "기준^{지수}", selectText: "기준" }
     ];
     const BASIC_TEXT_BLOCKS = [
       { id: "text", group: "기본 블록", label: "텍스트", icon: "T", hint: "일반 문장", shortcut: "", aliases: ["plain", "문장"], template: "텍스트를 입력하세요.", selectText: "텍스트를 입력하세요." },
@@ -292,6 +294,8 @@
       { action: "cloze", label: "빈칸", hint: "선택한 글자를 {{빈칸}}으로 만들기" },
       { action: "box", label: "박스", hint: "선택한 문장을 문제 박스로 감싸기" },
       { action: "choices", label: "보기", hint: "보기 4개 틀 넣기" },
+      { action: "fraction", label: "분수", hint: "선택한 1/3을 세로 분수로 표시" },
+      { action: "power", label: "지수", hint: "선택한 글자 뒤에 지수 붙이기" },
       { action: "numbered", label: "번호", hint: "선택한 줄을 1. 2. 번호 목록으로 바꾸기" },
       { action: "bullet", label: "목록", hint: "선택한 줄을 글머리표 목록으로 바꾸기" }
     ];
@@ -1913,10 +1917,19 @@
       const source = String(text || "");
       const parts = [];
       let cursor = 0;
-      source.replace(/(\{\{([^{}]+)\}\}|\*\*([^*\n]+)\*\*)/g, (match, _token, answer, boldText, index) => {
+      const pattern = /(\{\{([^{}]+)\}\}|\*\*([^*\n]+)\*\*|\\frac\{([^{}\n]+)\}\{([^{}\n]+)\}|([A-Za-z가-힣0-9㎡㎥μΩπ().+\-*/]+)\^\{([^{}\n]+)\}|([A-Za-z가-힣0-9㎡㎥μΩπ().+\-*/]+)\^([0-9A-Za-z가-힣+\-]+)|(^|[^\w./])(\d+(?:\.\d+)?)\/(\d+(?:\.\d+)?)(?![\w./]))/g;
+      source.replace(pattern, (match, _token, answer, boldText, numerator, denominator, bracedBase, bracedExponent, simpleBase, simpleExponent, fractionPrefix, numericNumerator, numericDenominator, index) => {
         parts.push(escapeHtml(source.slice(cursor, index)));
         if (answer) {
           parts.push(`<button class="cloze" type="button" data-answer="${escapeHtml(answer.trim())}">빈칸</button>`);
+        } else if (numerator && denominator) {
+          parts.push(renderInlineFraction(numerator, denominator));
+        } else if (bracedBase && bracedExponent) {
+          parts.push(renderInlinePower(bracedBase, bracedExponent));
+        } else if (simpleBase && simpleExponent) {
+          parts.push(renderInlinePower(simpleBase, simpleExponent));
+        } else if (numericNumerator && numericDenominator) {
+          parts.push(`${escapeHtml(fractionPrefix || "")}${renderInlineFraction(numericNumerator, numericDenominator)}`);
         } else {
           parts.push(`<strong class="rich-bold">${escapeHtml(boldText.trim())}</strong>`);
         }
@@ -1925,6 +1938,17 @@
       });
       parts.push(escapeHtml(source.slice(cursor)));
       return parts.join("");
+    }
+
+    function renderInlineFraction(numerator, denominator) {
+      const top = escapeHtml(String(numerator || "").trim());
+      const bottom = escapeHtml(String(denominator || "").trim());
+      const label = `${top} 나누기 ${bottom}`;
+      return `<span class="math-fraction" role="math" aria-label="${label}"><span class="math-numerator">${top}</span><span class="math-denominator">${bottom}</span></span>`;
+    }
+
+    function renderInlinePower(base, exponent) {
+      return `<span class="math-power" role="math"><span class="math-base">${escapeHtml(String(base || "").trim())}</span><sup class="math-exponent">${escapeHtml(String(exponent || "").trim())}</sup></span>`;
     }
 
     function renderRichTextBlock(block) {
@@ -5320,6 +5344,19 @@
         const fallback = "암기할 내용";
         const content = text.trim() || fallback;
         return selectionReplacement(`{{${content}}}`, 2, content.length);
+      }
+      if (action === "fraction") {
+        const normalized = text.trim();
+        const slashParts = normalized.split("/").map(part => part.trim());
+        if (slashParts.length === 2 && slashParts[0] && slashParts[1]) {
+          return selectionReplacement(`\\frac{${slashParts[0]}}{${slashParts[1]}}`);
+        }
+        const numerator = normalized || "분자";
+        return selectionReplacement(`\\frac{${numerator}}{분모}`, 6, numerator.length);
+      }
+      if (action === "power") {
+        const base = text.trim() || "기준";
+        return selectionReplacement(`${base}^{지수}`, 0, base.length);
       }
       if (action === "numbered") {
         const lines = selectedLines(text, ["첫 번째 항목", "두 번째 항목"]);

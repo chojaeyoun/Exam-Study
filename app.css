@@ -1900,6 +1900,56 @@
       color: var(--text);
     }
 
+    .math-fraction,
+    .math-power {
+      display: inline-flex;
+      align-items: center;
+      vertical-align: middle;
+      color: #173831;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .math-fraction {
+      flex-direction: column;
+      justify-content: center;
+      gap: 1px;
+      min-width: 22px;
+      margin: 0 2px;
+      line-height: 1.05;
+      transform: translateY(-1px);
+    }
+
+    .math-numerator,
+    .math-denominator {
+      display: block;
+      min-width: 100%;
+      padding: 0 4px;
+      text-align: center;
+      font-size: 0.88em;
+    }
+
+    .math-numerator {
+      border-bottom: 2px solid currentColor;
+      padding-bottom: 2px;
+    }
+
+    .math-denominator {
+      padding-top: 2px;
+    }
+
+    .math-power {
+      gap: 1px;
+      margin: 0 1px;
+    }
+
+    .math-exponent {
+      position: relative;
+      top: -0.3em;
+      font-size: 0.72em;
+      line-height: 1;
+    }
+
     .card .actions button {
       min-height: 46px;
       padding: 0 18px;
