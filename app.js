@@ -32,6 +32,9 @@
     let includeMasteredInStudyAll = false;
     let deferredInstallPrompt = null;
     let supabaseClient = null;
+    const AUTO_SYNC_KEY = `${STORAGE_KEY}.pendingStudySync`;
+    let studySyncTimer = null;
+    let cloudUploadPromise = null;
     let pendingPhotoQuestions = [];
     let csvFileMode = "import";
     let removeQuestionImageOnSave = false;
@@ -613,6 +616,7 @@
       const { data } = await client.auth.getUser();
       const email = data?.user?.email;
       setCloudStatus(message || (email ? `로그인됨: ${email}` : "연결 정보는 저장됨. 회원가입 또는 로그인을 진행하세요."));
+      if (email && localStorage.getItem(AUTO_SYNC_KEY)) scheduleStudyCloudSync();
     }
 
     function setCloudStatus(message) {
@@ -942,8 +946,50 @@
       render();
     }
 
-    async function uploadCloud() {
-      const client = requireSupabaseClient();
+    function scheduleStudyCloudSync(changed = false) {
+      if (changed) localStorage.setItem(AUTO_SYNC_KEY, crypto.randomUUID());
+      clearTimeout(studySyncTimer);
+      studySyncTimer = setTimeout(flushStudyCloudSync, 1200);
+    }
+
+    async function flushStudyCloudSync() {
+      if (!localStorage.getItem(AUTO_SYNC_KEY) || !getSupabaseClient()) return;
+      if (!navigator.onLine) {
+        setCloudStatus("학습 기록은 기기에 저장됨 · 인터넷 연결 후 자동 동기화");
+        return;
+      }
+      if (cloudUploadPromise) {
+        scheduleStudyCloudSync();
+        return;
+      }
+      const revision = localStorage.getItem(AUTO_SYNC_KEY);
+      const ok = await uploadCloud(true);
+      if (ok && revision === localStorage.getItem(AUTO_SYNC_KEY)) {
+        localStorage.removeItem(AUTO_SYNC_KEY);
+      } else if (localStorage.getItem(AUTO_SYNC_KEY)) {
+        clearTimeout(studySyncTimer);
+        studySyncTimer = setTimeout(flushStudyCloudSync, ok ? 1200 : 30000);
+      }
+    }
+
+    window.addEventListener("online", () => scheduleStudyCloudSync());
+
+    async function uploadCloud(automatic = false) {
+      automatic = automatic === true;
+      if (cloudUploadPromise) return cloudUploadPromise;
+      cloudUploadPromise = performCloudUpload(automatic).catch(error => {
+        setCloudStatus(`클라우드 저장 실패 · 기록은 기기에 보관됨: ${error.message}`);
+        return false;
+      });
+      try {
+        return await cloudUploadPromise;
+      } finally {
+        cloudUploadPromise = null;
+      }
+    }
+
+    async function performCloudUpload(automatic) {
+      const client = automatic ? getSupabaseClient() : requireSupabaseClient();
       if (!client) return;
       const user = await requireCloudUser(client);
       if (!user) return;
@@ -977,7 +1023,7 @@
       const backupResult = await uploadCloudBackup(client, user);
       if (!backupResult.ok) return setCloudStatus(backupResult.message);
 
-      const { error: staleDeleteError } = await client
+      const { error: staleDeleteError } = automatic ? { error: null } : await client
         .from("exam_questions")
         .delete()
         .eq("user_id", user.id)
@@ -995,6 +1041,7 @@
         .neq("category", CLOUD_BACKUP_CATEGORY);
       const cloudCountText = Number.isFinite(cloudQuestionCount) ? `, 클라우드 확인 ${cloudQuestionCount}개` : "";
       setCloudStatus(`업로드 완료: 시험 ${examRows.length}개, 이 기기 문제 ${questionRows.length}개${cloudCountText}, 백업 ${backupResult.chunkCount}조각`);
+      return true;
     }
 
     async function downloadCloud() {
@@ -2616,6 +2663,7 @@
       persist();
       render();
       activeMemoryCardQuestionId = q.id;
+      scheduleStudyCloudSync(true);
       renderMemoryCardPanel(q);
     }
 
@@ -4316,6 +4364,7 @@
       });
       persist();
       renderReviewExamResults(results, session.label);
+      scheduleStudyCloudSync(true);
       renderStats();
       renderDashboard();
       renderWrongList();
@@ -4815,6 +4864,7 @@
       q.wrongCount = (q.wrongCount || 0) + 1;
       q.updatedAt = new Date().toISOString();
       persist();
+      scheduleStudyCloudSync(true);
       advanceAfterReview(q.id);
     }
 
@@ -4825,6 +4875,7 @@
       q.masteredAt = new Date().toISOString();
       q.updatedAt = new Date().toISOString();
       persist();
+      scheduleStudyCloudSync(true);
       advanceAfterReview(q.id);
     }
 
