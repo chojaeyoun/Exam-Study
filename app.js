@@ -1645,7 +1645,7 @@
       const coreHtml = parsed.core
         ? `<section class="answer-section">
             <h4 class="answer-section-title">정답</h4>
-            <p class="answer-core">${formatInlineHtml(parsed.core)}</p>
+            <div class="answer-core">${formatRichTextHtml(parsed.core)}</div>
           </section>`
         : "";
       const pointsHtml = parsed.points.length
@@ -1744,7 +1744,7 @@
         const isFinal = section.label === "답";
         return `<section class="calc-step${isFinal ? " final" : ""}">
           <h4 class="calc-label">${escapeHtml(isFinal ? "최종 답" : section.label)}</h4>
-          <p class="calc-equation">${formatInlineHtml(section.text)}</p>
+          <div class="calc-equation">${formatRichTextHtml(section.text)}</div>
         </section>`;
       }).join("");
       const memoHtml = memo
@@ -1817,7 +1817,7 @@
       if (!source) return "";
 
       const choiceBank = extractChoiceBank(source);
-      const boxed = extractQuestionBoxes(choiceBank.body || source);
+      const boxed = extractQuestionBoxes(choiceBank.body);
       const questionSource = boxed.body;
       const selectedAnswer = String(options.selectedAnswer || "");
       const hideChoices = Boolean(options.hideChoices);
@@ -1836,7 +1836,7 @@
           ...parts.options.map(option => {
             const optionHtml = hasQuestionBoxToken(option.text)
               ? renderQuestionBodyWithBoxes(option.text, boxed.boxes)
-              : formatInlineHtml(option.text);
+              : formatRichTextHtml(option.text);
             const selectedClass = selectedAnswer && option.number === selectedAnswer ? " selected" : "";
             return `<div class="question-option${selectedClass}"><b>${escapeHtml(option.number)}</b><span>${optionHtml}</span></div>`;
           }),
@@ -1877,31 +1877,36 @@
 
     function renderQuestionBoxes(boxes) {
       return boxes.map(box => {
-        const lines = String(box || "").split("\n").map(line => line.trim()).filter(Boolean);
-        const content = lines.length
-          ? lines.map(line => `<p class="question-paper-line">${formatInlineHtml(line)}</p>`).join("")
-          : formatRichTextHtml(box);
+        const content = formatRichTextHtml(box);
         return `<div class="question-paper-box">${content}</div>`;
       }).join("");
     }
 
     function extractChoiceBank(text) {
+      const closed = String(text || "").match(/\[보기\]\s*[:：]?\s*([\s\S]*?)\[\/보기\]/);
+      if (closed) {
+        const items = splitChoiceItems(closed[1]);
+        if (!items.length) return { body: text, items: [] };
+        return { body: `${text.slice(0, closed.index)}\n${text.slice(closed.index + closed[0].length)}`.trim(), items };
+      }
       const lines = String(text || "").split("\n");
       const markerIndex = lines.findIndex(line => /^\s*(?:\[보기\]|보기)\s*[:：]?\s*$/i.test(line.trim()));
       if (markerIndex < 0) {
         const inline = String(text || "").match(/(?:\[보기\]|보기)\s*[:：]\s*(.+?)(?=\n\s*(?:\d+[.)]|[①-⑳])\s+|$)/s);
         if (!inline) return { body: text, items: [] };
         const items = splitChoiceItems(inline[1]);
+        if (!items.length) return { body: text, items: [] };
         const body = `${text.slice(0, inline.index)}${text.slice(inline.index + inline[0].length)}`.trim();
         return { body, items };
       }
 
       const bodyLines = lines.slice(0, markerIndex);
       const choiceLines = [];
+      const closingIndex = lines.findIndex((line, index) => index > markerIndex && /^\s*\[\/보기\]\s*$/i.test(line));
       let index = markerIndex + 1;
       for (; index < lines.length; index += 1) {
         const line = lines[index];
-        if (/^\s*(?:\d+[.)]|[①-⑳])\s+/.test(line) || /^\s*#{1,3}\s+/.test(line)) break;
+        if (closingIndex < 0 && (/^\s*(?:\d+[.)]|[①-⑳])\s+/.test(line) || /^\s*#{1,3}\s+/.test(line))) break;
         if (/^\s*\[\/보기\]\s*$/i.test(line.trim())) {
           index += 1;
           break;
@@ -1909,6 +1914,7 @@
         choiceLines.push(line);
       }
       const tailLines = lines.slice(index);
+      if (!choiceLines.some(line => line.trim())) return { body: text, items: [] };
       return {
         body: [...bodyLines, ...tailLines].join("\n").trim(),
         items: splitChoiceItems(choiceLines.join("\n"))
@@ -1916,8 +1922,10 @@
     }
 
     function splitChoiceItems(text) {
-      return String(text || "")
-        .split(/[,，;；\n]+/)
+      const source = String(text || "").trim();
+      if (source.includes("|") && normalizeMarkdownBlockBreaks(source).split(/\n{2,}/).some(isMarkdownTable)) return [source];
+      return source
+        .split(source.includes("\n") ? /\r?\n/ : /[,，;；]+/)
         .map(item => item.replace(/^[\s\-•*]+/, "").trim())
         .filter(Boolean);
     }
@@ -1928,6 +1936,7 @@
         <p class="choice-bank-title">보기</p>
         <div class="choice-bank-items">${items.map((item, index) => {
           const selectedClass = selectedAnswer === String(index + 1) ? " selected" : "";
+          if (item.includes("\n")) return `<div class="choice-bank-content">${formatRichTextHtml(item)}</div>`;
           return `<span class="choice-bank-chip${selectedClass}">${formatInlineHtml(item)}</span>`;
         }).join("")}</div>
       </div>`;
@@ -1948,13 +1957,19 @@
 
     function normalizeMarkdownBlockBreaks(text) {
       const output = [];
-      String(text || "").split(/\r?\n/).forEach(line => {
+      const lines = String(text || "").split(/\r?\n/);
+      let inTable = false;
+      lines.forEach((line, index) => {
         const trimmed = line.trim();
+        const isTableStart = trimmed.includes("|") && isMarkdownTable(`${trimmed}\n${lines[index + 1] || ""}`);
+        if (isTableStart && output.length && output[output.length - 1] !== "") output.push("");
+        if (inTable && !trimmed.includes("|")) output.push("");
+        inTable = isTableStart || (inTable && trimmed.includes("|"));
         const isStandaloneBlock = /^#{1,4}\s+\S/.test(trimmed) || /^---+$/.test(trimmed);
         if (isStandaloneBlock && output.length && output[output.length - 1] !== "") {
           output.push("");
         }
-        output.push(isStandaloneBlock ? trimmed : line);
+        output.push(isStandaloneBlock || inTable ? trimmed : line);
         if (isStandaloneBlock) output.push("");
       });
       return output.join("\n").replace(/\n{3,}/g, "\n\n").trim();
@@ -2058,7 +2073,7 @@
       if (source.startsWith(">")) {
         return `<div class="rich-callout">${formatInlineHtml(source.replace(/^>\s?/gm, "").trim())}</div>`;
       }
-      if (/^-\s+\[[ xX]\]\s+/m.test(source)) {
+      if (source.split("\n").every(line => /^-\s+\[[ xX]\]\s+/.test(line.trim()))) {
         const items = source.split("\n").map(line => line.trim()).filter(Boolean);
         return `<ul class="rich-checklist">${items.map(line => {
           const done = /^-\s+\[[xX]\]\s+/.test(line);
@@ -2066,11 +2081,11 @@
           return `<li><span class="box${done ? " done" : ""}"></span><span>${formatInlineHtml(text)}</span></li>`;
         }).join("")}</ul>`;
       }
-      if (/^-\s+/m.test(source)) {
+      if (source.split("\n").every(line => /^-\s+/.test(line.trim()))) {
         const items = source.split("\n").map(line => line.replace(/^-\s+/, "").trim()).filter(Boolean);
         return `<ul class="rich-list">${items.map(item => `<li><span>•</span><span>${formatInlineHtml(item)}</span></li>`).join("")}</ul>`;
       }
-      if (/^\d+[.)]\s+/m.test(source)) {
+      if (source.split("\n").every(line => /^\d+[.)]\s+/.test(line.trim()))) {
         const items = source.split("\n").map(line => line.replace(/^\d+[.)]\s+/, "").trim()).filter(Boolean);
         return `<ol class="rich-numbered-list">${items.map(item => `<li>${formatInlineHtml(item)}</li>`).join("")}</ol>`;
       }
@@ -2080,7 +2095,9 @@
     function isMarkdownTable(block) {
       const lines = String(block || "").split("\n").map(line => line.trim()).filter(Boolean);
       if (lines.length < 2 || !lines.every(line => line.includes("|"))) return false;
-      return /^:?-{3,}:?$/.test(splitTableRow(lines[1])[0] || "") || splitTableRow(lines[1]).every(cell => /^:?-{3,}:?$/.test(cell));
+      const headers = splitTableRow(lines[0]);
+      const separators = splitTableRow(lines[1]);
+      return headers.length >= 2 && headers.length === separators.length && separators.every(cell => /^:?-{3,}:?$/.test(cell));
     }
 
     function renderMarkdownTable(block) {
@@ -2091,11 +2108,12 @@
         .map(splitTableRow)
       .filter(row => row.length);
       if (!rows.length) return "";
-      const header = rows[0];
+      const width = Math.max(...rows.map(row => row.length));
+      const header = Array.from({ length: width }, (_, index) => rows[0][index] || "");
       const bodyRows = rows.slice(1);
       return `<div class="content-table-wrap"><table class="content-table">
-        <thead><tr>${header.map((cell, index) => `<th${tableAlignAttr(alignments[index])}>${escapeHtml(cell)}</th>`).join("")}</tr></thead>
-        <tbody>${bodyRows.map(row => `<tr>${header.map((_, index) => `<td${tableAlignAttr(alignments[index])}>${escapeHtml(row[index] || "")}</td>`).join("")}</tr>`).join("")}</tbody>
+        <thead><tr>${header.map((cell, index) => `<th${tableAlignAttr(alignments[index])}>${formatInlineHtml(cell)}</th>`).join("")}</tr></thead>
+        <tbody>${bodyRows.map(row => `<tr>${header.map((_, index) => `<td${tableAlignAttr(alignments[index])}>${formatInlineHtml(row[index] || "")}</td>`).join("")}</tr>`).join("")}</tbody>
       </table></div>`;
     }
 
@@ -2124,14 +2142,25 @@
       return String(line || "")
         .replace(/^\|/, "")
         .replace(/\|$/, "")
-        .split("|")
-        .map(cell => cell.trim());
+        .split(/(?<!\\)\|/)
+        .map(cell => cell.replace(/\\\|/g, "|").trim());
     }
 
     function splitQuestionOptions(text) {
       const circleMap = new Map([["①", "1"], ["②", "2"], ["③", "3"], ["④", "4"], ["⑤", "5"]]);
-      const optionPattern = /(^|[\s/])(?:(\d{1,2})[).]|([①②③④⑤]))\s*/g;
-      const matches = [...text.replace(/\n/g, " ").matchAll(optionPattern)];
+      const optionPattern = /(^|[\s/])(?:(\d{1,2})[).](?=\s|$)|([①②③④⑤]))\s*/g;
+      const matches = [...text.matchAll(optionPattern)].filter(match => {
+        const prefix = text.slice(0, match.index);
+        const lineStart = prefix.lastIndexOf("\n") + 1;
+        const lineEnd = text.indexOf("\n", match.index);
+        if (text.slice(lineStart, lineEnd < 0 ? text.length : lineEnd).includes("|")) return false;
+        let depth = 0;
+        for (const char of prefix) {
+          if (char === "(" || char === "（") depth++;
+          if (char === ")" || char === "）") depth = Math.max(0, depth - 1);
+        }
+        return depth === 0;
+      });
       if (matches.length < 2) return { body: text, options: [] };
 
       const body = cleanupOptionText(text.slice(0, matches[0].index));
@@ -2159,7 +2188,7 @@
       return String(text || "")
         .replace(/\s*\/\s*$/g, "")
         .replace(/^[\s/]+|[\s/]+$/g, "")
-        .replace(/\s+/g, " ")
+        .replace(/[^\S\n]+/g, " ")
         .trim();
     }
 

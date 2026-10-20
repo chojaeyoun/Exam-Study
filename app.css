@@ -1754,6 +1754,12 @@
       gap: 8px;
     }
 
+    .choice-bank-content {
+      flex-basis: 100%;
+      min-width: 0;
+      max-width: 100%;
+    }
+
     .choice-answer-grid.long-options {
       grid-template-columns: 1fr;
     }
