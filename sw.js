@@ -1,11 +1,11 @@
-const CACHE_NAME = "exam-study-app-v150";
+const CACHE_NAME = "exam-study-app-v151";
 const APP_SHELL = [
   "./index.html",
-  "./app.css?v=150",
-  "./app-config.js?v=150",
-  "./app-config-public.js?v=150",
-  "./app.js?v=150",
-  "./local-ai.js?v=150",
+  "./app.css?v=151",
+  "./app-config.js?v=151",
+  "./app-config-public.js?v=151",
+  "./app.js?v=151",
+  "./local-ai.js?v=151",
   "./industrial_safety_study.html",
   "./industrial_safety_study_public.html",
   "./manifest.webmanifest",
@@ -41,8 +41,9 @@ self.addEventListener("fetch", event => {
     requestUrl.pathname.endsWith("/index.html");
 
   if (isPageRequest) {
+    // GitHub Pages가 HTML을 10분 캐시하라고 보내서, 그대로 받으면 업데이트 직후에도 옛 화면이 뜸 -> 항상 서버에 확인
     event.respondWith(
-      fetch(event.request).then(response => {
+      fetch(event.request.url, { cache: "no-cache", credentials: "same-origin" }).then(response => {
         const copy = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
         return response;
