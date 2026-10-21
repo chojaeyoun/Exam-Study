@@ -1,6 +1,7 @@
 (() => {
   const storageKey = window.EXAM_STUDY_CONFIG?.localAiStorageKey || "examStudyApp.localAi.v1";
   const defaultEndpoint = "http://127.0.0.1:8765";
+  const geminiDefaultModel = "gemini-2.5-flash";
   const localAi = {
     toggle: document.querySelector("#localAiToggle"),
     panel: document.querySelector("#localAiPanel"),
@@ -8,6 +9,7 @@
     status: document.querySelector("#localAiStatus"),
     endpoint: document.querySelector("#localAiEndpoint"),
     model: document.querySelector("#localAiModel"),
+    geminiKey: document.querySelector("#localAiGeminiKey"),
     messages: document.querySelector("#localAiMessages"),
     form: document.querySelector("#localAiForm"),
     prompt: document.querySelector("#localAiPrompt"),
@@ -29,6 +31,7 @@
       const saved = JSON.parse(localStorage.getItem(storageKey));
       if (saved?.endpoint) localAi.endpoint.value = saved.endpoint;
       if (saved?.model) localAi.model.value = saved.model;
+      if (saved?.geminiKey && localAi.geminiKey) localAi.geminiKey.value = saved.geminiKey;
     } catch (error) {
       console.warn(error);
     }
@@ -37,7 +40,8 @@
   function saveSettings() {
     localStorage.setItem(storageKey, JSON.stringify({
       endpoint: endpoint(),
-      model: modelName()
+      model: modelName(),
+      geminiKey: geminiKey()  // 이 기기에만 저장 (클라우드 동기화 안 함)
     }));
   }
 
@@ -47,6 +51,10 @@
 
   function modelName() {
     return (localAi.model.value || "gemma3:4b").trim();
+  }
+
+  function geminiKey() {
+    return (localAi.geminiKey?.value || "").trim();
   }
 
   function bridge() {
@@ -174,11 +182,18 @@
       "앱이 현재 문제와 저장된 정답/해설을 제공한 경우에는 그 정답을 최우선 기준으로 삼고 절대 다른 숫자나 답으로 바꾸지 않는다.",
       "저장된 정답이 있으면 먼저 저장된 정답 기준임을 밝히고, 왜 그 답인지 풀이, 암기 포인트, 헷갈리는 부분을 설명한다.",
       "내 답안 분석은 채점 보조이며 확정 점수처럼 단정하지 않는다.",
-      "저장된 정답이 없는 일반 질문에는 일반 학습 설명으로만 답한다."
+      "저장된 정답이 없는 일반 질문에는 일반 학습 설명으로만 답한다.",
+      "법 조항 번호, 수치, 기준값은 저장된 정답이나 메모에 있는 것만 쓰고, 없는 숫자나 조항은 만들어 내지 않는다.",
+      "확실하지 않은 내용은 쓰지 않는다. '~일 수 있다', '~할 수도 있다', '경우에 따라' 같은 흐릿한 표현 대신 저장된 정답에 근거해 짧고 단정적으로 쓴다.",
+      "각 항목은 1~3문장으로 짧게 쓰고, 문제와 상관없는 일반론은 쓰지 않는다."
     ].join(" ");
   }
 
   async function checkHealth() {
+    if (geminiKey()) {
+      setStatus("Gemini로 해설합니다 (실패하면 로컬 AI)", "ok");
+      return;
+    }
     try {
       const response = await fetch(`${endpoint()}/api/health`);
       const data = await response.json();
@@ -191,6 +206,74 @@
     }
   }
 
+  async function readLines(response, onLine) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      lines.filter(line => line.trim()).forEach(onLine);
+    }
+    if (buffer.trim()) onLine(buffer);
+  }
+
+  async function streamOllama(messages, temperature, onText) {
+    const response = await fetch(`${endpoint()}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: modelName(), messages, stream: true, options: { temperature } })
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || `HTTP ${response.status}`);
+    }
+    let answer = "";
+    await readLines(response, line => {
+      const text = JSON.parse(line).message?.content || "";
+      if (!text) return;
+      answer += text;
+      onText(answer);
+    });
+    return answer;
+  }
+
+  async function streamGemini(messages, temperature, onText) {
+    const system = messages.filter(m => m.role === "system").map(m => m.content).join("\n");
+    const contents = [];
+    messages.filter(m => m.role !== "system").forEach(m => {
+      const role = m.role === "assistant" ? "model" : "user";
+      const last = contents[contents.length - 1];
+      if (last?.role === role) last.parts[0].text += `\n\n${m.content}`;  // 같은 역할이 연달아 오면 합친다
+      else contents.push({ role, parts: [{ text: m.content }] });
+    });
+    const model = /^gemini/i.test(modelName()) ? modelName() : geminiDefaultModel;
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey() },
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature } })
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 429) throw new Error("무료 사용량 한도 초과(잠시 후 다시)");
+      throw new Error(data.error?.message || `HTTP ${response.status}`);
+    }
+    let answer = "";
+    await readLines(response, line => {
+      if (!line.startsWith("data:")) return;
+      const parts = JSON.parse(line.slice(5)).candidates?.[0]?.content?.parts || [];
+      const text = parts.filter(part => !part.thought).map(part => part.text || "").join("");
+      if (!text) return;
+      answer += text;
+      onText(answer);
+    });
+    if (!answer.trim()) throw new Error("빈 응답");
+    return answer;
+  }
+
   async function sendPrompt(content, options = {}) {
     if (!content) return "";
     saveSettings();
@@ -199,56 +282,51 @@
     history.push({ role: "user", content });
     const assistant = addMessage("assistant", "");
 
-    const messages = [
-      { role: "system", content: systemPrompt() },
-      {
-        role: "user",
-        content: currentStudyText(true, true)
-          ? `앱에서 자동 첨부한 현재 문제 정보입니다. 아래 기준을 우선하여 답하세요.\n\n${currentStudyText(true, true)}`
-          : "앱에서 현재 문제 정보를 찾지 못했습니다. 시험의 확정 정답인 것처럼 말하지 말고, 일반 학습 설명으로만 답하세요."
-      },
-      ...history.slice(-10)
-    ];
+    // 해설/답안 분석은 이 문제만 보낸다: 이전 대화에 섞인 다른 문제 내용이 해설을 흐리게 만들었음
+    const focused = Boolean(options.saveKind);
+    const messages = focused
+      ? [{ role: "system", content: systemPrompt() }, { role: "user", content }]
+      : [
+          { role: "system", content: systemPrompt() },
+          {
+            role: "user",
+            content: currentStudyText(true, true)
+              ? `앱에서 자동 첨부한 현재 문제 정보입니다. 아래 기준을 우선하여 답하세요.\n\n${currentStudyText(true, true)}`
+              : "앱에서 현재 문제 정보를 찾지 못했습니다. 시험의 확정 정답인 것처럼 말하지 말고, 일반 학습 설명으로만 답하세요."
+          },
+          ...history.slice(-10)
+        ];
+
+    // 낮은 temperature: 사실 설명에서 지어내는 문장을 줄인다
+    const temperature = focused ? 0.2 : 0.5;
+    const onText = text => {
+      assistant.innerHTML = renderLocalAiMarkdown(text);
+      localAi.messages.scrollTop = localAi.messages.scrollHeight;
+    };
 
     try {
-      const response = await fetch(`${endpoint()}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: modelName(), messages, stream: true })
-      });
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || `HTTP ${response.status}`);
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let answer = "";
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          const chunk = JSON.parse(line);
-          const text = chunk.message?.content || "";
-          if (!text) continue;
-          answer += text;
-          assistant.innerHTML = renderLocalAiMarkdown(answer);
-          localAi.messages.scrollTop = localAi.messages.scrollHeight;
+      let answer = null;
+      let source = "로컬 AI";
+      if (geminiKey()) {
+        try {
+          setStatus("Gemini 응답 중...");
+          answer = await streamGemini(messages, temperature, onText);
+          source = "Gemini";
+        } catch (error) {
+          assistant.innerHTML = renderLocalAiMarkdown(`(Gemini 실패: ${error.message} · 로컬 AI로 다시 시도합니다)`);
         }
+      }
+      if (answer === null) {
+        setStatus("로컬 AI 응답 중...");
+        answer = await streamOllama(messages, temperature, onText);
       }
 
       history.push({ role: "assistant", content: answer });
       lastAssistant = { content: answer, mode: options.mode || "explanation" };
       if (options.saveKind && bridge()?.saveCurrentAiExplanation?.(options.saveKind, answer)) {
-        setStatus(options.saveKind === "answerAnalysis" ? "응답 완료 · 답안 분석 저장됨" : "응답 완료 · AI 해설 저장됨", "ok");
+        setStatus(`${source} 응답 완료 · ${options.saveKind === "answerAnalysis" ? "답안 분석" : "AI 해설"} 저장됨`, "ok");
       } else {
-        setStatus("응답 완료", "ok");
+        setStatus(`${source} 응답 완료`, "ok");
       }
       return answer;
     } catch (error) {
@@ -329,6 +407,7 @@
   localAi.close.addEventListener("click", closePanel);
   localAi.endpoint.addEventListener("change", () => { saveSettings(); checkHealth(); });
   localAi.model.addEventListener("change", saveSettings);
+  localAi.geminiKey?.addEventListener("change", () => { saveSettings(); checkHealth(); });
   localAi.useQuestion.addEventListener("click", () => appendContext(false));
   localAi.useAnswer.addEventListener("click", () => appendContext(true));
   localAi.generateExplanation?.addEventListener("click", generateExplanation);

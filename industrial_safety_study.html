@@ -11,7 +11,7 @@
   <link rel="icon" href="icons/sushi-vinegar-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/sushi-vinegar-icon.svg">
   <title>Sushi Vinegar</title>
-  <link rel="stylesheet" href="app.css?v=148">
+  <link rel="stylesheet" href="app.css?v=149">
 </head>
 <body>
   <div class="app">
@@ -565,6 +565,9 @@
       <label>모델
         <input id="localAiModel" type="text" value="gemma3:4b">
       </label>
+      <label class="wide">Gemini API 키 (무료 · 넣으면 Gemini 우선, 안 되면 로컬 AI)
+        <input id="localAiGeminiKey" type="password" autocomplete="off" placeholder="aistudio.google.com 에서 받은 키">
+      </label>
     </div>
     <div id="localAiMessages" class="local-ai-messages">
       <div class="local-ai-message system">저장된 정답이 있으면 그 답을 기준으로 풀이와 암기 포인트를 설명합니다.</div>
@@ -586,8 +589,8 @@
   </section>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app-config.js?v=148"></script>
-  <script src="app.js?v=148"></script>
-  <script src="local-ai.js?v=148"></script>
+  <script src="app-config.js?v=149"></script>
+  <script src="app.js?v=149"></script>
+  <script src="local-ai.js?v=149"></script>
 </body>
 </html>

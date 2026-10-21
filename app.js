@@ -4431,9 +4431,8 @@
 
       const keywords = answerKeywords(question.answer).slice(0, 8);
       const requiredNumbers = answerNumberTokens(question.answer);
-      const mineCompact = compactText(mine);
       const mineNumbers = answerNumberTokens(mine);
-      const hitKeywords = keywords.filter(keyword => mineCompact.includes(compactText(keyword)));
+      const hitKeywords = keywords.filter(keyword => answerIncludes(mine, keyword));
       const missingNumbers = requiredNumbers.filter(number => !mineNumbers.includes(number));
       const keywordRate = keywords.length ? hitKeywords.length / keywords.length : (answered ? 0.5 : 0);
       const numberOk = !missingNumbers.length;
@@ -4694,7 +4693,7 @@
       keywords.forEach(keyword => {
         const keywordNumbers = answerNumberTokens(keyword);
         const keywordNumbersOk = keywordNumbers.every(number => mineNumbers.includes(number));
-        const bucket = mine.includes(compactText(keyword)) && keywordNumbersOk ? hits : misses;
+        const bucket = answerIncludes(els.myAnswer.value, keyword) && keywordNumbersOk ? hits : misses;
         bucket.push(keyword);
       });
       const hitHtml = !keywords.length
@@ -4784,6 +4783,20 @@
 
     function compactText(value) {
       return String(value || "").toLowerCase().replace(/\s+/g, "");
+    }
+
+    // 문장부호, 단어 끝 조사(의/에/에서/에게/을/를), 따로 쓴 '및'·'등'은 빠지거나 바뀌어도 같은 답으로 본다
+    function looseAnswerText(value) {
+      return compactText(String(value || "")
+        .replace(/\p{P}/gu, " ")
+        .replace(/(\S)(에서|에게|의|에|을|를)(?=\s|$)/g, "$1")
+        .replace(/(^|\s)(및|등)(?=\s|$)/g, " "));
+    }
+
+    function answerIncludes(mine, keyword) {
+      if (compactText(mine).includes(compactText(keyword))) return true;
+      const loose = looseAnswerText(keyword);
+      return loose.length >= 2 && looseAnswerText(mine).includes(loose);  // 한 글자만 남으면 아무 데나 맞으니 제외
     }
 
     function answerNumberTokens(value) {
