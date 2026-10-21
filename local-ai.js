@@ -1,7 +1,9 @@
 (() => {
   const storageKey = window.EXAM_STUDY_CONFIG?.localAiStorageKey || "examStudyApp.localAi.v1";
   const defaultEndpoint = "http://127.0.0.1:8765";
-  const geminiDefaultModel = "gemini-2.5-flash";
+  // 목록을 못 받을 때만 쓰는 값. Google이 옛 모델을 새 사용자에게 막아서(2.5-flash) 고정하지 않고 목록에서 고른다
+  const geminiFallbackModel = "gemini-3.8-flash";
+  let geminiChosenModel = "";
   const localAi = {
     toggle: document.querySelector("#localAiToggle"),
     panel: document.querySelector("#localAiPanel"),
@@ -241,6 +243,33 @@
     return answer;
   }
 
+  // 키로 쓸 수 있는 모델 중 가장 최신 정식 Flash (preview/lite/exp 제외)
+  async function resolveGeminiModel() {
+    if (geminiChosenModel) return geminiChosenModel;
+    try {
+      const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
+        headers: { "x-goog-api-key": geminiKey() }
+      });
+      const data = await response.json();
+      const version = name => (name.match(/gemini-([\d.]+)-flash$/)?.[1] || "0").split(".").map(Number);
+      const candidates = (data.models || [])
+        .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+        .map(m => m.name.replace(/^models\//, ""))
+        .filter(name => /^gemini-[\d.]+-flash$/.test(name))
+        .sort((a, b) => {
+          const [va, vb] = [version(a), version(b)];
+          for (let i = 0; i < Math.max(va.length, vb.length); i += 1) {
+            if ((vb[i] || 0) !== (va[i] || 0)) return (vb[i] || 0) - (va[i] || 0);
+          }
+          return 0;
+        });
+      geminiChosenModel = candidates[0] || geminiFallbackModel;
+    } catch (error) {
+      geminiChosenModel = geminiFallbackModel;
+    }
+    return geminiChosenModel;
+  }
+
   async function streamGemini(messages, temperature, onText) {
     const system = messages.filter(m => m.role === "system").map(m => m.content).join("\n");
     const contents = [];
@@ -250,7 +279,7 @@
       if (last?.role === role) last.parts[0].text += `\n\n${m.content}`;  // 같은 역할이 연달아 오면 합친다
       else contents.push({ role, parts: [{ text: m.content }] });
     });
-    const model = /^gemini/i.test(modelName()) ? modelName() : geminiDefaultModel;
+    const model = /^gemini/i.test(modelName()) ? modelName() : await resolveGeminiModel();
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey() },
