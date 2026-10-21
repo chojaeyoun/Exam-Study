@@ -304,6 +304,7 @@
       localAi.messages.scrollTop = localAi.messages.scrollHeight;
     };
 
+    let geminiError = "";
     try {
       let answer = null;
       let source = "로컬 AI";
@@ -313,7 +314,8 @@
           answer = await streamGemini(messages, temperature, onText);
           source = "Gemini";
         } catch (error) {
-          assistant.innerHTML = renderLocalAiMarkdown(`(Gemini 실패: ${error.message} · 로컬 AI로 다시 시도합니다)`);
+          geminiError = error.message;
+          assistant.innerHTML = renderLocalAiMarkdown(`(Gemini 실패: ${geminiError} · 로컬 AI로 다시 시도합니다)`);
         }
       }
       if (answer === null) {
@@ -330,7 +332,11 @@
       }
       return answer;
     } catch (error) {
-      assistant.textContent = `오류: ${error.message}`;
+      // 두 쪽 오류를 다 보여준다: 로컬 오류만 보이면 Gemini가 왜 안 됐는지 알 수 없음
+      assistant.textContent = geminiKey()
+        ? `오류 · Gemini: ${geminiError || "-"} / 로컬 AI: ${error.message}`
+        : `오류 · 로컬 AI: ${error.message}
+(PC의 브릿지 서버가 꺼져 있으면 실패합니다. 위 'Gemini API 키' 칸에 키를 넣으면 PC 없이 해설됩니다.)`;
       setStatus("응답 실패", "error");
       return "";
     } finally {
