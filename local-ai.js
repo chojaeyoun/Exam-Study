@@ -3,8 +3,9 @@
   const positionKey = `${storageKey}.position`;
   const defaultEndpoint = "http://127.0.0.1:8765";
   // 목록을 못 받을 때만 쓰는 값. Google이 옛 모델을 새 사용자에게 막아서(2.5-flash) 고정하지 않고 목록에서 고른다
-  const geminiFallbackModel = "gemini-3.8-flash";
-  let geminiChosenModel = "";
+  const geminiFallbackModels = ["gemini-3.8-flash", "gemini-3.8-flash-lite"];
+  let geminiModels = [];
+  const geminiBlockedUntil = {};  // 한도에 걸린 모델 -> 다시 써 볼 시각
   const localAi = {
     toggle: document.querySelector("#localAiToggle"),
     panel: document.querySelector("#localAiPanel"),
@@ -184,31 +185,41 @@
     return answer;
   }
 
-  // 키로 쓸 수 있는 모델 중 가장 최신 정식 Flash (preview/lite/exp 제외)
-  async function resolveGeminiModel() {
-    if (geminiChosenModel) return geminiChosenModel;
+  // 키로 쓸 수 있는 모델 중 가장 최신 정식 Flash, 그다음 Flash-Lite (preview/exp 제외).
+  // 무료 한도가 Flash는 하루 수십 회, Flash-Lite는 수백 회라서 Flash가 막히면 Lite로 넘어간다
+  async function resolveGeminiModels() {
+    if (geminiModels.length) return geminiModels;
     try {
       const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", {
         headers: { "x-goog-api-key": geminiKey() }
       });
       const data = await response.json();
-      const version = name => (name.match(/gemini-([\d.]+)-flash$/)?.[1] || "0").split(".").map(Number);
-      const candidates = (data.models || [])
+      const names = (data.models || [])
         .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
-        .map(m => m.name.replace(/^models\//, ""))
-        .filter(name => /^gemini-[\d.]+-flash$/.test(name))
-        .sort((a, b) => {
-          const [va, vb] = [version(a), version(b)];
-          for (let i = 0; i < Math.max(va.length, vb.length); i += 1) {
-            if ((vb[i] || 0) !== (va[i] || 0)) return (vb[i] || 0) - (va[i] || 0);
-          }
-          return 0;
-        });
-      geminiChosenModel = candidates[0] || geminiFallbackModel;
+        .map(m => m.name.replace(/^models\//, ""));
+      const newest = pattern => names
+        .filter(name => pattern.test(name))
+        .sort((a, b) => compareVersions(b.match(pattern)[1], a.match(pattern)[1]))[0];
+      geminiModels = [
+        newest(/^gemini-([\d.]+)-flash$/) || geminiFallbackModels[0],
+        newest(/^gemini-([\d.]+)-flash-lite$/) || geminiFallbackModels[1]
+      ];
     } catch (error) {
-      geminiChosenModel = geminiFallbackModel;
+      return geminiFallbackModels;  // 목록을 못 받으면 이번만 기본값, 다음에 다시 목록 시도
     }
-    return geminiChosenModel;
+    return geminiModels;
+  }
+
+  function compareVersions(a, b) {
+    const [va, vb] = [a, b].map(v => v.split(".").map(Number));
+    for (let i = 0; i < Math.max(va.length, vb.length); i += 1) {
+      if ((va[i] || 0) !== (vb[i] || 0)) return (va[i] || 0) - (vb[i] || 0);
+    }
+    return 0;
+  }
+
+  function geminiLabel(model) {
+    return model.replace(/^gemini-/, "Gemini ").replace(/-flash-lite$/, " Flash-Lite").replace(/-flash$/, " Flash");
   }
 
   async function streamGemini(messages, temperature, onText) {
@@ -220,28 +231,39 @@
       if (last?.role === role) last.parts[0].text += `\n\n${m.content}`;  // 같은 역할이 연달아 오면 합친다
       else contents.push({ role, parts: [{ text: m.content }] });
     });
-    const model = /^gemini/i.test(modelName()) ? modelName() : await resolveGeminiModel();
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey() },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature } })
-    });
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      if (response.status === 429) throw new Error("무료 사용량 한도 초과(잠시 후 다시)");
-      throw new Error(data.error?.message || `HTTP ${response.status}`);
+    const models = /^gemini/i.test(modelName()) ? [modelName()] : await resolveGeminiModels();
+    const usable = models.filter(model => !(geminiBlockedUntil[model] > Date.now()));
+    let lastError = new Error("무료 사용량 한도 초과(잠시 후 다시)");
+    for (const model of usable.length ? usable : models) {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey() },
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents, generationConfig: { temperature } })
+      });
+      if (response.status === 429) {
+        // 분당 한도일 수도 있어 10분 뒤에는 다시 시도
+        geminiBlockedUntil[model] = Date.now() + 10 * 60 * 1000;
+        lastError = new Error(`${geminiLabel(model)} 무료 사용량 한도 초과(잠시 후 다시)`);
+        setStatus(`${geminiLabel(model)} 한도 초과 · 다음 모델로 다시 시도...`);
+        continue;
+      }
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error?.message || `HTTP ${response.status}`);
+      }
+      let answer = "";
+      await readLines(response, line => {
+        if (!line.startsWith("data:")) return;
+        const parts = JSON.parse(line.slice(5)).candidates?.[0]?.content?.parts || [];
+        const text = parts.filter(part => !part.thought).map(part => part.text || "").join("");
+        if (!text) return;
+        answer += text;
+        onText(answer);
+      });
+      if (!answer.trim()) throw new Error("빈 응답");
+      return { answer, model };
     }
-    let answer = "";
-    await readLines(response, line => {
-      if (!line.startsWith("data:")) return;
-      const parts = JSON.parse(line.slice(5)).candidates?.[0]?.content?.parts || [];
-      const text = parts.filter(part => !part.thought).map(part => part.text || "").join("");
-      if (!text) return;
-      answer += text;
-      onText(answer);
-    });
-    if (!answer.trim()) throw new Error("빈 응답");
-    return answer;
+    throw lastError;
   }
 
   async function sendPrompt(content) {
@@ -283,8 +305,9 @@
       if (geminiKey()) {
         try {
           setStatus("Gemini 응답 중...");
-          answer = await streamGemini(messages, temperature, onText);
-          source = "Gemini";
+          const result = await streamGemini(messages, temperature, onText);
+          answer = result.answer;
+          source = geminiLabel(result.model);
         } catch (error) {
           geminiError = error.message;
           assistant.innerHTML = renderLocalAiMarkdown(`(Gemini 실패: ${geminiError} · 로컬 AI로 다시 시도합니다)`);
