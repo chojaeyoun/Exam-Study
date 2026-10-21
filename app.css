@@ -4120,6 +4120,14 @@
       font-size: 14px;
     }
 
+    .local-ai-save-questions {
+      display: block;
+      margin-top: 10px;
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
     .local-ai-message.user {
       align-self: flex-end;
       background: var(--soft);

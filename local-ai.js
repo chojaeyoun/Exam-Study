@@ -24,6 +24,8 @@
   };
   const history = [];
   let historyQuestion = null;
+  const QUESTION_BLOCK_START = "<<<문제저장";
+  const QUESTION_BLOCK_END = "문제저장>>>";
 
   if (!localAi.toggle || !localAi.panel) return;
 
@@ -130,7 +132,12 @@
       "이때 법 조항 번호, 수치, 기준값은 저장된 정답이나 메모에 있는 것만 쓰고 없는 것은 만들어 내지 않는다.",
       "[그 밖의 질문] 화면의 문제로 이야기를 끌고 가지 말고 질문에 바로 답한다. 아는 범위에서 수치나 법령도 구체적으로 쓰되, 확실하지 않은 숫자·조항·최근 개정 내용에는 '(확인 필요)'를 붙인다.",
       "인터넷 검색은 할 수 없으니 오늘 뉴스나 이번 시험 일정처럼 최신 정보가 필요한 질문에는 모른다고 답한다.",
-      "'~일 수 있다', '경우에 따라' 같은 흐릿한 표현은 꼭 필요할 때만 쓰고, 질문에 필요한 만큼만 짧고 분명하게 답한다."
+      "'~일 수 있다', '경우에 따라' 같은 흐릿한 표현은 꼭 필요할 때만 쓰고, 질문에 필요한 만큼만 짧고 분명하게 답한다.",
+      "[문제를 만들어 달라는 요청] 먼저 만든 문제와 정답을 번호를 붙여 읽기 좋게 보여준 뒤, 답변 맨 끝에 앱이 저장할 수 있도록 아래 형식의 블록을 정확히 붙인다.",
+      `${QUESTION_BLOCK_START}\n[{"examType":"written","category":"분야","level":"중","question":"문제","answer":"정답","memo":"해설 한두 줄"}]\n${QUESTION_BLOCK_END}`,
+      "블록 안은 JSON 배열만 쓴다. examType은 written(실기 필답형), multiple(필기 4지선다), practical(실기 작업형) 중 하나이고, 따로 말이 없으면 화면 문제의 유형을 따른다.",
+      "multiple은 question에 보기 ①②③④를 줄을 바꿔 넣고 answer에는 정답 번호(예: ③)와 보기 내용을 쓴다. level은 상, 중, 하 중 하나다.",
+      "문제를 만들어 달라는 요청이 아니면 이 블록을 쓰지 않는다."
     ].join(" ");
   }
 
@@ -295,7 +302,7 @@
     ];
     const temperature = 0.3;  // 낮게: 사실 설명에서 지어내는 문장을 줄인다
     const onText = text => {
-      assistant.innerHTML = renderLocalAiMarkdown(text);
+      assistant.innerHTML = renderLocalAiMarkdown(splitQuestionBlock(text).visible);
       localAi.messages.scrollTop = localAi.messages.scrollHeight;
     };
 
@@ -320,6 +327,7 @@
       }
       history.push({ role: "assistant", content: answer });
       setStatus(`${source} 응답 완료`, "ok");
+      addSaveQuestionsButton(assistant, splitQuestionBlock(answer).items);
       return answer;
     } catch (error) {
       // 두 쪽 오류를 다 보여준다: 로컬 오류만 보이면 Gemini가 왜 안 됐는지 알 수 없음
@@ -340,6 +348,46 @@
     if (!content || localAi.send.disabled) return;
     localAi.prompt.value = "";
     await sendPrompt(content);
+  }
+
+  // AI가 만든 문제의 저장용 블록: 화면에는 숨기고, 안의 JSON 배열을 꺼낸다 (스트리밍 중 반쯤 온 블록도 숨김)
+  function splitQuestionBlock(text) {
+    const start = text.indexOf(QUESTION_BLOCK_START);
+    if (start < 0) return { visible: text, items: null };
+    const end = text.indexOf(QUESTION_BLOCK_END, start);
+    const visible = (text.slice(0, start) + (end < 0 ? "" : text.slice(end + QUESTION_BLOCK_END.length))).trim();
+    if (end < 0) return { visible, items: null };
+    const body = text.slice(start + QUESTION_BLOCK_START.length, end).replace(/```(?:json)?/gi, "").trim();
+    try {
+      const items = JSON.parse(body);
+      return { visible, items: Array.isArray(items) ? items.filter(item => item?.question && item?.answer) : null };
+    } catch (error) {
+      return { visible: `${visible}
+
+(저장용 문제 데이터를 읽지 못했습니다. "저장 형식으로 다시 써줘"라고 해 보세요.)`, items: null };
+    }
+  }
+
+  function addSaveQuestionsButton(message, items) {
+    if (!items?.length) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "local-ai-save-questions";
+    button.textContent = `문제 ${items.length}개 저장`;
+    button.addEventListener("click", () => {
+      const result = bridge()?.addQuestionsFromAi?.(items);
+      if (!result) {
+        setStatus("문제를 저장하지 못했습니다.", "error");
+        return;
+      }
+      button.disabled = true;
+      button.textContent = result.added
+        ? `${result.added}개 저장됨${result.skipped ? ` · 이미 있는 ${result.skipped}개 제외` : ""}`
+        : "이미 모두 저장된 문제입니다";
+      setStatus(`문제 ${result.added}개를 현재 시험 탭에 저장했습니다 (태그: AI생성)`, "ok");
+    });
+    message.appendChild(button);
+    localAi.messages.scrollTop = localAi.messages.scrollHeight;
   }
 
   function showSettings(show) {

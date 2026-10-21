@@ -4890,8 +4890,50 @@
     window.ExamStudyLocalAi = {
       getCurrentQuestionContext: getCurrentAiQuestionContext,
       saveCurrentAiExplanation,
-      appendCurrentStudyNoteFromAi
+      appendCurrentStudyNoteFromAi,
+      addQuestionsFromAi
     };
+
+    // AI 도우미가 만든 문제를 현재 시험 탭에 저장. CSV 가져오기처럼 같은 분야·같은 문제는 건너뛴다
+    function addQuestionsFromAi(items) {
+      const existing = new Set(currentExamQuestions().map(q => `${q.category}|${q.question}`));
+      const created = [];
+      let skipped = 0;
+      (Array.isArray(items) ? items : []).forEach(item => {
+        const question = String(item?.question || "").trim();
+        const answer = String(item?.answer || "").trim();
+        if (!question || !answer) return;
+        const category = String(item.category || "").trim() || "AI 생성";
+        const key = `${category}|${question}`;
+        if (existing.has(key)) {
+          skipped += 1;
+          return;
+        }
+        existing.add(key);
+        created.push({
+          id: crypto.randomUUID(),
+          examId: state.activeExamId,
+          examType: normalizeExamType(item.examType),
+          category,
+          level: ["상", "중", "하"].includes(item.level) ? item.level : "중",
+          question,
+          answer,
+          memo: String(item.memo || "").trim(),
+          tags: normalizeTags([...normalizeTags(item.tags), "AI생성"]),
+          favorite: false,
+          status: "new",
+          wrongCount: 0,
+          masteredAt: "",
+          updatedAt: new Date().toISOString()
+        });
+      });
+      if (created.length) {
+        state.questions.push(...created);
+        persist();
+        render();
+      }
+      return { added: created.length, skipped };
+    }
 
     function editCurrentStudyQuestion() {
       const q = getCurrentQuestion();

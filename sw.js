@@ -1,11 +1,11 @@
-const CACHE_NAME = "exam-study-app-v155";
+const CACHE_NAME = "exam-study-app-v156";
 const APP_SHELL = [
   "./index.html",
-  "./app.css?v=155",
-  "./app-config.js?v=155",
-  "./app-config-public.js?v=155",
-  "./app.js?v=155",
-  "./local-ai.js?v=155",
+  "./app.css?v=156",
+  "./app-config.js?v=156",
+  "./app-config-public.js?v=156",
+  "./app.js?v=156",
+  "./local-ai.js?v=156",
   "./industrial_safety_study.html",
   "./industrial_safety_study_public.html",
   "./manifest.webmanifest",
