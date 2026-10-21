@@ -1,5 +1,6 @@
 (() => {
   const storageKey = window.EXAM_STUDY_CONFIG?.localAiStorageKey || "examStudyApp.localAi.v1";
+  const positionKey = `${storageKey}.position`;
   const defaultEndpoint = "http://127.0.0.1:8765";
   // 목록을 못 받을 때만 쓰는 값. Google이 옛 모델을 새 사용자에게 막아서(2.5-flash) 고정하지 않고 목록에서 고른다
   const geminiFallbackModel = "gemini-3.8-flash";
@@ -7,7 +8,10 @@
   const localAi = {
     toggle: document.querySelector("#localAiToggle"),
     panel: document.querySelector("#localAiPanel"),
+    head: document.querySelector("#localAiPanel .local-ai-head"),
     close: document.querySelector("#localAiClose"),
+    settingsToggle: document.querySelector("#localAiSettingsToggle"),
+    options: document.querySelector("#localAiOptions"),
     status: document.querySelector("#localAiStatus"),
     endpoint: document.querySelector("#localAiEndpoint"),
     model: document.querySelector("#localAiModel"),
@@ -15,16 +19,10 @@
     messages: document.querySelector("#localAiMessages"),
     form: document.querySelector("#localAiForm"),
     prompt: document.querySelector("#localAiPrompt"),
-    send: document.querySelector("#localAiSend"),
-    useQuestion: document.querySelector("#localAiUseQuestion"),
-    useAnswer: document.querySelector("#localAiUseAnswer"),
-    generateExplanation: document.querySelector("#localAiGenerateExplanation"),
-    analyzeAnswer: document.querySelector("#localAiAnalyzeAnswer"),
-    saveLast: document.querySelector("#localAiSaveLast"),
-    saveNote: document.querySelector("#localAiSaveNote")
+    send: document.querySelector("#localAiSend")
   };
   const history = [];
-  let lastAssistant = { content: "", mode: "explanation" };
+  let historyQuestion = null;
 
   if (!localAi.toggle || !localAi.panel) return;
 
@@ -68,12 +66,6 @@
     localAi.status.className = `local-ai-status ${type}`.trim();
   }
 
-  function setBusy(isBusy) {
-    [localAi.send, localAi.generateExplanation, localAi.analyzeAnswer].filter(Boolean).forEach(button => {
-      button.disabled = isBusy;
-    });
-  }
-
   function addMessage(role, text) {
     const message = document.createElement("div");
     message.className = `local-ai-message ${role}`;
@@ -109,7 +101,7 @@
     return { examTitle: title, question, answer, myAnswer, tags: [] };
   }
 
-  function currentStudyText(includeAnswer = false, includeMyAnswer = false) {
+  function currentStudyText() {
     const context = currentContext();
     if (!context) return "";
     const parts = [];
@@ -119,62 +111,11 @@
     if (context.level) parts.push(`중요도: ${context.level}`);
     if (context.tags?.length) parts.push(`태그: ${context.tags.join(", ")}`);
     if (context.question) parts.push(`문제:\n${context.question}`);
-    if (includeAnswer && context.answer) parts.push(`저장된 정답/해설:\n${context.answer}`);
-    if (includeAnswer && context.memo) parts.push(`작성 메모:\n${context.memo}`);
-    if (includeMyAnswer && context.myAnswer) parts.push(`내 답안:\n${context.myAnswer}`);
+    if (context.answer) parts.push(`저장된 정답/해설:\n${context.answer}`);
+    if (context.memo) parts.push(`작성 메모:\n${context.memo}`);
+    if (context.myAnswer) parts.push(`내 답안:\n${context.myAnswer}`);
     if (context.aiExplanation?.explanation) parts.push(`저장된 AI 해설:\n${context.aiExplanation.explanation}`);
     return parts.join("\n\n");
-  }
-
-  function appendContext(includeAnswer) {
-    const text = currentStudyText(includeAnswer, true);
-    if (!text) {
-      addMessage("system", "현재 화면에서 가져올 문제가 없습니다.");
-      return;
-    }
-    const current = localAi.prompt.value.trim();
-    localAi.prompt.value = `${current ? `${current}\n\n` : ""}${text}`;
-    localAi.prompt.focus();
-  }
-
-  function buildExplanationPrompt() {
-    const text = currentStudyText(true, false);
-    if (!text) return "";
-    return [
-      "현재 산업안전기사 문제를 저장된 정답 기준으로 해설해줘.",
-      "다음 형식을 지켜줘.",
-      "",
-      "1. 핵심 결론: 정답을 한두 줄로 정리",
-      "2. 왜 맞는지: 원리나 법규 관점 설명",
-      "3. 오답/주의점: 헷갈리기 쉬운 부분",
-      "4. 암기 포인트: 시험 직전에 볼 키워드",
-      "5. 오답노트 요약: 다시 볼 문장 3줄 이내",
-      "",
-      text
-    ].join("\n");
-  }
-
-  function buildAnswerAnalysisPrompt() {
-    const context = currentContext();
-    if (!context) return "";
-    if (!context.myAnswer) {
-      addMessage("system", "내 답안 칸에 답을 먼저 적으면 분석할 수 있습니다.");
-      return "";
-    }
-    return [
-      "내 답안을 저장된 정답과 비교해서 채점 보조 형태로 분석해줘.",
-      "확정 점수처럼 말하지 말고, 산업안전기사 필답형/작업형 부분점수 관점으로 봐줘.",
-      "다음 형식을 지켜줘.",
-      "",
-      "1. 맞은 핵심 키워드",
-      "2. 빠진 핵심 키워드",
-      "3. 감점 위험 표현",
-      "4. 더 시험답안다운 표현",
-      "5. 틀린 이유 분류: 개념 모름/키워드 누락/문제 오독/용어 혼동/암기 부족 중 가장 가까운 것",
-      "6. 오답노트 요약",
-      "",
-      currentStudyText(true, true)
-    ].join("\n");
   }
 
   function systemPrompt() {
@@ -182,18 +123,18 @@
       "너는 산업안전기사 학습용 AI 해설 도우미다.",
       "반드시 한국어로만 답하고 중국어와 영어를 섞지 않는다.",
       "앱이 현재 문제와 저장된 정답/해설을 제공한 경우에는 그 정답을 최우선 기준으로 삼고 절대 다른 숫자나 답으로 바꾸지 않는다.",
-      "저장된 정답이 있으면 먼저 저장된 정답 기준임을 밝히고, 왜 그 답인지 풀이, 암기 포인트, 헷갈리는 부분을 설명한다.",
-      "내 답안 분석은 채점 보조이며 확정 점수처럼 단정하지 않는다.",
+      "'답 알려줘'에는 저장된 정답을 시험 답안처럼 정리해서 답하고, '이유'나 '왜'를 물으면 그 답이 맞는 원리와 암기 포인트를 설명한다.",
+      "'내 답안'을 봐 달라고 하면 저장된 정답과 비교해 맞은 키워드, 빠진 키워드, 고칠 표현을 알려주되 확정 점수처럼 단정하지 않는다.",
       "저장된 정답이 없는 일반 질문에는 일반 학습 설명으로만 답한다.",
       "법 조항 번호, 수치, 기준값은 저장된 정답이나 메모에 있는 것만 쓰고, 없는 숫자나 조항은 만들어 내지 않는다.",
       "확실하지 않은 내용은 쓰지 않는다. '~일 수 있다', '~할 수도 있다', '경우에 따라' 같은 흐릿한 표현 대신 저장된 정답에 근거해 짧고 단정적으로 쓴다.",
-      "각 항목은 1~3문장으로 짧게 쓰고, 문제와 상관없는 일반론은 쓰지 않는다."
+      "질문에 필요한 만큼만 짧게 답하고, 문제와 상관없는 일반론은 쓰지 않는다."
     ].join(" ");
   }
 
   async function checkHealth() {
     if (geminiKey()) {
-      setStatus("Gemini로 해설합니다 (실패하면 로컬 AI)", "ok");
+      setStatus("Gemini로 답합니다 (실패하면 로컬 AI)", "ok");
       return;
     }
     try {
@@ -202,9 +143,9 @@
       if (!response.ok || !data.ok) throw new Error(data.hint || data.error || "연결 실패");
       const firstModel = data.models?.[0]?.name;
       if (firstModel && !localAi.model.value.trim()) localAi.model.value = firstModel;
-      setStatus(`연결됨: ${data.models?.length || 0}개 모델`, "ok");
+      setStatus(`로컬 AI 연결됨: ${data.models?.length || 0}개 모델`, "ok");
     } catch (error) {
-      setStatus("브릿지 서버가 꺼져 있습니다. ollama-chatbot의 Start-Chatbot.ps1을 실행하세요.", "error");
+      setStatus("Gemini 키가 없고 로컬 AI도 꺼져 있습니다. ⚙에서 키를 넣으세요.", "error");
     }
   }
 
@@ -303,31 +244,33 @@
     return answer;
   }
 
-  async function sendPrompt(content, options = {}) {
+  async function sendPrompt(content) {
     if (!content) return "";
     saveSettings();
-    setBusy(true);
+    localAi.send.disabled = true;
+
+    // 문제를 넘기면 대화를 새로 시작한다: 앞 문제 대화가 섞이면 답이 흐려졌음
+    const question = currentContext()?.question || "";
+    if (question !== historyQuestion) {
+      history.length = 0;
+      historyQuestion = question;
+    }
     addMessage("user", content);
     history.push({ role: "user", content });
     const assistant = addMessage("assistant", "");
 
-    // 해설/답안 분석은 이 문제만 보낸다: 이전 대화에 섞인 다른 문제 내용이 해설을 흐리게 만들었음
-    const focused = Boolean(options.saveKind);
-    const messages = focused
-      ? [{ role: "system", content: systemPrompt() }, { role: "user", content }]
-      : [
-          { role: "system", content: systemPrompt() },
-          {
-            role: "user",
-            content: currentStudyText(true, true)
-              ? `앱에서 자동 첨부한 현재 문제 정보입니다. 아래 기준을 우선하여 답하세요.\n\n${currentStudyText(true, true)}`
-              : "앱에서 현재 문제 정보를 찾지 못했습니다. 시험의 확정 정답인 것처럼 말하지 말고, 일반 학습 설명으로만 답하세요."
-          },
-          ...history.slice(-10)
-        ];
-
-    // 낮은 temperature: 사실 설명에서 지어내는 문장을 줄인다
-    const temperature = focused ? 0.2 : 0.5;
+    const studyText = currentStudyText();
+    const messages = [
+      { role: "system", content: systemPrompt() },
+      {
+        role: "user",
+        content: studyText
+          ? `앱에서 자동 첨부한 현재 문제 정보입니다. 아래 기준을 우선하여 답하세요.\n\n${studyText}`
+          : "앱에서 현재 문제 정보를 찾지 못했습니다. 시험의 확정 정답인 것처럼 말하지 말고, 일반 학습 설명으로만 답하세요."
+      },
+      ...history.slice(-10)
+    ];
+    const temperature = 0.3;  // 낮게: 사실 설명에서 지어내는 문장을 줄인다
     const onText = text => {
       assistant.innerHTML = renderLocalAiMarkdown(text);
       localAi.messages.scrollTop = localAi.messages.scrollHeight;
@@ -351,25 +294,18 @@
         setStatus("로컬 AI 응답 중...");
         answer = await streamOllama(messages, temperature, onText);
       }
-
       history.push({ role: "assistant", content: answer });
-      lastAssistant = { content: answer, mode: options.mode || "explanation" };
-      if (options.saveKind && bridge()?.saveCurrentAiExplanation?.(options.saveKind, answer)) {
-        setStatus(`${source} 응답 완료 · ${options.saveKind === "answerAnalysis" ? "답안 분석" : "AI 해설"} 저장됨`, "ok");
-      } else {
-        setStatus(`${source} 응답 완료`, "ok");
-      }
+      setStatus(`${source} 응답 완료`, "ok");
       return answer;
     } catch (error) {
       // 두 쪽 오류를 다 보여준다: 로컬 오류만 보이면 Gemini가 왜 안 됐는지 알 수 없음
       assistant.textContent = geminiKey()
         ? `오류 · Gemini: ${geminiError || "-"} / 로컬 AI: ${error.message}`
-        : `오류 · 로컬 AI: ${error.message}
-(PC의 브릿지 서버가 꺼져 있으면 실패합니다. 위 'Gemini API 키' 칸에 키를 넣으면 PC 없이 해설됩니다.)`;
+        : `오류 · 로컬 AI: ${error.message}\n(PC의 브릿지 서버가 꺼져 있으면 실패합니다. ⚙에서 'Gemini API 키'를 넣으면 PC 없이 답합니다.)`;
       setStatus("응답 실패", "error");
       return "";
     } finally {
-      setBusy(false);
+      localAi.send.disabled = false;
       localAi.prompt.focus();
     }
   }
@@ -377,55 +313,67 @@
   async function sendMessage(event) {
     event.preventDefault();
     const content = localAi.prompt.value.trim();
-    if (!content) return;
+    if (!content || localAi.send.disabled) return;
     localAi.prompt.value = "";
-    await sendPrompt(content, { mode: "chat" });
+    await sendPrompt(content);
   }
 
-  async function generateExplanation() {
-    const prompt = buildExplanationPrompt();
-    if (!prompt) {
-      addMessage("system", "현재 화면에서 해설을 만들 문제가 없습니다.");
-      return;
-    }
-    await sendPrompt(prompt, { mode: "explanation", saveKind: "explanation" });
+  function showSettings(show) {
+    localAi.options?.classList.toggle("hidden", !show);
+    localAi.settingsToggle?.setAttribute("aria-expanded", String(show));
   }
 
-  async function analyzeMyAnswer() {
-    const prompt = buildAnswerAnalysisPrompt();
-    if (!prompt) return;
-    await sendPrompt(prompt, { mode: "answerAnalysis", saveKind: "answerAnalysis" });
+  // 제목 줄을 끌어 패널을 옮긴다. 위치는 기기마다 기억하고, 화면 밖으로 나가지 않게 맞춘다
+  function placePanel(left, top) {
+    const rect = localAi.panel.getBoundingClientRect();
+    const x = Math.min(Math.max(0, left), Math.max(0, window.innerWidth - rect.width));
+    const y = Math.min(Math.max(0, top), Math.max(0, window.innerHeight - 60));
+    Object.assign(localAi.panel.style, { left: `${x}px`, top: `${y}px`, right: "auto", bottom: "auto" });
+    return { left: x, top: y };
   }
 
-  function saveLastResponse() {
-    if (!lastAssistant.content.trim()) {
-      addMessage("system", "저장할 마지막 AI 응답이 없습니다.");
-      return;
-    }
-    const kind = lastAssistant.mode === "answerAnalysis" ? "answerAnalysis" : "explanation";
-    if (bridge()?.saveCurrentAiExplanation?.(kind, lastAssistant.content)) {
-      setStatus(kind === "answerAnalysis" ? "마지막 답안 분석 저장됨" : "마지막 해설 저장됨", "ok");
-    } else {
-      setStatus("현재 문제에 저장하지 못했습니다.", "error");
+  function restorePosition() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(positionKey));
+      if (Number.isFinite(saved?.left) && Number.isFinite(saved?.top)) placePanel(saved.left, saved.top);
+    } catch (error) {
+      console.warn(error);
     }
   }
 
-  function saveLastToStudyNote() {
-    if (!lastAssistant.content.trim()) {
-      addMessage("system", "오답노트에 넣을 마지막 AI 응답이 없습니다.");
-      return;
-    }
-    const title = lastAssistant.mode === "answerAnalysis" ? "AI 답안 분석" : "AI 해설 요약";
-    if (bridge()?.appendCurrentStudyNoteFromAi?.(lastAssistant.content, title)) {
-      setStatus("오답노트에 저장됨", "ok");
-    } else {
-      setStatus("오답노트에 저장하지 못했습니다.", "error");
-    }
+  function enableDragging() {
+    let drag = null;
+    localAi.head?.addEventListener("pointerdown", event => {
+      if (event.button !== 0 || event.target.closest("button, input, textarea")) return;
+      const rect = localAi.panel.getBoundingClientRect();
+      drag = { dx: event.clientX - rect.left, dy: event.clientY - rect.top };
+      localAi.head.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+    localAi.head?.addEventListener("pointermove", event => {
+      if (drag) placePanel(event.clientX - drag.dx, event.clientY - drag.dy);
+    });
+    const stop = event => {
+      if (!drag) return;
+      drag = null;
+      const rect = localAi.panel.getBoundingClientRect();
+      localStorage.setItem(positionKey, JSON.stringify(placePanel(rect.left, rect.top)));
+      localAi.head.releasePointerCapture?.(event.pointerId);
+    };
+    localAi.head?.addEventListener("pointerup", stop);
+    localAi.head?.addEventListener("pointercancel", stop);
+    window.addEventListener("resize", () => {
+      if (localAi.panel.style.left) {
+        const rect = localAi.panel.getBoundingClientRect();
+        placePanel(rect.left, rect.top);
+      }
+    });
   }
 
   function openPanel() {
     localAi.panel.classList.remove("hidden");
     localAi.toggle.setAttribute("aria-expanded", "true");
+    restorePosition();
     checkHealth();
     localAi.prompt.focus();
   }
@@ -436,18 +384,22 @@
   }
 
   loadSettings();
+  showSettings(!geminiKey());  // 키가 있으면 설정을 접어 답변 칸을 넓게
+  enableDragging();
   localAi.toggle.addEventListener("click", () => {
     localAi.panel.classList.contains("hidden") ? openPanel() : closePanel();
   });
   localAi.close.addEventListener("click", closePanel);
+  localAi.settingsToggle?.addEventListener("click", () => showSettings(localAi.options.classList.contains("hidden")));
   localAi.endpoint.addEventListener("change", () => { saveSettings(); checkHealth(); });
   localAi.model.addEventListener("change", saveSettings);
   localAi.geminiKey?.addEventListener("change", () => { saveSettings(); checkHealth(); });
-  localAi.useQuestion.addEventListener("click", () => appendContext(false));
-  localAi.useAnswer.addEventListener("click", () => appendContext(true));
-  localAi.generateExplanation?.addEventListener("click", generateExplanation);
-  localAi.analyzeAnswer?.addEventListener("click", analyzeMyAnswer);
-  localAi.saveLast?.addEventListener("click", saveLastResponse);
-  localAi.saveNote?.addEventListener("click", saveLastToStudyNote);
   localAi.form.addEventListener("submit", sendMessage);
+  localAi.prompt.addEventListener("keydown", event => {
+    // Enter 전송, Shift+Enter 줄바꿈. 한글 조합 중 Enter는 글자 확정이라 무시
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      localAi.form.requestSubmit();
+    }
+  });
 })();

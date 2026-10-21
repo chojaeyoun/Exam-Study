@@ -4015,11 +4015,16 @@
       right: 18px;
       bottom: 76px;
       z-index: 61;
-      width: min(420px, calc(100vw - 28px));
-      max-height: min(680px, calc(100vh - 104px));
-      display: grid;
-      grid-template-rows: auto auto minmax(180px, 1fr) auto;
+      width: min(440px, calc(100vw - 28px));
+      height: min(640px, calc(100vh - 104px));
+      min-width: 280px;
+      min-height: 300px;
+      max-width: 100vw;
+      max-height: 100vh;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
+      resize: both;  /* 오른쪽 아래 모서리를 끌어 크기 조절 */
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
@@ -4038,6 +4043,14 @@
       padding: 14px 16px;
       border-bottom: 1px solid var(--line);
       background: #f7faf8;
+      cursor: move;
+      touch-action: none;  /* 휴대폰에서 끌 때 화면이 같이 스크롤되지 않게 */
+      user-select: none;
+    }
+
+    .local-ai-head-actions {
+      display: flex;
+      gap: 6px;
     }
 
     .local-ai-title {
@@ -4081,7 +4094,13 @@
       grid-column: 1 / -1;
     }
 
+    .local-ai-options.hidden {
+      display: none;
+    }
+
     .local-ai-messages {
+      flex: 1;
+      min-height: 120px;
       overflow: auto;
       padding: 14px 16px;
       display: flex;
@@ -4122,18 +4141,6 @@
       background: #fff;
     }
 
-    .local-ai-context {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-    }
-
-    .local-ai-context button {
-      min-width: 0;
-      padding-inline: 8px;
-      font-size: 13px;
-    }
-
     .local-ai-input-row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 74px;
@@ -4144,9 +4151,21 @@
       min-height: 72px;
     }
 
+    /* 휴대폰: 하단 메뉴(.nav) 위로 버튼을 올리고, 패널은 화면 폭에 맞춘다 (Gemini는 PC 없이 동작) */
     @media (max-width: 760px) {
-      .local-ai-toggle,
+      .local-ai-toggle {
+        right: 12px;
+        bottom: calc(86px + env(safe-area-inset-bottom));
+      }
+
       .local-ai-panel {
-        display: none !important;
+        left: 8px;
+        right: 8px;
+        top: 8px;
+        bottom: auto;
+        width: calc(100vw - 16px);
+        min-width: 0;
+        height: min(72vh, calc(100vh - 110px));
+        resize: none;
       }
     }
